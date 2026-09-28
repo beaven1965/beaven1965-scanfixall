@@ -1,7 +1,7 @@
 {
-  "name": "ScitechLectureTool — Recorder, Transcriber & Translator",
-  "short_name": "ScitechLectureTool",
-  "description": "Record, transcribe, translate, and summarize classroom lectures.",
+  "name": "ScanFixAll — Scan, Clean & Shrink",
+  "short_name": "ScanFixAll",
+  "description": "Turn messy document photos into clean, shareable scans, and shrink any photo down to a size you can actually send.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#151B26",

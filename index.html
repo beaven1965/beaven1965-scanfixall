@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ScitechLectureTool — Recorder, Transcriber &amp; Translator</title>
-<meta name="description" content="Record, transcribe, and translate lectures — built for students and teachers.">
+<title>ScanFixAll — Scan, Clean &amp; Shrink</title>
+<meta name="description" content="Turn messy document photos into clean, shareable scans, and shrink any photo down to a size you can actually send.">
 <meta name="theme-color" content="#151B26">
 <link rel="manifest" href="/manifest.json">
 <link rel="icon" type="image/png" sizes="32x32" href="/icon-32.png">
@@ -12,6 +12,7 @@
 <link rel="apple-touch-icon" sizes="180x180" href="/icon-180.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
 <style>
   :root{
     --ink:#1C2331;
@@ -1516,14 +1517,229 @@
     color:#1a73e8;
   }
 </style>
+
+  /* ---- ScanFixAll: home mode cards ---- */
+  .mode-cards{
+    display:flex;
+    flex-direction:column;
+    gap:16px;
+    margin-top:12px;
+  }
+  .mode-card{
+    display:flex;
+    align-items:center;
+    gap:16px;
+    background:var(--surface);
+    border:1px solid var(--surface-line);
+    border-radius:16px;
+    padding:22px 20px;
+    cursor:pointer;
+    text-align:left;
+    color:var(--text);
+    font-family:inherit;
+  }
+  .mode-card:active{ background:var(--surface-line); }
+  .mode-card .mode-icon{
+    font-size:34px;
+    line-height:1;
+    flex-shrink:0;
+    width:56px;
+    height:56px;
+    border-radius:14px;
+    background:var(--ink-deep);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
+  .mode-card .mode-title{
+    font-family:'Source Serif 4',serif;
+    font-size:18px;
+    font-weight:600;
+    margin-bottom:4px;
+  }
+  .mode-card .mode-sub{
+    font-size:13px;
+    color:var(--text-muted);
+    line-height:1.4;
+  }
+  .free-count-hint{
+    margin-top:18px;
+    font-size:12.5px;
+    color:var(--text-muted);
+    text-align:center;
+  }
+
+  /* ---- ScanFixAll: tool screens (Scan / Shrink) ---- */
+  .tool-stage{
+    display:flex;
+    flex-direction:column;
+    gap:14px;
+  }
+  .tool-upload-row{
+    display:flex;
+    gap:10px;
+    flex-wrap:wrap;
+  }
+  .tool-btn{
+    flex:1;
+    min-width:140px;
+    background:var(--surface);
+    border:1px solid var(--surface-line);
+    color:var(--text);
+    padding:14px 12px;
+    border-radius:10px;
+    font-size:14px;
+    font-weight:600;
+    cursor:pointer;
+    text-align:center;
+  }
+  .tool-btn.primary{
+    background:var(--gold);
+    color:var(--ink-deep);
+    border:none;
+  }
+  .tool-btn:disabled{ opacity:0.55; cursor:default; }
+  .canvas-wrap{
+    background:var(--ink-deep);
+    border:1px solid var(--surface-line);
+    border-radius:14px;
+    padding:10px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    overflow:hidden;
+    min-height:220px;
+  }
+  .canvas-wrap canvas{
+    max-width:100%;
+    max-height:60vh;
+    border-radius:8px;
+  }
+  .adjust-row{
+    display:flex;
+    align-items:center;
+    gap:10px;
+  }
+  .adjust-row label{
+    font-size:13px;
+    color:var(--text-muted);
+    min-width:70px;
+  }
+  .adjust-row input[type="range"]{
+    flex:1;
+  }
+  .rotate-row{
+    display:flex;
+    gap:10px;
+  }
+  .rotate-row button{
+    flex:1;
+    background:var(--surface);
+    border:1px solid var(--surface-line);
+    color:var(--text);
+    padding:10px;
+    border-radius:10px;
+    font-size:18px;
+    cursor:pointer;
+  }
+  .enhance-toggle-row{
+    display:flex;
+    gap:10px;
+  }
+  .enhance-toggle-row button{
+    flex:1;
+    background:var(--surface);
+    border:1px solid var(--surface-line);
+    color:var(--text);
+    padding:10px;
+    border-radius:10px;
+    font-size:13px;
+    font-weight:600;
+    cursor:pointer;
+  }
+  .enhance-toggle-row button.active{
+    background:var(--gold);
+    color:var(--ink-deep);
+    border-color:var(--gold);
+  }
+  .size-preset-row{
+    display:flex;
+    gap:10px;
+  }
+  .size-preset-row button{
+    flex:1;
+    background:var(--surface);
+    border:1px solid var(--surface-line);
+    color:var(--text);
+    padding:14px 8px;
+    border-radius:10px;
+    font-size:13px;
+    font-weight:600;
+    cursor:pointer;
+    text-align:center;
+  }
+  .size-preset-row button .preset-sub{
+    display:block;
+    font-size:11px;
+    font-weight:400;
+    color:var(--text-muted);
+    margin-top:2px;
+  }
+  .size-preset-row button.active{
+    background:var(--gold);
+    color:var(--ink-deep);
+    border-color:var(--gold);
+  }
+  .size-preset-row button.active .preset-sub{ color:var(--ink-deep); opacity:0.75; }
+  .size-compare{
+    display:flex;
+    justify-content:space-between;
+    background:var(--surface);
+    border-radius:10px;
+    padding:12px 16px;
+    font-size:13px;
+  }
+  .size-compare .big{ font-size:16px; font-weight:700; }
+  .size-compare .arrow{ color:var(--text-muted); align-self:center; }
+  .page-thumbs{
+    display:flex;
+    gap:8px;
+    flex-wrap:wrap;
+  }
+  .page-thumb{
+    position:relative;
+    width:64px;
+    height:64px;
+    border-radius:8px;
+    overflow:hidden;
+    border:1px solid var(--surface-line);
+  }
+  .page-thumb img{ width:100%; height:100%; object-fit:cover; display:block; }
+  .page-thumb .remove-thumb{
+    position:absolute;
+    top:2px; right:2px;
+    background:rgba(21,27,38,0.85);
+    color:#fff;
+    border:none;
+    border-radius:50%;
+    width:20px; height:20px;
+    font-size:12px;
+    line-height:1;
+    cursor:pointer;
+  }
+  .tool-hint{
+    font-size:12.5px;
+    color:var(--text-muted);
+    line-height:1.5;
+  }
+</style>
 </head>
 <body>
-
 <div class="shell">
   <header>
     <div class="brand">
-      ScitechLectureTool
-      <div class="brand-tagline">Transcriber &amp; Translator</div>
+      ScanFixAll
+      <div class="brand-tagline">Scan, Clean &amp; Shrink</div>
     </div>
     <div class="header-actions">
       <div class="icon-with-label">
@@ -1544,15 +1760,6 @@
         <span class="icon-label">Premium</span>
       </div>
       <div class="icon-with-label">
-        <button class="gear-btn" id="libraryBtn" aria-label="Library">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
-            <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
-          </svg>
-        </button>
-        <span class="icon-label">Library</span>
-      </div>
-      <div class="icon-with-label">
         <button class="gear-btn" id="settingsBtn" aria-label="Settings">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
             <circle cx="12" cy="12" r="3"/>
@@ -1566,23 +1773,175 @@
 
   <main>
     <!-- HOME -->
-    <div class="home-view" id="homeView">
-      <button class="home-icon-btn" id="homeRecordBtn" aria-label="Record">
-        <span class="home-icon-circle home-record-only">
-               <svg width="96" height="96" viewBox="0 0 52 52" fill="none">
-            <rect x="15" y="0" width="22" height="33" rx="11" fill="#FFFFFF"/>
-            <path d="M9 22 A17 19 0 0 0 43 22" stroke="#FFFFFF" stroke-width="5" stroke-linecap="round" fill="none"/>
-            <line x1="26" y1="41" x2="26" y2="47" stroke="#FFFFFF" stroke-width="5" stroke-linecap="round"/>
-          </svg>
-        </span>
-        <span class="home-icon-label">Record</span>
-      </button>
-      <button class="home-icon-btn" id="homeStopBtn" aria-label="Stop" disabled style="display:none;">
-        <span class="home-icon-circle">
-          <svg width="30" height="30" viewBox="0 0 24 24" fill="var(--ink-deep)"><rect x="5" y="5" width="14" height="14" rx="2"/></svg>
-        </span>
-        <span class="home-icon-label">Stop</span>
-      </button>
+    <div class="home-view" id="homeView" style="display:flex; flex-direction:column; align-items:stretch; justify-content:flex-start; padding-top:20px;">
+      <div class="mode-cards">
+        <button class="mode-card" id="goScanBtn">
+          <span class="mode-icon">📄</span>
+          <span>
+            <span class="mode-title" style="display:block;">Scan a Document</span>
+            <span class="mode-sub">Straighten a crumpled or tilted photo, brighten it, and turn it into a clean page or PDF.</span>
+          </span>
+        </button>
+        <button class="mode-card" id="goShrinkBtn">
+          <span class="mode-icon">🤳</span>
+          <span>
+            <span class="mode-title" style="display:block;">Shrink a Photo</span>
+            <span class="mode-sub">Make any photo — a selfie, a picture, anything — small enough to send or post, instantly.</span>
+          </span>
+        </button>
+        <button class="mode-card" id="goSignBtn">
+          <span class="mode-icon">✍️</span>
+          <span>
+            <span class="mode-title" style="display:block;">Sign a Document</span>
+            <span class="mode-sub">Draw your signature and place it on a document photo — no printer needed.</span>
+          </span>
+        </button>
+      </div>
+      <div class="free-count-hint" id="freeCountHint"></div>
+    </div>
+
+    <!-- SCAN A DOCUMENT -->
+    <div class="library page-white" id="scanView" style="display:none;">
+      <div class="result-meta">
+        <span class="date">Scan a Document</span>
+        <button class="new-recording-btn" id="closeScanBtn">Close</button>
+      </div>
+
+      <div class="tool-stage">
+        <div class="tool-upload-row" id="scanUploadRow">
+          <button class="tool-btn primary" id="scanTakePhotoBtn">📷 Take Photo</button>
+          <button class="tool-btn" id="scanUploadBtn">⬆ Upload Photo</button>
+          <input type="file" id="scanFileInput" accept="image/*" capture="environment" class="visually-hidden">
+        </div>
+
+        <div class="canvas-wrap" id="scanCanvasWrap" style="display:none;">
+          <canvas id="scanCanvas"></canvas>
+        </div>
+
+        <div id="scanEditControls" style="display:none;">
+          <div class="rotate-row">
+            <button id="scanRotateLeftBtn">⟲ Rotate</button>
+            <button id="scanRotateRightBtn">⟳ Rotate</button>
+          </div>
+          <div class="adjust-row" style="margin-top:10px;">
+            <label>Straighten</label>
+            <input type="range" id="scanStraightenSlider" min="-15" max="15" step="0.5" value="0">
+          </div>
+          <div class="enhance-toggle-row" style="margin-top:10px;">
+            <button id="scanEnhanceBtn" class="active">✨ Auto-brighten</button>
+            <button id="scanBwBtn">⬛ Black &amp; White mode</button>
+          </div>
+          <div class="tool-hint" style="margin-top:10px;">Got more pages? Add them below before saving — they'll all go into one PDF.</div>
+          <div class="page-thumbs" id="scanPageThumbs" style="margin-top:10px;"></div>
+          <div class="tool-upload-row" style="margin-top:10px;">
+            <button class="tool-btn" id="scanAddPageBtn">➕ Add another page</button>
+          </div>
+          <div class="size-compare" style="margin-top:14px;">
+            <span>Estimated file size: <span class="big" id="scanSizeEstimate">—</span></span>
+          </div>
+          <div class="tool-upload-row" style="margin-top:10px;">
+            <button class="tool-btn primary" id="scanSaveImageBtn">⬇ Save as Image</button>
+            <button class="tool-btn primary" id="scanSavePdfBtn">⬇ Save as PDF</button>
+          </div>
+          <div class="error-box" id="scanError" style="display:none;"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SHRINK A PHOTO -->
+    <div class="library page-white" id="shrinkView" style="display:none;">
+      <div class="result-meta">
+        <span class="date">Shrink a Photo</span>
+        <button class="new-recording-btn" id="closeShrinkBtn">Close</button>
+      </div>
+
+      <div class="tool-stage">
+        <div class="tool-upload-row" id="shrinkUploadRow">
+          <button class="tool-btn primary" id="shrinkTakePhotoBtn">📷 Take Photo</button>
+          <button class="tool-btn" id="shrinkUploadBtn">⬆ Upload Photo</button>
+          <input type="file" id="shrinkFileInput" accept="image/*" capture="environment" class="visually-hidden">
+        </div>
+
+        <div class="canvas-wrap" id="shrinkCanvasWrap" style="display:none;">
+          <canvas id="shrinkCanvas"></canvas>
+        </div>
+
+        <div id="shrinkEditControls" style="display:none;">
+          <div class="size-preset-row">
+            <button class="size-preset-btn" data-preset="small">Small<span class="preset-sub">Messenger/Chat</span></button>
+            <button class="size-preset-btn active" data-preset="medium">Medium<span class="preset-sub">Email/Social</span></button>
+            <button class="size-preset-btn" data-preset="large">Large<span class="preset-sub">Printing</span></button>
+          </div>
+          <div class="size-compare" style="margin-top:12px;">
+            <span>Original: <span class="big" id="shrinkOriginalSize">—</span></span>
+            <span class="arrow">→</span>
+            <span>New: <span class="big" id="shrinkNewSize">—</span></span>
+          </div>
+          <div class="tool-upload-row" style="margin-top:10px;">
+            <button class="tool-btn primary" id="shrinkSaveBtn">⬇ Download Shrunk Photo</button>
+          </div>
+          <div class="error-box" id="shrinkError" style="display:none;"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SIGN A DOCUMENT -->
+    <div class="library page-white" id="signView" style="display:none;">
+      <div class="result-meta">
+        <span class="date">Sign a Document</span>
+        <button class="new-recording-btn" id="closeSignBtn">Close</button>
+      </div>
+
+      <div class="tool-stage">
+        <div class="tool-upload-row" id="signUploadRow">
+          <button class="tool-btn primary" id="signTakePhotoBtn">📷 Take Photo</button>
+          <button class="tool-btn" id="signUploadBtn">⬆ Upload Photo</button>
+          <input type="file" id="signFileInput" accept="image/*" capture="environment" class="visually-hidden">
+        </div>
+
+        <div class="canvas-wrap" id="signCanvasWrap" style="display:none;">
+          <div id="signStack" style="position:relative; display:inline-block; line-height:0;">
+            <canvas id="signCanvas"></canvas>
+            <canvas id="signOverlayCanvas" style="position:absolute; top:0; left:0; width:100%; height:100%; touch-action:none; cursor:grab;"></canvas>
+          </div>
+        </div>
+
+        <div id="signEditControls" style="display:none;">
+          <div class="tool-upload-row">
+            <button class="tool-btn primary" id="signOpenPadBtn">✍️ Add Signature</button>
+          </div>
+          <div id="signPlacementControls" style="display:none; margin-top:10px;">
+            <div class="adjust-row">
+              <label>Size</label>
+              <input type="range" id="signSizeSlider" min="10" max="60" step="1" value="28">
+            </div>
+            <div class="tool-hint">Drag the signature to where it should go, then tap "Place on Document."</div>
+            <div class="tool-upload-row" style="margin-top:10px;">
+              <button class="tool-btn" id="signRedoBtn">↺ Redraw Signature</button>
+              <button class="tool-btn primary" id="signPlaceBtn">✅ Place on Document</button>
+            </div>
+          </div>
+          <div class="tool-hint" id="signPlacedHint" style="margin-top:10px; display:none;"></div>
+          <div class="tool-upload-row" style="margin-top:14px;">
+            <button class="tool-btn primary" id="signSaveImageBtn">⬇ Save as Image</button>
+            <button class="tool-btn primary" id="signSavePdfBtn">⬇ Save as PDF</button>
+          </div>
+          <div class="error-box" id="signError" style="display:none;"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SIGNATURE PAD (overlay modal) -->
+    <div id="sigPadModal" style="display:none; position:fixed; inset:0; background:rgba(21,27,38,0.92); z-index:50; align-items:center; justify-content:center; flex-direction:column; padding:20px;">
+      <div style="background:#fff; border-radius:14px; padding:14px; max-width:480px; width:100%;">
+        <div class="tool-hint" style="color:#2A2013; margin-bottom:8px;">Draw your signature below with your finger or mouse.</div>
+        <canvas id="sigPadCanvas" style="width:100%; touch-action:none; border:1px dashed #999; border-radius:8px; background:#fff;"></canvas>
+        <div class="tool-upload-row" style="margin-top:12px;">
+          <button class="tool-btn" id="sigPadClearBtn">Clear</button>
+          <button class="tool-btn" id="sigPadCancelBtn">Cancel</button>
+          <button class="tool-btn primary" id="sigPadUseBtn">Use This Signature</button>
+        </div>
+      </div>
     </div>
 
     <!-- SETTINGS -->
@@ -1611,70 +1970,14 @@
           <div class="error-box" id="familyCodeError" style="display:none;"></div>
           <div id="familyCodesList"></div>
         </div>
-        <div class="settings-item clickable feature-row" id="lessonPlanRow" style="--accent:#2E6B8C"><span>📝 Lesson Plan Generator</span><span class="chevron">→</span></div>
       </div>
-      <div class="hint">Got an access code from a payment or from your teacher/family member? Enter it above to unlock Premium on this device. More features will appear here as they're built.</div>
+      <div class="hint">Got an access code from a payment or from someone who shared it? Enter it above to unlock Premium on this device.</div>
     </div>
 
-    <!-- LESSON PLAN GENERATOR -->
-    <div class="library page-white" id="lessonplanView" style="display:none;">
-      <div class="result-meta">
-        <span class="date">Lesson Plan Generator</span>
-        <button class="new-recording-btn" id="closeLessonPlanBtn">Close</button>
-      </div>
-      <div class="concordance-intro">Fill in your subject and topic, and this will draft a full DepEd-style Daily Lesson Log you can review, edit, and print. Works for any senior high subject — yours or a colleague's.</div>
-      <div class="lesson-plan-form">
-        <div class="lesson-plan-field">
-          <label for="lpSubjectInput">Subject</label>
-          <input type="text" id="lpSubjectInput" placeholder="e.g. Understanding Culture, Society and Politics">
-        </div>
-        <div class="lesson-plan-row2">
-          <div class="lesson-plan-field">
-            <label for="lpGradeSelect">Grade level</label>
-            <select id="lpGradeSelect">
-              <option value="Grade 11">Grade 11</option>
-              <option value="Grade 12" selected>Grade 12</option>
-            </select>
-          </div>
-          <div class="lesson-plan-field">
-            <label for="lpDurationSelect">Class length</label>
-            <select id="lpDurationSelect">
-              <option value="50 minutes" selected>50 minutes</option>
-              <option value="60 minutes">60 minutes</option>
-              <option value="80 minutes">80 minutes</option>
-              <option value="90 minutes">90 minutes</option>
-            </select>
-          </div>
-        </div>
-        <div class="lesson-plan-field">
-          <label for="lpTopicInput">Topic / lesson title</label>
-          <input type="text" id="lpTopicInput" placeholder="e.g. Social Stratification and Inequality">
-        </div>
-        <button class="lesson-plan-generate-btn" id="lpGenerateBtn">Generate lesson plan</button>
-      </div>
-      <div class="error-box" id="lpError" style="display:none;"></div>
-      <div class="status-row" id="lpStatusRow" style="display:none;">
-        <div class="spinner"></div>
-        <span>Writing your lesson plan…</span>
-      </div>
-      <div id="lpResults"></div>
-    </div>
-
-    <!-- LIBRARY -->
-    <div class="library page-white" id="libraryView" style="display:none;">
-      <div class="result-meta">
-        <span class="date">Past lectures</span>
-        <button class="new-recording-btn" id="closeLibraryBtn">Close</button>
-      </div>
-      <input type="text" class="library-search" id="librarySearchInput" placeholder="Search by word or topic…">
-      <div id="libraryList"></div>
-      <div class="hint" id="libraryEmpty" style="display:none;">No saved lectures yet. Once you finish a recording, it'll show up here automatically.</div>
-    </div>
-
-    <!-- PAYWALL -->
+    <!-- PREMIUM / PAYWALL -->
     <div class="paywall page-white" id="paywallView" style="display:none;">
       <div class="result-meta">
-        <span class="date">ScitechLectureTool Premium</span>
+        <span class="date">ScanFixAll Premium</span>
         <button class="new-recording-btn" id="closePaywallBtn">Close</button>
       </div>
 
@@ -1682,25 +1985,22 @@
 
       <div class="paywall-hero">
         <div class="paywall-badge">⭐</div>
-        <h2 class="paywall-title">Support ScitechLectureTool</h2>
-        <p class="paywall-sub">Help keep this tool running and growing for classrooms like yours.</p>
+        <h2 class="paywall-title">Support ScanFixAll</h2>
+        <p class="paywall-sub">Help keep this tool running and growing.</p>
       </div>
 
-      <div class="founding-banner">🎉 Founding Supporter Offer — be among the first to help build this classroom tool.</div>
+      <div class="founding-banner">🎉 Founding Supporter Offer — be among the first to help build this tool.</div>
 
       <ul class="feature-list">
-        <li><span class="check">✓</span> Unlimited recordings, transcribing &amp; translating — always</li>
-        <li><span class="check">✓</span> Easy-to-use recording, right from your phone or laptop</li>
-        <li><span class="check">✓</span> Instant lecture translation into 7+ languages</li>
-        <li><span class="check">✓</span> Auto-generated quiz from any lecture</li>
-        <li><span class="check">✓</span> Lesson Plan Generator for teachers</li>
-        <li><span class="check">✓</span> Class-code sharing — one recording, the whole section</li>
+        <li><span class="check">✓</span> Unlimited scans and photo shrinks — every day</li>
+        <li><span class="check">✓</span> No watermark on your scanned documents</li>
+        <li><span class="check">✓</span> Combine unlimited pages into one PDF</li>
+        <li><span class="check">✓</span> Access-code sharing — one purchase, your whole family or class</li>
         <li><span class="check">✓</span> A founding-supporter badge on your account <span class="soon">coming soon</span></li>
-        <li><span class="check">✓</span> Longer lecture storage in your library <span class="soon">coming soon</span></li>
       </ul>
 
       <div class="price-tag">
-        <div class="amount">₱250<span>per month</span></div>
+        <div class="amount">₱150<span>per month</span></div>
         <div class="note">No auto-charge, no card stored. Pay once a month here and get a fresh code good for another 30 days.</div>
       </div>
 
@@ -1714,238 +2014,28 @@
   </main>
 </div>
 
-<div class="save-toast" id="saveToast">✅ Recording saved in your library</div>
-
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script>
 (function(){
-  const recordBtn = document.getElementById('recordBtn');
-  const recordIcon = document.getElementById('recordIcon');
-  const recordLabel = document.getElementById('recordLabel');
-  const timerEl = document.getElementById('timer');
-  const hint = document.getElementById('hint');
-  const statusRow = document.getElementById('statusRow');
-  const statusText = document.getElementById('statusText');
-  const errorBox = document.getElementById('errorBox');
-  const recordAgainBtn = document.getElementById('recordAgainBtn');
-  const recordStage = document.getElementById('recordStage');
-  const results = document.getElementById('results');
-  const resultDate = document.getElementById('resultDate');
-  const takeawayText = document.getElementById('takeawayText');
-  const bulletsList = document.getElementById('bulletsList');
-  const transcriptToggle = document.getElementById('transcriptToggle');
-  const printTranscriptBtn = document.getElementById('printTranscriptBtn');
-  const transcriptBox = document.getElementById('transcriptBox');
-  const translateBtn = document.getElementById('translateBtn');
-  const retranslateBtn = document.getElementById('retranslateBtn');
-  const translateNote = document.getElementById('translateNote');
-  const translateLangSelect = document.getElementById('translateLangSelect');
-  const audioPlayback = document.getElementById('audioPlayback');
-  const skipBackBtn = document.getElementById('skipBackBtn');
-  const skipFwdBtn = document.getElementById('skipFwdBtn');
-  const downloadBtn = document.getElementById('downloadBtn');
-  const downloadNowBtn = document.getElementById('downloadNowBtn');
-  const playPauseBtn = document.getElementById('playPauseBtn');
-  const prevSermonBtn = document.getElementById('prevSermonBtn');
-  const nextSermonBtn = document.getElementById('nextSermonBtn');
-  const seekBar = document.getElementById('seekBar');
-  const timeToggleBtn = document.getElementById('timeToggleBtn');
-  const muteBtn = document.getElementById('muteBtn');
-  const speedBtn = document.getElementById('speedBtn');
-  let currentAudioBlob = null;
-
-  // ---- New: Home page, Settings, equalizer, save toast ----
+  // ---- View elements & simple navigation ----
   const homeView = document.getElementById('homeView');
-  const homeRecordBtn = document.getElementById('homeRecordBtn');
-  const homeStopBtn = document.getElementById('homeStopBtn');
+  const scanView = document.getElementById('scanView');
+  const shrinkView = document.getElementById('shrinkView');
+  const signView = document.getElementById('signView');
+  const settingsView = document.getElementById('settingsView');
+  const paywallView = document.getElementById('paywallView');
+
   const homeBtn = document.getElementById('homeBtn');
   const settingsBtn = document.getElementById('settingsBtn');
-  const settingsView = document.getElementById('settingsView');
   const closeSettingsBtn = document.getElementById('closeSettingsBtn');
-  const lessonplanView = document.getElementById('lessonplanView');
-  const closeLessonPlanBtn = document.getElementById('closeLessonPlanBtn');
-  const lessonPlanRow = document.getElementById('lessonPlanRow');
-  const lpSubjectInput = document.getElementById('lpSubjectInput');
-  const lpGradeSelect = document.getElementById('lpGradeSelect');
-  const lpDurationSelect = document.getElementById('lpDurationSelect');
-  const lpTopicInput = document.getElementById('lpTopicInput');
-  const lpGenerateBtn = document.getElementById('lpGenerateBtn');
-  const lpError = document.getElementById('lpError');
-  const lpStatusRow = document.getElementById('lpStatusRow');
-  const lpResults = document.getElementById('lpResults');
-  const equalizer = document.getElementById('equalizer');
-  const pauseStopRow = document.getElementById('pauseStopRow');
-  const stopBtn = document.getElementById('stopBtn');
-  const saveToast = document.getElementById('saveToast');
-
-  let currentView = 'home';
-  let toastTimer = null;
-  function showToast(msg){
-    saveToast.textContent = msg;
-    saveToast.classList.add('show');
-    clearTimeout(toastTimer);
-    toastTimer = setTimeout(() => { saveToast.classList.remove('show'); }, 2600);
-  }
-
-  homeBtn.addEventListener('click', () => showView('home'));
-  homeRecordBtn.addEventListener('click', () => showRecordingPage());
-  let screenBeforeSettings = 'home';
-  settingsBtn.addEventListener('click', () => {
-    screenBeforeSettings = currentView === 'settings' ? screenBeforeSettings : currentView;
-    showView('settings');
-  });
-  closeSettingsBtn.addEventListener('click', () => showView(screenBeforeSettings));
-
-  lessonPlanRow.addEventListener('click', () => {
-    showView('lessonplan');
-    lpError.style.display = 'none';
-  });
-  closeLessonPlanBtn.addEventListener('click', () => showView('settings'));
-
-  const CHUNK_THRESHOLD_BYTES = 4 * 1024 * 1024; // ~4MB triggers splitting into chunks
-  const CHUNK_SECONDS = 90; // length of each chunk once shrunk down
-  const TARGET_SAMPLE_RATE = 16000; // matches what Whisper listens for anyway
-
-  function downloadBlob(blob, filename){
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    setTimeout(() => URL.revokeObjectURL(url), 2000);
-  }
-  function makeFileName(blob){
-    const d = new Date();
-    const stamp = d.toISOString().slice(0,10) + '-' + String(d.getHours()).padStart(2,'0') + String(d.getMinutes()).padStart(2,'0');
-    const ext = (blob && blob.type && blob.type.includes('wav')) ? 'wav' : 'webm';
-    return 'sermon-echo-' + stamp + '.' + ext;
-  }
-  downloadBtn.addEventListener('click', () => {
-    if(currentAudioBlob) downloadBlob(currentAudioBlob, makeFileName(currentAudioBlob));
-  });
-  downloadNowBtn.addEventListener('click', () => {
-    if(currentAudioBlob) downloadBlob(currentAudioBlob, makeFileName(currentAudioBlob));
-  });
-
-  skipBackBtn.addEventListener('click', () => {
-    audioPlayback.currentTime = Math.max(0, audioPlayback.currentTime - 15);
-  });
-  skipFwdBtn.addEventListener('click', () => {
-    audioPlayback.currentTime = Math.min(audioPlayback.duration || Infinity, audioPlayback.currentTime + 15);
-  });
-
-  // ---- Custom player controls: Play/Pause, seek, speed, mute, Prev/Next ----
-  function formatPlayerTime(sec){
-    if(!isFinite(sec) || sec < 0) sec = 0;
-    return formatTime(sec * 1000);
-  }
-
-  let showRemainingTime = false;
-  const PLAYBACK_SPEEDS = [1, 1.25, 1.5, 2, 0.75];
-  let speedIndex = 0;
-  let seekBarDragging = false;
-
-  function updatePlayPauseIcon(){
-    playPauseBtn.textContent = audioPlayback.paused ? '▶' : '⏸';
-    playPauseBtn.setAttribute('aria-label', audioPlayback.paused ? 'Play' : 'Pause');
-  }
-
-  function updateTimeDisplay(){
-    const dur = audioPlayback.duration || 0;
-    const cur = audioPlayback.currentTime || 0;
-    timeToggleBtn.textContent = showRemainingTime
-      ? '-' + formatPlayerTime(Math.max(0, dur - cur))
-      : formatPlayerTime(cur) + ' / ' + formatPlayerTime(dur);
-    if(isFinite(dur) && dur > 0){
-      seekBar.max = dur;
-      if(!seekBarDragging) seekBar.value = cur;
-    }
-  }
-
-  playPauseBtn.addEventListener('click', () => {
-    if(!audioPlayback.src) return;
-    if(audioPlayback.paused) audioPlayback.play(); else audioPlayback.pause();
-  });
-  audioPlayback.addEventListener('play', updatePlayPauseIcon);
-  audioPlayback.addEventListener('pause', updatePlayPauseIcon);
-  audioPlayback.addEventListener('ended', updatePlayPauseIcon);
-  audioPlayback.addEventListener('timeupdate', updateTimeDisplay);
-  audioPlayback.addEventListener('loadedmetadata', updateTimeDisplay);
-  audioPlayback.addEventListener('durationchange', updateTimeDisplay);
-
-  seekBar.addEventListener('mousedown', () => { seekBarDragging = true; });
-  seekBar.addEventListener('touchstart', () => { seekBarDragging = true; });
-  seekBar.addEventListener('input', () => {
-    audioPlayback.currentTime = Number(seekBar.value);
-    updateTimeDisplay();
-  });
-  seekBar.addEventListener('change', () => { seekBarDragging = false; });
-
-  timeToggleBtn.addEventListener('click', () => {
-    showRemainingTime = !showRemainingTime;
-    updateTimeDisplay();
-  });
-
-  muteBtn.addEventListener('click', () => {
-    audioPlayback.muted = !audioPlayback.muted;
-    muteBtn.textContent = audioPlayback.muted ? '🔇' : '🔈';
-  });
-
-  speedBtn.addEventListener('click', () => {
-    speedIndex = (speedIndex + 1) % PLAYBACK_SPEEDS.length;
-    audioPlayback.playbackRate = PLAYBACK_SPEEDS[speedIndex];
-    speedBtn.textContent = PLAYBACK_SPEEDS[speedIndex] + 'x';
-  });
-
-  async function getSortedSermons(){
-    let sermons = [];
-    try{
-      sermons = await getAllSermons();
-    }catch(err){
-      return [];
-    }
-    sermons.sort((a, b) => new Date(b.date) - new Date(a.date));
-    return sermons;
-  }
-
-  // Library is sorted newest-first: "Previous" moves to the next-older
-  // recording (higher index), "Next" moves to the more recent one.
-  async function playAdjacentSermon(indexOffset){
-    if(!currentSermon || !currentSermon.id) return;
-    const sermons = await getSortedSermons();
-    const idx = sermons.findIndex(s => s.id === currentSermon.id);
-    if(idx === -1) return;
-    const target = sermons[idx + indexOffset];
-    if(!target) return;
-    openSavedSermon(target);
-  }
-
-  prevSermonBtn.addEventListener('click', () => playAdjacentSermon(1));
-  nextSermonBtn.addEventListener('click', () => playAdjacentSermon(-1));
-
-  async function updatePrevNextButtons(){
-    if(!currentSermon || !currentSermon.id){
-      prevSermonBtn.disabled = true;
-      nextSermonBtn.disabled = true;
-      prevSermonBtn.style.opacity = '0.4';
-      nextSermonBtn.style.opacity = '0.4';
-      return;
-    }
-    const sermons = await getSortedSermons();
-    const idx = sermons.findIndex(s => s.id === currentSermon.id);
-    prevSermonBtn.disabled = idx === -1 || idx >= sermons.length - 1;
-    nextSermonBtn.disabled = idx <= 0;
-    prevSermonBtn.style.opacity = prevSermonBtn.disabled ? '0.4' : '1';
-    nextSermonBtn.style.opacity = nextSermonBtn.disabled ? '0.4' : '1';
-  }
-
-  const newRecordingBtn = document.getElementById('newRecordingBtn');
-  const uploadBtn = document.getElementById('uploadBtn');
-  const fileInput = document.getElementById('fileInput');
-  const libraryBtn = document.getElementById('libraryBtn');
-  const closeLibraryBtn = document.getElementById('closeLibraryBtn');
-  const libraryView = document.getElementById('libraryView');
+  const paywallBtn = document.getElementById('paywallBtn');
+  const closePaywallBtn = document.getElementById('closePaywallBtn');
+  const goScanBtn = document.getElementById('goScanBtn');
+  const goShrinkBtn = document.getElementById('goShrinkBtn');
+  const goSignBtn = document.getElementById('goSignBtn');
+  const closeScanBtn = document.getElementById('closeScanBtn');
+  const closeShrinkBtn = document.getElementById('closeShrinkBtn');
+  const closeSignBtn = document.getElementById('closeSignBtn');
 
   const premiumBadge = document.getElementById('premiumBadge');
   const redeemCodeInput = document.getElementById('redeemCodeInput');
@@ -1956,1483 +2046,714 @@
   const familyLabelInput = document.getElementById('familyLabelInput');
   const createFamilyCodeBtn = document.getElementById('createFamilyCodeBtn');
   const familyCodeError = document.getElementById('familyCodeError');
-  const familyCodesList = document.getElementById('familyCodesList');  const paywallBtn = document.getElementById('paywallBtn');
-  const closePaywallBtn = document.getElementById('closePaywallBtn');
-  const paywallView = document.getElementById('paywallView');
+  const familyCodesList = document.getElementById('familyCodesList');
   const subscribeBtn = document.getElementById('subscribeBtn');
   const paywallError = document.getElementById('paywallError');
   const paidBanner = document.getElementById('paidBanner');
-  const libraryList = document.getElementById('libraryList');
-  const libraryEmpty = document.getElementById('libraryEmpty');
-  const librarySearchInput = document.getElementById('librarySearchInput');
+  const freeCountHint = document.getElementById('freeCountHint');
 
-  // Central place that knows about every top-level "page" in the app.
-  // Call showView('home') / showView('record') / etc. instead of toggling
-  // .style.display directly, so only one page is ever visible at a time.
   const VIEWS = {
     home: homeView,
-    record: recordStage,
-    results: results,
-    library: libraryView,
+    scan: scanView,
+    shrink: shrinkView,
+    sign: signView,
     settings: settingsView,
-    lessonplan: lessonplanView,
     paywall: paywallView
   };
+  let currentView = 'home';
+
   function showView(name){
-    Object.values(VIEWS).forEach(v => { v.style.display = 'none'; });
-    VIEWS[name].style.display = 'flex';
+    Object.keys(VIEWS).forEach(k => { VIEWS[k].style.display = (k === name) ? '' : 'none'; });
+    if(name === 'home') VIEWS.home.style.display = 'flex';
     currentView = name;
-    window.scrollTo(0, 0);
-  }
-  function showRecordingPage(){
-    showView('record');
-    if(!isRecording){
-      recordBtn.classList.add('idle-blink');
-      recordLabel.textContent = 'Tap to start recording';
-      hint.style.display = 'block';
-    } else {
-      recordBtn.classList.remove('idle-blink');
-    }
+    window.scrollTo(0,0);
   }
 
-  let mediaRecorder, chunks = [], startTime, timerInterval;
-  let isRecording = false;
-  let isPaused = false;
-  let isFinalizing = false;
-  let pausedElapsed = 0; // ms accumulated before the current pause/resume segment
-  let activeStream = null;
-  let segments = []; // separate audio blobs, one per record/pause cycle
-  let lastRecordingDurationMs = 0;
-  const pauseBtn = document.getElementById('pauseBtn');
+  homeBtn.addEventListener('click', () => showView('home'));
+  goScanBtn.addEventListener('click', () => showView('scan'));
+  goShrinkBtn.addEventListener('click', () => showView('shrink'));
+  goSignBtn.addEventListener('click', () => showView('sign'));
+  closeScanBtn.addEventListener('click', () => { resetScanTool(); showView('home'); });
+  closeShrinkBtn.addEventListener('click', () => { resetShrinkTool(); showView('home'); });
+  closeSignBtn.addEventListener('click', () => { resetSignTool(); showView('home'); });
 
-  // ---- Combining paused segments into one clean audio file ----
-  // Browsers can drop or corrupt audio when using MediaRecorder's built-in
-  // pause()/resume(), so instead we stop and start a fresh recorder for each
-  // segment, then stitch the raw audio together ourselves afterward.
-  function concatAudioBuffers(ctx, buffers){
-    const numberOfChannels = Math.max(...buffers.map(b => b.numberOfChannels));
-    const sampleRate = buffers[0].sampleRate;
-    const totalLength = buffers.reduce((sum, b) => sum + b.length, 0);
-    const result = ctx.createBuffer(numberOfChannels, totalLength, sampleRate);
-    for(let ch = 0; ch < numberOfChannels; ch++){
-      const channelData = result.getChannelData(ch);
-      let offset = 0;
-      for(const buf of buffers){
-        const src = buf.numberOfChannels > ch ? buf.getChannelData(ch) : buf.getChannelData(0);
-        channelData.set(src, offset);
-        offset += buf.length;
-      }
-    }
-    return result;
-  }
-  function writeString(view, offset, str){
-    for(let i = 0; i < str.length; i++) view.setUint8(offset + i, str.charCodeAt(i));
-  }
-  function audioBufferToWav(buffer){
-    const numChannels = buffer.numberOfChannels;
-    const sampleRate = buffer.sampleRate;
-    let samples;
-    if(numChannels === 2){
-      const left = buffer.getChannelData(0), right = buffer.getChannelData(1);
-      samples = new Float32Array(left.length + right.length);
-      for(let i = 0, j = 0; i < left.length; i++){
-        samples[j++] = left[i];
-        samples[j++] = right[i];
-      }
-    } else {
-      samples = buffer.getChannelData(0);
-    }
-    const bytesPerSample = 2, blockAlign = numChannels * bytesPerSample;
-    const dataSize = samples.length * bytesPerSample;
-    const arrBuf = new ArrayBuffer(44 + dataSize);
-    const view = new DataView(arrBuf);
-    writeString(view, 0, 'RIFF');
-    view.setUint32(4, 36 + dataSize, true);
-    writeString(view, 8, 'WAVE');
-    writeString(view, 12, 'fmt ');
-    view.setUint32(16, 16, true);
-    view.setUint16(20, 1, true);
-    view.setUint16(22, numChannels, true);
-    view.setUint32(24, sampleRate, true);
-    view.setUint32(28, sampleRate * blockAlign, true);
-    view.setUint16(32, blockAlign, true);
-    view.setUint16(34, 16, true);
-    writeString(view, 36, 'data');
-    view.setUint32(40, dataSize, true);
-    let offset = 44;
-    for(let i = 0; i < samples.length; i++, offset += 2){
-      const s = Math.max(-1, Math.min(1, samples[i]));
-      view.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
-    }
-    return new Blob([view], { type: 'audio/wav' });
-  }
-  async function combineSegments(segs){
-    if(segs.length <= 1) return segs[0];
-    const AC = window.AudioContext || window.webkitAudioContext;
-    const ctx = new AC();
-    try{
-      const buffers = [];
-      for(const seg of segs){
-        const arrayBuffer = await seg.arrayBuffer();
-        buffers.push(await ctx.decodeAudioData(arrayBuffer));
-      }
-      const combined = concatAudioBuffers(ctx, buffers);
-      return audioBufferToWav(combined);
-    } finally {
-      ctx.close();
-    }
-  }
-
-  // ---- Helpers for splitting long recordings into smaller pieces ----
-  // Netlify's functions reject any single request over ~6MB, so recordings
-  // longer than a few minutes need to be broken up before being sent.
-  async function decodeBlobToAudioBuffer(blob){
-    const AC = window.AudioContext || window.webkitAudioContext;
-    const ctx = new AC();
-    try{
-      const arrayBuffer = await blob.arrayBuffer();
-      return await ctx.decodeAudioData(arrayBuffer);
-    } finally {
-      ctx.close();
-    }
-  }
-
-  async function resampleToMono(buffer, targetRate){
-    if(buffer.sampleRate === targetRate && buffer.numberOfChannels === 1){
-      return buffer;
-    }
-    let monoBuffer = buffer;
-    if(buffer.numberOfChannels > 1){
-      const AC = window.AudioContext || window.webkitAudioContext;
-      const tempCtx = new AC();
-      monoBuffer = tempCtx.createBuffer(1, buffer.length, buffer.sampleRate);
-      const out = monoBuffer.getChannelData(0);
-      const chData = [];
-      for(let ch = 0; ch < buffer.numberOfChannels; ch++) chData.push(buffer.getChannelData(ch));
-      for(let i = 0; i < buffer.length; i++){
-        let sum = 0;
-        for(let ch = 0; ch < chData.length; ch++) sum += chData[ch][i];
-        out[i] = sum / chData.length;
-      }
-      tempCtx.close();
-    }
-    const OfflineCtx = window.OfflineAudioContext || window.webkitOfflineAudioContext;
-    const offline = new OfflineCtx(1, Math.ceil(buffer.duration * targetRate), targetRate);
-    const source = offline.createBufferSource();
-    source.buffer = monoBuffer;
-    source.connect(offline.destination);
-    source.start(0);
-    return await offline.startRendering();
-  }
-
-  function computeRms(data, start, end){
-    let sumSquares = 0;
-    for(let i = start; i < end; i++){
-      sumSquares += data[i] * data[i];
-    }
-    return Math.sqrt(sumSquares / (end - start));
-  }
-
-  // Looks for the quietest moment (a natural pause) near a chunk boundary,
-  // instead of cutting at a rigid fixed time. This avoids slicing through
-  // the middle of a word or sentence, which caused dropped/duplicated words.
-  function findQuietCutPoint(data, targetSample, sampleRate, maxTotalSamples){
-    const searchWindowSeconds = 2;
-    const windowSamples = Math.floor(searchWindowSeconds * sampleRate);
-    const analysisFrame = Math.floor(0.05 * sampleRate);
-
-    const searchStart = Math.max(0, targetSample - windowSamples);
-    const searchEnd = Math.min(maxTotalSamples, targetSample + windowSamples);
-
-    let quietestPoint = targetSample;
-    let quietestLevel = Infinity;
-
-    for(let pos = searchStart; pos + analysisFrame <= searchEnd; pos += analysisFrame){
-      const level = computeRms(data, pos, pos + analysisFrame);
-      if(level < quietestLevel){
-        quietestLevel = level;
-        quietestPoint = pos;
-      }
-    }
-    return quietestPoint;
-  }
-
-  function sliceBufferIntoChunks(buffer, chunkSeconds){
-    const data = buffer.getChannelData(0);
-    const totalSamples = buffer.length;
-    const nominalChunkSamples = Math.floor(chunkSeconds * buffer.sampleRate);
-    const chunks = [];
-    const AC = window.AudioContext || window.webkitAudioContext;
-    const ctx = new AC();
-    try{
-      let start = 0;
-      while(start < totalSamples){
-        let end = Math.min(start + nominalChunkSamples, totalSamples);
-        if(end < totalSamples){
-          end = findQuietCutPoint(data, end, buffer.sampleRate, totalSamples);
-          if(end <= start) end = Math.min(start + nominalChunkSamples, totalSamples);
-        }
-        const length = end - start;
-        const chunkBuffer = ctx.createBuffer(1, length, buffer.sampleRate);
-        chunkBuffer.getChannelData(0).set(data.subarray(start, end));
-        chunks.push(chunkBuffer);
-        start = end;
-      }
-    } finally {
-      ctx.close();
-    }
-    return chunks;
-  }
-
-  function startSegmentRecorder(){
-    chunks = [];
-    mediaRecorder = new MediaRecorder(activeStream);
-    mediaRecorder.ondataavailable = e => { if(e.data.size > 0) chunks.push(e.data); };
-    mediaRecorder.onstop = () => {
-      segments.push(new Blob(chunks, { type: 'audio/webm' }));
-      if(isFinalizing){
-        activeStream.getTracks().forEach(t => t.stop());
-        finishRecording();
-      }
-    };
-    mediaRecorder.start(1000);
-  }
-
-  function withTimeout(promise, ms){
-    return Promise.race([
-      promise,
-      new Promise((_, reject) => setTimeout(() => reject(new Error('Combining the recording took too long')), ms))
-    ]);
-  }
-
-  async function finishRecording(){
-    recordLabel.textContent = 'Processing…';
-    let audioBlob;
-    try{
-      audioBlob = await withTimeout(combineSegments(segments), 20000);
-    }catch(err){
-      console.error('Could not stitch recording segments together in time — using the largest segment instead', err);
-      // Fall back to whichever single segment has the most audio, so the
-      // user still gets something useful instead of getting stuck forever.
-      audioBlob = segments.reduce((biggest, s) => (s.size > (biggest ? biggest.size : 0) ? s : biggest), null) || segments[0];
-    }
-    segments = [];
-    isFinalizing = false;
-    await saveThenProcess(audioBlob, lastRecordingDurationMs);
-  }
-
-  // ---- Live equalizer while actively recording ----
-  let audioCtx = null, analyserNode = null, eqRafId = null;
-  function startEqualizer(){
-    try{
-      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-      const source = audioCtx.createMediaStreamSource(activeStream);
-      analyserNode = audioCtx.createAnalyser();
-      analyserNode.fftSize = 64;
-      source.connect(analyserNode);
-      const data = new Uint8Array(analyserNode.frequencyBinCount);
-      const bars = equalizer.querySelectorAll('span');
-      equalizer.classList.remove('paused');
-      function tick(){
-        analyserNode.getByteFrequencyData(data);
-        bars.forEach((bar, i) => {
-          const idx = Math.floor((i + 1) * data.length / (bars.length + 1));
-          const v = data[idx] / 255;
-          bar.style.height = (8 + v * 32) + 'px';
-        });
-        eqRafId = requestAnimationFrame(tick);
-      }
-      tick();
-    }catch(err){
-      console.error('Equalizer unavailable', err);
-    }
-  }
-  function stopEqualizer(){
-    if(eqRafId) cancelAnimationFrame(eqRafId);
-    eqRafId = null;
-    if(audioCtx){ audioCtx.close().catch(() => {}); audioCtx = null; }
-    analyserNode = null;
-    equalizer.querySelectorAll('span').forEach(bar => { bar.style.height = '8px'; });
-  }
-
-  // ---- Timer ----
-  function formatTime(ms){
-    const totalSec = Math.floor(ms/1000);
-    const m = String(Math.floor(totalSec/60)).padStart(2,'0');
-    const s = String(totalSec%60).padStart(2,'0');
-    return m+':'+s;
-  }
-
-  // ---- Recording ----
-  async function startRecording(){
-    if(isRecording) return;
-    errorBox.style.display = 'none';
-    downloadNowBtn.style.display = 'none';
-    recordAgainBtn.style.display = 'none';
-    recordBtn.classList.remove('needs-attention');
-    try{
-      activeStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      segments = [];
-      isFinalizing = false;
-      startSegmentRecorder();
-      isRecording = true;
-      isPaused = false;
-      pausedElapsed = 0;
-      startTime = Date.now();
-      timerInterval = setInterval(() => {
-        timerEl.textContent = formatTime(pausedElapsed + (Date.now() - startTime));
-      }, 250);
-
-      recordBtn.classList.remove('idle-blink');
-      recordBtn.classList.add('recording');
-      recordBtn.setAttribute('aria-label','Recording in progress');
-      recordLabel.textContent = 'Recording — tap Pause or Stop';
-      hint.style.display = 'none';
-      recordIcon.style.display = 'none';
-      equalizer.style.display = 'flex';
-      startEqualizer();
-      pauseStopRow.style.display = 'flex';
-      pauseBtn.textContent = 'Pause';
-      pauseBtn.classList.remove('is-paused');
-      homeStopBtn.disabled = false;
-    }catch(err){
-      showError('Could not access the microphone. Please allow microphone access and try again.');
-    }
-  }
-
-  function stopRecording(){
-    if(!isRecording) return;
-    lastRecordingDurationMs = isPaused ? pausedElapsed : pausedElapsed + (Date.now() - startTime);
-    isRecording = false;
-    isPaused = false;
-    clearInterval(timerInterval);
-    stopEqualizer();
-    recordBtn.classList.remove('recording');
-    recordBtn.setAttribute('aria-label','Start recording');
-    recordLabel.textContent = 'Processing…';
-    pauseStopRow.style.display = 'none';
-    recordIcon.style.display = 'block';
-    equalizer.style.display = 'none';
-    homeStopBtn.disabled = true;
-    if(currentView !== 'record') showView('record');
-
-    if(mediaRecorder && mediaRecorder.state !== 'inactive'){
-      isFinalizing = true;
-      mediaRecorder.stop(); // onstop pushes the final segment, then finishes since isFinalizing is true
-    } else {
-      // Was already paused (recorder already stopped) — just finish now.
-      finishRecording();
-    }
-  }
-
-  recordBtn.addEventListener('click', () => { startRecording(); });
-  stopBtn.addEventListener('click', stopRecording);
-  homeStopBtn.addEventListener('click', stopRecording);
-
-  recordAgainBtn.addEventListener('click', () => {
-    startRecording();
+  let screenBeforeSettings = 'home';
+  settingsBtn.addEventListener('click', () => {
+    screenBeforeSettings = currentView === 'settings' ? screenBeforeSettings : currentView;
+    showView('settings');
   });
+  closeSettingsBtn.addEventListener('click', () => showView(screenBeforeSettings));
 
-  pauseBtn.addEventListener('click', () => {
-    if(!isRecording) return;
-    if(!isPaused){
-      isPaused = true;
-      pausedElapsed += Date.now() - startTime;
-      clearInterval(timerInterval);
-      mediaRecorder.stop(); // onstop pushes this segment into the array (isFinalizing is false, so it just waits)
-      stopEqualizer();
-      equalizer.classList.add('paused');
-      pauseBtn.textContent = 'Resume';
-      pauseBtn.classList.add('is-paused');
-      recordLabel.textContent = 'Paused — tap Resume to continue, or Stop to finish';
-    } else {
-      isPaused = false;
-      startSegmentRecorder(); // starts a brand-new, clean segment
-      startTime = Date.now();
-      timerInterval = setInterval(() => {
-        timerEl.textContent = formatTime(pausedElapsed + (Date.now() - startTime));
-      }, 250);
-      startEqualizer();
-      pauseBtn.textContent = 'Pause';
-      pauseBtn.classList.remove('is-paused');
-      recordLabel.textContent = 'Recording — tap Pause or Stop';
-    }
-  });
+  // ---- Free-tier daily usage limit ----
+  // Everything runs on-device, so there's no server cost to worry about —
+  // this cap exists purely to make Premium worth unlocking. Resets every
+  // calendar day (device's local time).
+  const FREE_DAILY_LIMIT = 3;
+  const USAGE_KEY = 'sf_daily_usage';
 
-  function showError(msg, audioBlob){
-    errorBox.textContent = msg;
-    errorBox.style.display = 'block';
-    statusRow.style.display = 'none';
-    recordLabel.textContent = 'Tap to start recording';
-    hint.style.display = 'block';
-    recordAgainBtn.style.display = 'inline-block';
-    recordBtn.classList.add('needs-attention');
-    homeStopBtn.disabled = true;
-
-    if(audioBlob){
-      currentAudioBlob = audioBlob;
-      downloadNowBtn.style.display = 'inline-block';
-      errorBox.textContent = msg + ' Your recording itself is safe — you can download it below.';
-    } else {
-      downloadNowBtn.style.display = 'none';
-    }
+  function isPremiumActive(){
+    return localStorage.getItem('sf_premium_unlocked') === 'true';
   }
 
-  // Saves the raw audio to the local library right away (before transcription),
-  // so the recording is never lost even if transcription or the API keys fail.
-  async function saveThenProcess(audioBlob, durationMs){
-    let pendingId = null;
-    try{
-      pendingId = await saveSermon({
-        date: new Date().toISOString(),
-        takeaway: '',
-        bullets: [],
-        transcript: '',
-        audioBlob,
-        durationMs: durationMs || 0,
-        pending: true
-      });
-      showToast('✅ Recording saved in your library');
-    }catch(err){
-      console.error('Could not save the raw recording', err);
-    }
-    await processAudio(audioBlob, pendingId);
+  function getUsageToday(){
+    const today = new Date().toDateString();
+    let raw = null;
+    try{ raw = JSON.parse(localStorage.getItem(USAGE_KEY) || 'null'); }catch(e){}
+    if(!raw || raw.date !== today) return { date: today, count: 0 };
+    return raw;
   }
 
-  async function processAudio(audioBlob, pendingId){
-    audioPlayback.src = URL.createObjectURL(audioBlob);
-    audioPlayback.load();
-    currentAudioBlob = audioBlob;
-
-    statusRow.style.display = 'flex';
-    statusText.textContent = 'Transcribing the recording…';
-
-    try{
-      const transcript = await transcribeAudio(audioBlob, (current, total) => {
-        statusText.textContent = 'Transcribing part ' + current + ' of ' + total + '…';
-      });
-      statusText.textContent = 'Preparing your takeaway…';
-      const summary = await summarizeTranscript(transcript);
-      showResults(transcript, summary, audioBlob, pendingId);
-    }catch(err){
-      console.error(err);
-      showError(err.message || 'Something went wrong while processing the recording. Please try again.', audioBlob);
-    }
+  function bumpUsage(){
+    const usage = getUsageToday();
+    usage.count += 1;
+    localStorage.setItem(USAGE_KEY, JSON.stringify(usage));
+    updateFreeCountHint();
   }
 
-  // ---- Upload an existing recording ----
-  uploadBtn.addEventListener('click', () => {
-    fileInput.click();
-  });
-  fileInput.addEventListener('change', async () => {
-    const file = fileInput.files[0];
-    fileInput.value = '';
-    if(!file) return;
-    errorBox.style.display = 'none';
-    recordAgainBtn.style.display = 'none';
-    recordBtn.classList.remove('needs-attention');
-    statusRow.style.display = 'flex';
-    recordLabel.textContent = 'Processing…';
-    hint.style.display = 'none';
-    await saveThenProcess(file);
-  });
+  function canUseToolNow(){
+    if(isPremiumActive()) return true;
+    return getUsageToday().count < FREE_DAILY_LIMIT;
+  }
 
-  // Converts a Blob to a base64 string (without the "data:...;base64," prefix)
-  function blobToBase64(blob){
+  function updateFreeCountHint(){
+    if(isPremiumActive()){
+      freeCountHint.textContent = '⭐ Premium — unlimited scans and shrinks, no watermark.';
+      return;
+    }
+    const usage = getUsageToday();
+    const left = Math.max(0, FREE_DAILY_LIMIT - usage.count);
+    freeCountHint.textContent = left > 0
+      ? ('Free plan: ' + left + ' of ' + FREE_DAILY_LIMIT + ' scans/shrinks left today.')
+      : 'Free plan: you\'ve used today\'s 3 free scans/shrinks — unlock Premium for unlimited.';
+  }
+
+  function blockIfOutOfFreeUses(errorBoxEl){
+    if(canUseToolNow()) return false;
+    errorBoxEl.textContent = 'You\'ve used today\'s 3 free scans/shrinks. Unlock Premium for unlimited use — tap the ⭐ Premium tab above.';
+    errorBoxEl.style.display = 'block';
+    return true;
+  }
+
+  function formatBytes(bytes){
+    if(bytes < 1024) return bytes + ' B';
+    if(bytes < 1024*1024) return (bytes/1024).toFixed(0) + ' KB';
+    return (bytes/(1024*1024)).toFixed(2) + ' MB';
+  }
+
+  function dataUrlSizeBytes(dataUrl){
+    const base64 = dataUrl.split(',')[1] || '';
+    return Math.round(base64.length * 0.75);
+  }
+
+  function loadImageFromFile(file){
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
-      reader.onloadend = () => resolve(String(reader.result).split(',')[1]);
-      reader.onerror = reject;
-      reader.readAsDataURL(blob);
-    });
-  }
-
-  async function transcribeOneChunk(blob){
-    const audioBase64 = await blobToBase64(blob);
-    const res = await fetch('/.netlify/functions/transcribe', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ audioBase64, mimeType: blob.type })
-    });
-    if(!res.ok){
-      const errData = await res.json().catch(() => ({}));
-      const base = errData.error || ('Transcription failed. (' + res.status + ')');
-      const detail = errData.detail ? (' Detail: ' + String(errData.detail).slice(0, 300)) : '';
-      throw new Error(base + detail);
-    }
-    const data = await res.json();
-    return data.transcript;
-  }
-
-  // ---- OpenAI Whisper transcription (via secure server function) ----
-  // Long recordings are split into smaller pieces first, since Netlify's
-  // functions reject any single request over ~6MB. Short recordings are
-  // sent as-is.
-  async function transcribeAudio(blob, onProgress){
-    if(blob.size <= CHUNK_THRESHOLD_BYTES){
-      return await transcribeOneChunk(blob);
-    }
-
-    const decoded = await decodeBlobToAudioBuffer(blob);
-    const resampled = await resampleToMono(decoded, TARGET_SAMPLE_RATE);
-    const pieces = sliceBufferIntoChunks(resampled, CHUNK_SECONDS);
-
-    const transcripts = [];
-    for(let i = 0; i < pieces.length; i++){
-      if(onProgress) onProgress(i + 1, pieces.length);
-      const chunkBlob = audioBufferToWav(pieces[i]);
-      const text = await transcribeOneChunk(chunkBlob);
-      transcripts.push(text.trim());
-    }
-    return transcripts.join(' ');
-  }
-
-  // ---- Claude summary (via secure server function) ----
-  async function summarizeTranscript(transcript){
-    const res = await fetch('/.netlify/functions/summarize', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ transcript })
-    });
-
-    if(!res.ok){
-      const errData = await res.json().catch(() => ({}));
-      throw new Error(errData.error || ('Could not generate the takeaway. (' + res.status + ')'));
-    }
-    const data = await res.json();
-    if(!data.takeaway || !Array.isArray(data.bullets)){
-      throw new Error('Received an unexpected response while preparing the takeaway. Please try again.');
-    }
-    return data;
-  }
-
-  // ---- Results display ----
-  function showResults(transcript, summary, audioBlob, pendingId){
-    statusRow.style.display = 'none';
-    showView('results');
-
-    const dateObj = new Date();
-    resultDate.textContent = dateObj.toLocaleDateString(undefined, { weekday:'long', month:'long', day:'numeric' });
-    takeawayText.textContent = summary.takeaway;
-
-    bulletsList.innerHTML = '';
-    (summary.bullets || []).forEach(b => {
-      const li = document.createElement('li');
-      li.textContent = b;
-      bulletsList.appendChild(li);
-    });
-
-    transcriptBox.textContent = transcript;
-    currentAudioBlob = audioBlob || currentAudioBlob;
-
-    currentSermon = { id: pendingId || null, takeaway: summary.takeaway, bullets: summary.bullets || [], transcript, translations: {}, quiz: null };
-    resetTranslateUI();
-    resetQuizUI();
-    updatePrevNextButtons();
-
-    if(audioBlob){
-      const fields = {
-        date: dateObj.toISOString(),
-        takeaway: summary.takeaway,
-        bullets: summary.bullets || [],
-        transcript,
-        audioBlob,
-        pending: false
+      reader.onload = () => {
+        const img = new Image();
+        img.onload = () => resolve({ img, originalBytes: file.size });
+        img.onerror = () => reject(new Error('Could not read that image. Please try another photo.'));
+        img.src = reader.result;
       };
-      if(pendingId){
-        updateSermon(pendingId, fields).catch(err => console.error('Could not update sermon in library', err));
-      } else {
-        saveSermon(fields).then(newId => {
-          if(currentSermon && currentSermon.transcript === transcript) currentSermon.id = newId;
-        }).catch(err => console.error('Could not save sermon to library', err));
-      }
-    }
-  }
-
-  transcriptToggle.addEventListener('click', () => {
-    const showing = transcriptBox.style.display === 'block';
-    transcriptBox.style.display = showing ? 'none' : 'block';
-    transcriptToggle.textContent = showing ? 'Show full transcript' : 'Hide full transcript';
-  });
-
-  // ---- Print the full sermon text (takeaway, highlights, transcript) ----
-  // Reads directly from what's currently shown on screen, so if the user is
-  // viewing a translation, the printed page matches that language too.
-  function escapeHtml(str){
-    return String(str)
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;');
-  }
-
-  function printSermonText(){
-    const title = (resultDate.textContent || 'ScitechLectureTool').trim();
-    const takeaway = takeawayText.textContent.trim();
-    const bullets = Array.from(bulletsList.children).map(li => li.textContent.trim()).filter(Boolean);
-    const transcript = transcriptBox.textContent.trim();
-
-    if(!takeaway && bullets.length === 0 && !transcript){
-      alert("There's nothing to print for this recording yet.");
-      return;
-    }
-
-    const bulletsHtml = bullets.map(b => '<li>' + escapeHtml(b) + '</li>').join('');
-
-    const html = '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>' + escapeHtml(title) + '</title>' +
-      '<style>' +
-      'body{font-family: Georgia, "Times New Roman", serif; color:#1a1a1a; max-width:700px; margin:40px auto; padding:0 20px; line-height:1.6;}' +
-      'h1{font-size:22px; margin-bottom:4px;}' +
-      '.meta{color:#666; font-size:13px; margin-bottom:24px;}' +
-      'h2{font-size:15px; text-transform:uppercase; letter-spacing:0.05em; color:#444; border-bottom:1px solid #ddd; padding-bottom:6px; margin-top:28px;}' +
-      '.takeaway{font-style:italic; font-size:17px;}' +
-      'ul{padding-left:20px;} li{margin-bottom:8px;}' +
-      '.transcript{white-space:pre-wrap; font-size:14px;}' +
-      '@media print{ body{margin:0; padding:24px;} }' +
-      '</style></head><body>' +
-      '<h1>' + escapeHtml(title) + '</h1>' +
-      '<div class="meta">ScitechLectureTool — Transcriber &amp; Translator</div>' +
-      (takeaway ? '<h2>Takeaway</h2><div class="takeaway">' + escapeHtml(takeaway) + '</div>' : '') +
-      (bulletsHtml ? '<h2>Highlights</h2><ul>' + bulletsHtml + '</ul>' : '') +
-      (transcript ? '<h2>Full Transcript</h2><div class="transcript">' + escapeHtml(transcript) + '</div>' : '') +
-      '</body></html>';
-
-    const win = window.open('', '_blank');
-    if(!win){
-      alert('Please allow pop-ups for this site so the print page can open.');
-      return;
-    }
-    win.document.open();
-    win.document.write(html);
-    win.document.close();
-    const triggerPrint = () => { win.focus(); win.print(); };
-    win.onload = triggerPrint;
-    setTimeout(triggerPrint, 400); // fallback in case onload doesn't fire
-  }
-
-  printTranscriptBtn.addEventListener('click', printSermonText);
-
-  // ---- Sermon translation (Premium feature) ----
-  const TRANSLATE_LANG_KEY = 'se_translate_lang';
-  const savedLang = localStorage.getItem(TRANSLATE_LANG_KEY);
-  if(savedLang) translateLangSelect.value = savedLang;
-
-  let currentSermon = null; // { id, takeaway, bullets, transcript, translations }
-  let viewingTranslation = false;
-  const translatePremiumNote = document.getElementById('translatePremiumNote');
-
-  function showTranslatePremiumNote(){
-    translatePremiumNote.innerHTML = '';
-    const text = document.createElement('span');
-    text.textContent = '⭐ Translation is a Premium feature.';
-    const btn = document.createElement('button');
-    btn.className = 'unlock-btn';
-    btn.textContent = 'Unlock in Settings';
-    btn.addEventListener('click', () => {
-      screenBeforeSettings = currentView === 'settings' ? screenBeforeSettings : currentView;
-      showView('settings');
-    });
-    translatePremiumNote.appendChild(text);
-    translatePremiumNote.appendChild(btn);
-    translatePremiumNote.style.display = 'flex';
-  }
-  function hideTranslatePremiumNote(){
-    translatePremiumNote.style.display = 'none';
-  }
-
-  function renderSermonText(data){
-    takeawayText.textContent = data.takeaway;
-    bulletsList.innerHTML = '';
-    (data.bullets || []).forEach(b => {
-      const li = document.createElement('li');
-      li.textContent = b;
-      bulletsList.appendChild(li);
-    });
-    transcriptBox.textContent = data.transcript;
-  }
-
-  function resetTranslateUI(){
-    viewingTranslation = false;
-    translateBtn.textContent = '🌐 Translate';
-    translateBtn.disabled = false;
-    translateNote.textContent = '';
-    retranslateBtn.style.display = 'none';
-    hideTranslatePremiumNote();
-  }
-
-  // ---- Quiz for Students (Premium feature) ----
-  const generateQuizBtn = document.getElementById('generateQuizBtn');
-  const quizPremiumNote = document.getElementById('quizPremiumNote');
-  const quizStatusRow = document.getElementById('quizStatusRow');
-  const quizError = document.getElementById('quizError');
-  const quizContainer = document.getElementById('quizContainer');
-  const quizQuestionsList = document.getElementById('quizQuestionsList');
-  const printQuizStudentBtn = document.getElementById('printQuizStudentBtn');
-  const printQuizAnswerKeyBtn = document.getElementById('printQuizAnswerKeyBtn');
-  let currentQuiz = null; // array of {type, question, options?, answer}
-  let quizGenerationInFlight = false;
-
-  function showQuizPremiumNote(){
-    quizPremiumNote.innerHTML = '';
-    const text = document.createElement('span');
-    text.textContent = '⭐ Quiz generation is a Premium feature.';
-    const btn = document.createElement('button');
-    btn.className = 'unlock-btn';
-    btn.textContent = 'Unlock in Settings';
-    btn.addEventListener('click', () => {
-      screenBeforeSettings = currentView === 'settings' ? screenBeforeSettings : currentView;
-      showView('settings');
-    });
-    quizPremiumNote.appendChild(text);
-    quizPremiumNote.appendChild(btn);
-    quizPremiumNote.style.display = 'flex';
-  }
-  function hideQuizPremiumNote(){
-    quizPremiumNote.style.display = 'none';
-  }
-
-  function resetQuizUI(){
-    currentQuiz = null;
-    quizContainer.style.display = 'none';
-    quizQuestionsList.innerHTML = '';
-    quizError.style.display = 'none';
-    quizStatusRow.style.display = 'none';
-    hideQuizPremiumNote();
-    generateQuizBtn.style.display = 'inline-block';
-    generateQuizBtn.textContent = '📝 Generate Quiz';
-    generateQuizBtn.disabled = false;
-  }
-
-  function renderQuiz(questions){
-    currentQuiz = questions;
-    quizQuestionsList.innerHTML = '';
-    questions.forEach((q, i) => {
-      const card = document.createElement('div');
-      card.className = 'quiz-question';
-
-      const num = document.createElement('div');
-      num.className = 'q-num';
-      num.textContent = 'Question ' + (i + 1) + (q.type === 'multiple_choice' ? ' (Multiple Choice)' : ' (Short Answer)');
-      card.appendChild(num);
-
-      const qText = document.createElement('div');
-      qText.className = 'q-text';
-      qText.textContent = q.question;
-      card.appendChild(qText);
-
-      if(q.type === 'multiple_choice' && Array.isArray(q.options)){
-        const ul = document.createElement('ul');
-        ul.className = 'q-options';
-        const letters = ['A','B','C','D','E','F'];
-        q.options.forEach((opt, oi) => {
-          const li = document.createElement('li');
-          li.textContent = letters[oi] + '. ' + opt;
-          ul.appendChild(li);
-        });
-        card.appendChild(ul);
-      }
-
-      const ans = document.createElement('div');
-      ans.className = 'q-answer';
-      ans.textContent = 'Answer: ' + q.answer;
-      card.appendChild(ans);
-
-      quizQuestionsList.appendChild(card);
-    });
-    quizContainer.style.display = 'block';
-    generateQuizBtn.style.display = 'none';
-  }
-
-  async function generateQuiz(){
-    if(!currentSermon) return;
-
-    const premium = localStorage.getItem(PREMIUM_FLAG_KEY) === 'true';
-    if(!premium){
-      showQuizPremiumNote();
-      return;
-    }
-    hideQuizPremiumNote();
-
-    if(!currentSermon.transcript){
-      quizError.textContent = "There's nothing to build a quiz from yet for this recording.";
-      quizError.style.display = 'block';
-      return;
-    }
-
-    if(quizGenerationInFlight) return;
-    quizGenerationInFlight = true;
-    quizError.style.display = 'none';
-    quizStatusRow.style.display = 'flex';
-    generateQuizBtn.disabled = true;
-
-    try {
-      const res = await fetch('/.netlify/functions/generate-quiz', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          transcript: currentSermon.transcript,
-          takeaway: currentSermon.takeaway,
-          title: resultDate.textContent || ''
-        })
-      });
-      const data = await res.json().catch(() => ({}));
-      if(!res.ok) throw new Error(data.error || ('Could not generate the quiz (' + res.status + ').'));
-      if(!Array.isArray(data.questions) || data.questions.length === 0) throw new Error('Received an unexpected response. Please try again.');
-
-      renderQuiz(data.questions);
-      currentSermon.quiz = data.questions;
-      if(currentSermon.id){
-        updateSermon(currentSermon.id, { quiz: data.questions }).catch(err => console.error('Could not save quiz', err));
-      }
-    } catch (err) {
-      quizError.textContent = err.message || 'Could not generate the quiz right now. Please try again.';
-      quizError.style.display = 'block';
-    } finally {
-      quizGenerationInFlight = false;
-      generateQuizBtn.disabled = false;
-    }
-  }
-
-  generateQuizBtn.addEventListener('click', generateQuiz);
-
-  function printQuiz(includeAnswers){
-    if(!currentQuiz || currentQuiz.length === 0) return;
-    const title = (resultDate.textContent || 'ScitechLectureTool').trim();
-    const letters = ['A','B','C','D','E','F'];
-
-    const questionsHtml = currentQuiz.map((q, i) => {
-      let optionsHtml = '';
-      if(q.type === 'multiple_choice' && Array.isArray(q.options)){
-        optionsHtml = '<ul class="opts">' + q.options.map((opt, oi) => '<li>' + letters[oi] + '. ' + escapeHtml(opt) + '</li>').join('') + '</ul>';
-      } else {
-        optionsHtml = '<div class="blank-lines"><div class="line"></div><div class="line"></div></div>';
-      }
-      const answerHtml = includeAnswers ? '<div class="answer">Answer: ' + escapeHtml(q.answer) + '</div>' : '';
-      return '<div class="question"><div class="q-head">' + (i + 1) + '. ' + escapeHtml(q.question) + '</div>' + optionsHtml + answerHtml + '</div>';
-    }).join('');
-
-    const html = '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>' + escapeHtml(title) + ' — Quiz</title>' +
-      '<style>' +
-      'body{font-family: Georgia, "Times New Roman", serif; color:#1a1a1a; max-width:700px; margin:40px auto; padding:0 20px; line-height:1.6;}' +
-      'h1{font-size:20px; margin-bottom:2px;}' +
-      '.meta{color:#666; font-size:13px; margin-bottom:6px;}' +
-      '.name-line{margin:18px 0 28px; font-size:14px;}' +
-      '.name-line span{display:inline-block; border-bottom:1px solid #999; min-width:220px; margin-left:6px;}' +
-      '.question{margin-bottom:22px;}' +
-      '.q-head{font-weight:600; margin-bottom:8px;}' +
-      '.opts{list-style:none; margin:0 0 6px; padding-left:14px;}' +
-      '.opts li{margin-bottom:4px; font-size:14px;}' +
-      '.blank-lines .line{border-bottom:1px solid #999; height:22px; margin-bottom:4px;}' +
-      '.answer{color:#0a7a3d; font-weight:600; font-size:13px; margin-top:6px;}' +
-      '@media print{ body{margin:0; padding:24px;} }' +
-      '</style></head><body>' +
-      '<h1>' + escapeHtml(title) + ' — Quiz' + (includeAnswers ? ' (Answer Key)' : '') + '</h1>' +
-      '<div class="meta">ScitechLectureTool — Transcriber &amp; Translator</div>' +
-      (includeAnswers ? '' : '<div class="name-line">Name:<span></span> &nbsp;&nbsp; Date:<span></span></div>') +
-      questionsHtml +
-      '</body></html>';
-
-    const win = window.open('', '_blank');
-    if(!win){
-      alert('Please allow pop-ups for this site so the print page can open.');
-      return;
-    }
-    win.document.open();
-    win.document.write(html);
-    win.document.close();
-    const triggerPrint = () => { win.focus(); win.print(); };
-    win.onload = triggerPrint;
-    setTimeout(triggerPrint, 400);
-  }
-
-  printQuizStudentBtn.addEventListener('click', () => printQuiz(false));
-  printQuizAnswerKeyBtn.addEventListener('click', () => printQuiz(true));
-
-  // LESSON PLAN GENERATOR
-  let currentLessonPlan = null;
-
-  function lpSection(title, bodyHtml){
-    if(!bodyHtml) return '';
-    return '<div class="lesson-plan-section"><div class="lp-title">' + escapeHtml(title) + '</div><div class="lp-body">' + bodyHtml + '</div></div>';
-  }
-  function lpText(val){
-    return val ? escapeHtml(String(val)) : '';
-  }
-  function lpList(arr){
-    if(!Array.isArray(arr) || arr.length === 0) return '';
-    return '<ul>' + arr.map(item => '<li>' + escapeHtml(String(item)) + '</li>').join('') + '</ul>';
-  }
-
-  function renderLessonPlan(lp){
-    const proc = lp.procedures || {};
-    const html =
-      lpSection('Content Standard', lpText(lp.contentStandard)) +
-      lpSection('Performance Standard', lpText(lp.performanceStandard)) +
-      lpSection('Learning Competency', lpText(lp.learningCompetency)) +
-      lpSection('Objectives', lpList(lp.objectives)) +
-      lpSection('Subject Matter', lpText(lp.subjectMatter)) +
-      lpSection('Learning Resources', lpList(lp.resources)) +
-      lpSection('A. Reviewing Previous Lesson', lpText(proc.reviewing)) +
-      lpSection('B. Motivation / Establishing Purpose', lpText(proc.motivation)) +
-      lpSection('C. Presenting Examples / Instances', lpText(proc.presentation)) +
-      lpSection('D. Discussing New Concepts', lpText(proc.discussion)) +
-      lpSection('E. Developing Mastery', lpText(proc.developingMastery)) +
-      lpSection('F. Application to Daily Life', lpText(proc.application)) +
-      lpSection('G. Making Generalizations', lpText(proc.generalization)) +
-      lpSection('H. Evaluation', lpText(proc.evaluation)) +
-      lpSection('I. Additional Activities / Assignment', lpText(proc.assignment)) +
-      lpSection('Remarks', lpText(lp.remarks)) +
-      '<button class="lesson-plan-print-btn" id="lpPrintBtn">🖨️ Print / Save as PDF</button>';
-    lpResults.innerHTML = html;
-    const printBtn = document.getElementById('lpPrintBtn');
-    if(printBtn) printBtn.addEventListener('click', printLessonPlan);
-  }
-
-  async function generateLessonPlan(){
-    const subject = lpSubjectInput.value.trim();
-    const topic = lpTopicInput.value.trim();
-    if(!subject || !topic){
-      lpError.textContent = 'Please enter both a subject and a topic.';
-      lpError.style.display = 'block';
-      return;
-    }
-    lpError.style.display = 'none';
-    lpResults.innerHTML = '';
-    lpGenerateBtn.disabled = true;
-    lpStatusRow.style.display = 'flex';
-    try {
-      const res = await fetch('/.netlify/functions/lesson-plan', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          subject,
-          gradeLevel: lpGradeSelect.value,
-          duration: lpDurationSelect.value,
-          topic
-        })
-      });
-      const data = await res.json().catch(() => ({}));
-      if(!res.ok) throw new Error(data.error || ('Could not generate the lesson plan (' + res.status + ').'));
-      currentLessonPlan = data;
-      renderLessonPlan(data);
-    } catch (err) {
-      lpError.textContent = err.message || 'Could not generate the lesson plan right now. Please try again.';
-      lpError.style.display = 'block';
-    } finally {
-      lpGenerateBtn.disabled = false;
-      lpStatusRow.style.display = 'none';
-    }
-  }
-
-  function printLessonPlan(){
-    if(!currentLessonPlan) return;
-    const lp = currentLessonPlan;
-    const proc = lp.procedures || {};
-    const title = (lpSubjectInput.value.trim() || 'Lesson Plan') + ' — ' + (lpTopicInput.value.trim() || '');
-    const rows = [
-      ['Content Standard', lp.contentStandard],
-      ['Performance Standard', lp.performanceStandard],
-      ['Learning Competency', lp.learningCompetency],
-      ['Objectives', Array.isArray(lp.objectives) ? lp.objectives.map(o => '• ' + o).join('<br>') : lp.objectives],
-      ['Subject Matter', lp.subjectMatter],
-      ['Learning Resources', Array.isArray(lp.resources) ? lp.resources.map(r => '• ' + r).join('<br>') : lp.resources],
-      ['A. Reviewing Previous Lesson', proc.reviewing],
-      ['B. Motivation / Establishing Purpose', proc.motivation],
-      ['C. Presenting Examples / Instances', proc.presentation],
-      ['D. Discussing New Concepts', proc.discussion],
-      ['E. Developing Mastery', proc.developingMastery],
-      ['F. Application to Daily Life', proc.application],
-      ['G. Making Generalizations', proc.generalization],
-      ['H. Evaluation', proc.evaluation],
-      ['I. Additional Activities / Assignment', proc.assignment],
-      ['Remarks', lp.remarks]
-    ];
-    const rowsHtml = rows.filter(r => r[1]).map(r =>
-      '<div class="sec"><div class="sec-title">' + escapeHtml(r[0]) + '</div><div class="sec-body">' + (Array.isArray(r[1]) ? r[1] : escapeHtml(String(r[1])).replace(/\n/g, '<br>')) + '</div></div>'
-    ).join('');
-
-    const html = '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>' + escapeHtml(title) + '</title>' +
-      '<style>' +
-      'body{font-family: Georgia, "Times New Roman", serif; color:#1a1a1a; max-width:760px; margin:40px auto; padding:0 20px; line-height:1.6;}' +
-      'h1{font-size:19px; margin-bottom:2px;}' +
-      '.meta{color:#666; font-size:12px; margin-bottom:18px;}' +
-      '.sec{margin-bottom:16px;}' +
-      '.sec-title{font-weight:700; font-size:13px; margin-bottom:4px;}' +
-      '.sec-body{font-size:13px;}' +
-      '@media print{ body{margin:0; padding:24px;} }' +
-      '</style></head><body>' +
-      '<h1>' + escapeHtml((lpGradeSelect.value || '') + ' — ' + (lpSubjectInput.value.trim() || '')) + '</h1>' +
-      '<div class="meta">Topic: ' + escapeHtml(lpTopicInput.value.trim() || '') + ' &nbsp;|&nbsp; Duration: ' + escapeHtml(lpDurationSelect.value || '') + '</div>' +
-      rowsHtml +
-      '</body></html>';
-
-    const win = window.open('', '_blank');
-    if(!win){
-      alert('Please allow pop-ups for this site so the print page can open.');
-      return;
-    }
-    win.document.open();
-    win.document.write(html);
-    win.document.close();
-    const triggerPrint = () => { win.focus(); win.print(); };
-    win.onload = triggerPrint;
-    setTimeout(triggerPrint, 400);
-  }
-
-  lpGenerateBtn.addEventListener('click', generateLessonPlan);
-
-  translateLangSelect.addEventListener('change', () => {
-    localStorage.setItem(TRANSLATE_LANG_KEY, translateLangSelect.value);
-    if(viewingTranslation && currentSermon){
-      renderSermonText(currentSermon);
-      resetTranslateUI();
-    }
-  });
-
-  async function attemptTranslate(lang){
-    const res = await fetch('/.netlify/functions/translate', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        transcript: currentSermon.transcript,
-        takeaway: currentSermon.takeaway,
-        bullets: currentSermon.bullets,
-        targetLanguage: lang
-      })
-    });
-    const data = await res.json().catch(() => ({}));
-    if(!res.ok) throw new Error(data.error || ('Translation failed (' + res.status + ').'));
-    return data;
-  }
-
-  // forceFresh=true skips any saved translation and asks the AI again —
-  // used by "Redo translation" when an earlier saved translation reads oddly.
-  async function runTranslate(forceFresh){
-    const lang = translateLangSelect.value;
-
-    if(!forceFresh){
-      const cached = currentSermon.translations && currentSermon.translations[lang];
-      if(cached){
-        renderSermonText(cached);
-        viewingTranslation = true;
-        translateBtn.textContent = 'Show original';
-        translateNote.textContent = 'Showing ' + lang + ' translation';
-        retranslateBtn.style.display = 'inline-block';
-        return;
-      }
-    }
-
-    translateBtn.disabled = true;
-    retranslateBtn.disabled = true;
-    translateNote.textContent = 'Translating into ' + lang + '… this can take a bit for long recordings.';
-
-    try {
-      let data;
-      try {
-        data = await attemptTranslate(lang);
-      } catch (firstErr) {
-        // Some languages occasionally trip up the translator on the first
-        // try (a malformed response) — silently retry once before giving up.
-        translateNote.textContent = 'That took an extra try — still translating into ' + lang + '…';
-        data = await attemptTranslate(lang);
-      }
-
-      currentSermon.translations = currentSermon.translations || {};
-      currentSermon.translations[lang] = data;
-      renderSermonText(data);
-      viewingTranslation = true;
-      translateBtn.textContent = 'Show original';
-      translateNote.textContent = 'Showing ' + lang + ' translation';
-      retranslateBtn.style.display = 'inline-block';
-
-      if(currentSermon.id){
-        updateSermon(currentSermon.id, { translations: currentSermon.translations })
-          .catch(err => console.error('Could not save translation', err));
-      }
-    } catch (err) {
-      translateNote.textContent = err.message || 'Could not translate right now. Please try again.';
-    } finally {
-      translateBtn.disabled = false;
-      retranslateBtn.disabled = false;
-    }
-  }
-
-  translateBtn.addEventListener('click', async () => {
-    if(!currentSermon) return;
-
-    // Flip back to the original if we're currently showing a translation.
-    if(viewingTranslation){
-      renderSermonText(currentSermon);
-      resetTranslateUI();
-      return;
-    }
-
-    const premium = localStorage.getItem(PREMIUM_FLAG_KEY) === 'true';
-    if(!premium){
-      showTranslatePremiumNote();
-      return;
-    }
-    hideTranslatePremiumNote();
-
-    if(!currentSermon.transcript){
-      translateNote.textContent = "There's nothing to translate yet for this recording.";
-      return;
-    }
-
-    runTranslate(false);
-  });
-
-  retranslateBtn.addEventListener('click', () => {
-    if(!currentSermon || !viewingTranslation) return;
-    runTranslate(true);
-  });
-
-  // ---- Shared helpers: turn related-topic words into clickable inline links ----
-  function escapeHtml(str){
-    return String(str == null ? '' : str)
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;');
-  }
-  function escapeRegExp(str){
-    return String(str).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  }
-  // Escapes text for safe innerHTML use, then wraps any occurrence of the
-  // given terms (matched case-insensitively, longest terms first so e.g.
-  // "God's mercy" wins over just "mercy") in a clickable <span>.
-  function highlightTerms(text, terms){
-    const escaped = escapeHtml(text);
-    const clean = (terms || []).map(t => (t || '').trim()).filter(Boolean);
-    if(!clean.length) return escaped;
-    const sorted = [...clean].sort((a, b) => b.length - a.length);
-    const pattern = sorted.map(t => escapeRegExp(escapeHtml(t))).join('|');
-    if(!pattern) return escaped;
-    const re = new RegExp('(' + pattern + ')', 'gi');
-    return escaped.replace(re, '<span class="linked-term">$1</span>');
-  }
-
-  newRecordingBtn.addEventListener('click', () => {
-    timerEl.textContent = '00:00';
-    errorBox.style.display = 'none';
-    downloadNowBtn.style.display = 'none';
-    recordAgainBtn.style.display = 'none';
-    recordBtn.classList.remove('needs-attention');
-    showView('home');
-  });
-
-  // ---- Library (saved sermons, stored locally on this device via IndexedDB) ----
-  const DB_NAME = 'sermon_echo_db';
-  const STORE_NAME = 'sermons';
-
-  function openDb(){
-    return new Promise((resolve, reject) => {
-      const req = indexedDB.open(DB_NAME, 1);
-      req.onupgradeneeded = () => {
-        const db = req.result;
-        if(!db.objectStoreNames.contains(STORE_NAME)){
-          db.createObjectStore(STORE_NAME, { keyPath: 'id', autoIncrement: true });
-        }
-      };
-      req.onsuccess = () => resolve(req.result);
-      req.onerror = () => reject(req.error);
+      reader.onerror = () => reject(new Error('Could not read that file.'));
+      reader.readAsDataURL(file);
     });
   }
 
-  async function saveSermon(record){
-    const db = await openDb();
-    return new Promise((resolve, reject) => {
-      const tx = db.transaction(STORE_NAME, 'readwrite');
-      const req = tx.objectStore(STORE_NAME).add(record);
-      req.onsuccess = () => resolve(req.result);
-      tx.onerror = () => reject(tx.error);
-    });
+  // =========================================================
+  // SCAN A DOCUMENT
+  // =========================================================
+  const scanFileInput = document.getElementById('scanFileInput');
+  const scanTakePhotoBtn = document.getElementById('scanTakePhotoBtn');
+  const scanUploadBtn = document.getElementById('scanUploadBtn');
+  const scanCanvasWrap = document.getElementById('scanCanvasWrap');
+  const scanCanvas = document.getElementById('scanCanvas');
+  const scanEditControls = document.getElementById('scanEditControls');
+  const scanRotateLeftBtn = document.getElementById('scanRotateLeftBtn');
+  const scanRotateRightBtn = document.getElementById('scanRotateRightBtn');
+  const scanStraightenSlider = document.getElementById('scanStraightenSlider');
+  const scanEnhanceBtn = document.getElementById('scanEnhanceBtn');
+  const scanBwBtn = document.getElementById('scanBwBtn');
+  const scanAddPageBtn = document.getElementById('scanAddPageBtn');
+  const scanPageThumbs = document.getElementById('scanPageThumbs');
+  const scanSizeEstimate = document.getElementById('scanSizeEstimate');
+  const scanSaveImageBtn = document.getElementById('scanSaveImageBtn');
+  const scanSavePdfBtn = document.getElementById('scanSavePdfBtn');
+  const scanError = document.getElementById('scanError');
+
+  let scanCurrentImg = null;   // the Image currently being edited
+  let scanBaseRotation = 0;    // 0/90/180/270 from the rotate buttons
+  let scanFineAngle = 0;       // -15..15 from the straighten slider
+  let scanEnhanceOn = true;
+  let scanBwOn = false;
+  let scanPages = [];          // finished page data URLs (JPEG), one per page
+
+  function scanCtx(){ return scanCanvas.getContext('2d'); }
+
+  function renderScanCanvas(){
+    if(!scanCurrentImg) return;
+    const img = scanCurrentImg;
+    const totalAngle = (scanBaseRotation + scanFineAngle) * Math.PI / 180;
+
+    // Canvas sized to fit the rotated image without cropping corners.
+    const swappedForBase = (scanBaseRotation % 180 !== 0);
+    const iw = swappedForBase ? img.height : img.width;
+    const ih = swappedForBase ? img.width : img.height;
+
+    // Cap the working resolution so this stays fast on any phone.
+    const maxDim = 1600;
+    const scale = Math.min(1, maxDim / Math.max(iw, ih));
+    const cw = Math.round(iw * scale);
+    const ch = Math.round(ih * scale);
+
+    scanCanvas.width = cw;
+    scanCanvas.height = ch;
+    const ctx = scanCtx();
+    ctx.save();
+    ctx.clearRect(0,0,cw,ch);
+    ctx.translate(cw/2, ch/2);
+    ctx.rotate(totalAngle);
+    if(scanEnhanceOn){
+      ctx.filter = scanBwOn
+        ? 'grayscale(1) contrast(1.35) brightness(1.12)'
+        : 'contrast(1.22) brightness(1.08) saturate(0.95)';
+    } else {
+      ctx.filter = scanBwOn ? 'grayscale(1)' : 'none';
+    }
+    const dw = img.width * scale;
+    const dh = img.height * scale;
+    ctx.drawImage(img, -dw/2, -dh/2, dw, dh);
+    ctx.restore();
+
+    scanSizeEstimate.textContent = '~' + formatBytes(dataUrlSizeBytes(scanCanvas.toDataURL('image/jpeg', 0.82)));
   }
 
-  async function updateSermon(id, fields){
-    if(id === null || id === undefined) return;
-    const db = await openDb();
-    return new Promise((resolve, reject) => {
-      const tx = db.transaction(STORE_NAME, 'readwrite');
-      const store = tx.objectStore(STORE_NAME);
-      const getReq = store.get(id);
-      getReq.onsuccess = () => {
-        const record = getReq.result;
-        if(!record){ resolve(); return; }
-        Object.assign(record, fields);
-        store.put(record);
-      };
-      getReq.onerror = () => reject(getReq.error);
-      tx.oncomplete = () => resolve();
-      tx.onerror = () => reject(tx.error);
-    });
+  function resetScanTool(){
+    scanCurrentImg = null;
+    scanBaseRotation = 0;
+    scanFineAngle = 0;
+    scanStraightenSlider.value = 0;
+    scanEnhanceOn = true;
+    scanEnhanceBtn.classList.add('active');
+    scanBwOn = false;
+    scanBwBtn.classList.remove('active');
+    scanPages = [];
+    scanPageThumbs.innerHTML = '';
+    scanCanvasWrap.style.display = 'none';
+    scanEditControls.style.display = 'none';
+    scanError.style.display = 'none';
+    scanFileInput.value = '';
   }
 
-  async function getAllSermons(){
-    const db = await openDb();
-    return new Promise((resolve, reject) => {
-      const tx = db.transaction(STORE_NAME, 'readonly');
-      const req = tx.objectStore(STORE_NAME).getAll();
-      req.onsuccess = () => resolve(req.result || []);
-      req.onerror = () => reject(req.error);
-    });
-  }
-
-  async function deleteSermon(id){
-    const db = await openDb();
-    return new Promise((resolve, reject) => {
-      const tx = db.transaction(STORE_NAME, 'readwrite');
-      tx.objectStore(STORE_NAME).delete(id);
-      tx.oncomplete = () => resolve();
-      tx.onerror = () => reject(tx.error);
-    });
-  }
-
-  async function renderLibrary(){
-    libraryList.innerHTML = '';
-    let sermons = [];
+  async function handleScanFile(file){
+    scanError.style.display = 'none';
+    if(blockIfOutOfFreeUses(scanError)) return;
     try{
-      sermons = await getAllSermons();
+      const { img } = await loadImageFromFile(file);
+      scanCurrentImg = img;
+      scanBaseRotation = 0;
+      scanFineAngle = 0;
+      scanStraightenSlider.value = 0;
+      scanCanvasWrap.style.display = 'flex';
+      scanEditControls.style.display = 'block';
+      renderScanCanvas();
     }catch(err){
-      console.error('Could not load library', err);
+      scanError.textContent = err.message || 'Something went wrong reading that photo.';
+      scanError.style.display = 'block';
     }
-    sermons.sort((a, b) => new Date(b.date) - new Date(a.date));
+  }
 
-    if(sermons.length === 0){
-      libraryEmpty.textContent = 'No saved lectures yet. Once you finish a recording, it\'ll show up here automatically.';
-      libraryEmpty.style.display = 'block';
-      return;
+  scanTakePhotoBtn.addEventListener('click', () => { scanFileInput.setAttribute('capture','environment'); scanFileInput.click(); });
+  scanUploadBtn.addEventListener('click', () => { scanFileInput.removeAttribute('capture'); scanFileInput.click(); });
+  scanFileInput.addEventListener('change', () => {
+    const file = scanFileInput.files && scanFileInput.files[0];
+    if(file) handleScanFile(file);
+  });
+
+  scanRotateLeftBtn.addEventListener('click', () => { scanBaseRotation = (scanBaseRotation + 270) % 360; renderScanCanvas(); });
+  scanRotateRightBtn.addEventListener('click', () => { scanBaseRotation = (scanBaseRotation + 90) % 360; renderScanCanvas(); });
+  scanStraightenSlider.addEventListener('input', () => { scanFineAngle = parseFloat(scanStraightenSlider.value); renderScanCanvas(); });
+  scanEnhanceBtn.addEventListener('click', () => { scanEnhanceOn = !scanEnhanceOn; scanEnhanceBtn.classList.toggle('active', scanEnhanceOn); renderScanCanvas(); });
+  scanBwBtn.addEventListener('click', () => { scanBwOn = !scanBwOn; scanBwBtn.classList.toggle('active', scanBwOn); renderScanCanvas(); });
+
+  function finishedPageDataUrl(){
+    // Free plan gets a small watermark on the exported page; Premium doesn't.
+    const out = document.createElement('canvas');
+    out.width = scanCanvas.width;
+    out.height = scanCanvas.height;
+    const octx = out.getContext('2d');
+    octx.drawImage(scanCanvas, 0, 0);
+    if(!isPremiumActive()){
+      octx.font = Math.max(12, Math.round(out.width * 0.028)) + 'px sans-serif';
+      octx.fillStyle = 'rgba(120,120,120,0.55)';
+      octx.textAlign = 'right';
+      octx.fillText('Scanned with ScanFixAll', out.width - 10, out.height - 10);
     }
+    return out.toDataURL('image/jpeg', 0.85);
+  }
 
-    const query = librarySearchInput.value.trim().toLowerCase();
-    if(query){
-      sermons = sermons.filter(sermon => {
-        const haystack = [
-          sermon.takeaway || '',
-          (sermon.bullets || []).join(' '),
-          sermon.transcript || ''
-        ].join(' ').toLowerCase();
-        return haystack.includes(query);
-      });
-    }
-
-    if(sermons.length === 0){
-      libraryEmpty.textContent = 'No saved lectures match "' + librarySearchInput.value.trim() + '".';
-      libraryEmpty.style.display = 'block';
-      return;
-    }
-    libraryEmpty.style.display = 'none';
-
-    sermons.forEach(sermon => {
-      const item = document.createElement('div');
-      item.className = 'library-item';
-
-      const menuWrap = document.createElement('div');
-      menuWrap.className = 'lib-menu-wrap';
-
-      const menuToggle = document.createElement('button');
-      menuToggle.className = 'lib-menu-toggle';
-      menuToggle.textContent = '⋯';
-      menuToggle.setAttribute('aria-label', 'More actions');
-
-      const menuPanel = document.createElement('div');
-      menuPanel.className = 'lib-menu-panel';
-
-      function closeThisMenu(){ menuPanel.classList.remove('open'); }
-
-      menuToggle.addEventListener('click', (e) => {
-        e.stopPropagation();
-        const wasOpen = menuPanel.classList.contains('open');
-        document.querySelectorAll('.lib-menu-panel.open').forEach(p => p.classList.remove('open'));
-        if(!wasOpen) menuPanel.classList.add('open');
-      });
-
-      const renameBtn = document.createElement('button');
-      renameBtn.innerHTML = '✏️ Rename';
-      renameBtn.addEventListener('click', async (e) => {
-        e.stopPropagation();
-        closeThisMenu();
-        const next = prompt('Rename this recording:', sermon.title || '');
-        if(next === null) return;
-        await updateSermon(sermon.id, { title: next.trim() });
-        renderLibrary();
-      });
-
-      const quizBtn = document.createElement('button');
-      quizBtn.innerHTML = '📝 Quiz';
-      quizBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        closeThisMenu();
-        openSavedSermon(sermon);
-        if(!sermon.quiz || !sermon.quiz.length){
-          generateQuiz();
-        }
-      });
-
-      const printBtn = document.createElement('button');
-      printBtn.innerHTML = '🖨️ Print';
-      printBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        closeThisMenu();
-        openSavedSermon(sermon);
-        printSermonText();
-      });
-
-      const shareBtn = document.createElement('button');
-      shareBtn.innerHTML = '📤 Share';
-      shareBtn.addEventListener('click', async (e) => {
-        e.stopPropagation();
-        closeThisMenu();
-        await shareSermonAudio(sermon);
-      });
-
-      const del = document.createElement('button');
-      del.className = 'danger';
-      del.innerHTML = '🗑️ Delete';
-      del.addEventListener('click', async (e) => {
-        e.stopPropagation();
-        closeThisMenu();
-        if(!confirm('Delete this saved sermon? This cannot be undone.')) return;
-        await deleteSermon(sermon.id);
-        renderLibrary();
-      });
-
-      menuPanel.appendChild(renameBtn);
-      menuPanel.appendChild(quizBtn);
-      menuPanel.appendChild(printBtn);
-      menuPanel.appendChild(shareBtn);
-      menuPanel.appendChild(del);
-
-      menuWrap.appendChild(menuToggle);
-      menuWrap.appendChild(menuPanel);
-
-      const dateEl = document.createElement('div');
-      dateEl.className = 'lib-date';
-      const dateStr = new Date(sermon.date).toLocaleDateString(undefined, { weekday:'long', month:'long', day:'numeric', year:'numeric' });
-      const dateLine = sermon.durationMs ? dateStr + '  ·  ' + formatTime(sermon.durationMs) : dateStr;
-      if(sermon.title && sermon.title.trim()){
-        dateEl.innerHTML = '';
-        const titleSpan = document.createElement('span');
-        titleSpan.className = 'lib-title';
-        titleSpan.textContent = sermon.title.trim();
-        dateEl.appendChild(titleSpan);
-        dateEl.appendChild(document.createTextNode('  ·  ' + dateLine));
-      } else {
-        dateEl.textContent = dateLine;
-      }
-
-      const takeawayEl = document.createElement('div');
-      takeawayEl.className = 'lib-takeaway';
-      takeawayEl.textContent = sermon.pending
-        ? 'Recording saved — summary not available (tap to listen or download)'
-        : sermon.takeaway;
-
-      item.appendChild(menuWrap);
-      item.appendChild(dateEl);
-      item.appendChild(takeawayEl);
-
-      item.addEventListener('click', () => openSavedSermon(sermon));
-      libraryList.appendChild(item);
+  function renderScanPageThumbs(){
+    scanPageThumbs.innerHTML = '';
+    scanPages.forEach((dataUrl, idx) => {
+      const wrap = document.createElement('div');
+      wrap.className = 'page-thumb';
+      const img = document.createElement('img');
+      img.src = dataUrl;
+      const rm = document.createElement('button');
+      rm.className = 'remove-thumb';
+      rm.textContent = '✕';
+      rm.addEventListener('click', () => { scanPages.splice(idx,1); renderScanPageThumbs(); });
+      wrap.appendChild(img);
+      wrap.appendChild(rm);
+      scanPageThumbs.appendChild(wrap);
     });
   }
 
-  // Close any open library "⋯" menu when clicking anywhere outside it.
-  document.addEventListener('click', (e) => {
-    if(!e.target.closest('.lib-menu-wrap')){
-      document.querySelectorAll('.lib-menu-panel.open').forEach(p => p.classList.remove('open'));
-    }
+  scanAddPageBtn.addEventListener('click', () => {
+    if(!scanCurrentImg) return;
+    scanPages.push(finishedPageDataUrl());
+    renderScanPageThumbs();
+    scanCurrentImg = null;
+    scanCanvasWrap.style.display = 'none';
+    scanFileInput.value = '';
   });
 
-  function makeShareFileName(sermon){
-    const d = new Date(sermon.date);
-    const stamp = d.toISOString().slice(0,10);
-    const cleanTitle = (sermon.title && sermon.title.trim())
-      ? sermon.title.trim().replace(/[^a-z0-9\-_ ]/gi, '').replace(/\s+/g, '-')
-      : ('sermon-echo-' + stamp);
-    const ext = (sermon.audioBlob && sermon.audioBlob.type && sermon.audioBlob.type.includes('wav')) ? 'wav' : 'webm';
-    return cleanTitle + '.' + ext;
-  }
-
-  async function shareSermonAudio(sermon){
-    if(!sermon.audioBlob){
-      alert('No audio file is saved for this recording, so there\'s nothing to share.');
+  scanSaveImageBtn.addEventListener('click', () => {
+    if(!scanCurrentImg && scanPages.length === 0){
+      scanError.textContent = 'Take or upload a photo first.';
+      scanError.style.display = 'block';
       return;
     }
-    const filename = makeShareFileName(sermon);
-    const file = new File([sermon.audioBlob], filename, { type: sermon.audioBlob.type || 'audio/webm' });
+    const dataUrl = scanCurrentImg ? finishedPageDataUrl() : scanPages[scanPages.length - 1];
+    const a = document.createElement('a');
+    a.href = dataUrl;
+    a.download = 'scan-' + Date.now() + '.jpg';
+    a.click();
+    bumpUsage();
+  });
 
-    if(navigator.canShare && navigator.canShare({ files: [file] })){
-      try{
-        await navigator.share({
-          files: [file],
-          title: sermon.title && sermon.title.trim() ? sermon.title.trim() : 'ScitechLectureTool recording'
-        });
-      }catch(err){
-        // User cancelled the share sheet, or the browser blocked it — nothing to do here.
-      }
-    } else {
-      downloadBlob(sermon.audioBlob, filename);
-      alert('Sharing directly to other apps isn\'t supported in this browser, so the recording was downloaded instead — you can share it from there.');
+  scanSavePdfBtn.addEventListener('click', () => {
+    const pages = scanPages.slice();
+    if(scanCurrentImg) pages.push(finishedPageDataUrl());
+    if(pages.length === 0){
+      scanError.textContent = 'Take or upload a photo first.';
+      scanError.style.display = 'block';
+      return;
     }
-  }
-
-  function openSavedSermon(sermon){
-    showView('results');
-
-    resultDate.textContent = (sermon.title && sermon.title.trim() ? sermon.title.trim() + ' — ' : '') + new Date(sermon.date).toLocaleDateString(undefined, { weekday:'long', month:'long', day:'numeric' });
-
-    if(sermon.pending){
-      takeawayText.textContent = "This recording hasn't been summarized yet — the audio is saved safely below, but transcription or the takeaway didn't complete for it.";
-      bulletsList.innerHTML = '';
-      transcriptBox.textContent = sermon.transcript || '(No transcript available for this recording.)';
-    } else {
-      takeawayText.textContent = sermon.takeaway;
-      bulletsList.innerHTML = '';
-      (sermon.bullets || []).forEach(b => {
-        const li = document.createElement('li');
-        li.textContent = b;
-        bulletsList.appendChild(li);
+    if(!isPremiumActive() && pages.length > 1){
+      scanError.textContent = 'Combining multiple pages into one PDF is a Premium feature. Unlock Premium, or save each page separately as an image.';
+      scanError.style.display = 'block';
+      return;
+    }
+    try{
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF({ unit: 'pt' });
+      pages.forEach((dataUrl, idx) => {
+        const img = new Image();
+        img.src = dataUrl;
+        const pageWidth = doc.internal.pageSize.getWidth();
+        const pageHeight = doc.internal.pageSize.getHeight();
+        // Fit the image within the page, preserving its aspect ratio.
+        const ratio = Math.min(pageWidth / img.width, pageHeight / img.height);
+        const w = img.width * ratio;
+        const h = img.height * ratio;
+        if(idx > 0) doc.addPage();
+        doc.addImage(dataUrl, 'JPEG', (pageWidth - w) / 2, (pageHeight - h) / 2, w, h);
       });
-      transcriptBox.textContent = sermon.transcript;
+      doc.save('scan-' + Date.now() + '.pdf');
+      bumpUsage();
+    }catch(err){
+      scanError.textContent = 'Could not build the PDF right now. Please try again.';
+      scanError.style.display = 'block';
     }
+  });
 
-    currentAudioBlob = sermon.audioBlob || null;
-    audioPlayback.src = sermon.audioBlob ? URL.createObjectURL(sermon.audioBlob) : '';
-    audioPlayback.load();
+  // =========================================================
+  // SHRINK A PHOTO
+  // =========================================================
+  const shrinkFileInput = document.getElementById('shrinkFileInput');
+  const shrinkTakePhotoBtn = document.getElementById('shrinkTakePhotoBtn');
+  const shrinkUploadBtn = document.getElementById('shrinkUploadBtn');
+  const shrinkCanvasWrap = document.getElementById('shrinkCanvasWrap');
+  const shrinkCanvas = document.getElementById('shrinkCanvas');
+  const shrinkEditControls = document.getElementById('shrinkEditControls');
+  const shrinkOriginalSize = document.getElementById('shrinkOriginalSize');
+  const shrinkNewSize = document.getElementById('shrinkNewSize');
+  const shrinkSaveBtn = document.getElementById('shrinkSaveBtn');
+  const shrinkError = document.getElementById('shrinkError');
+  const presetButtons = document.querySelectorAll('.size-preset-btn');
 
-    currentSermon = {
-      id: sermon.id,
-      takeaway: sermon.pending ? '' : sermon.takeaway,
-      bullets: sermon.pending ? [] : (sermon.bullets || []),
-      transcript: sermon.transcript || '',
-      translations: sermon.translations || {},
-      quiz: sermon.quiz || null
-    };
-    resetTranslateUI();
-    if(sermon.quiz && sermon.quiz.length){
-      renderQuiz(sermon.quiz);
-    } else {
-      resetQuizUI();
-    }
-    updatePrevNextButtons();
+  const SIZE_PRESETS = {
+    small:  { maxDim: 900,  quality: 0.62 },
+    medium: { maxDim: 1400, quality: 0.75 },
+    large:  { maxDim: 2000, quality: 0.85 }
+  };
+
+  let shrinkOriginalImg = null;
+  let shrinkOriginalBytes = 0;
+  let shrinkPreset = 'medium';
+  let shrinkResultDataUrl = null;
+
+  function resetShrinkTool(){
+    shrinkOriginalImg = null;
+    shrinkOriginalBytes = 0;
+    shrinkResultDataUrl = null;
+    shrinkCanvasWrap.style.display = 'none';
+    shrinkEditControls.style.display = 'none';
+    shrinkError.style.display = 'none';
+    shrinkFileInput.value = '';
+    shrinkOriginalSize.textContent = '—';
+    shrinkNewSize.textContent = '—';
   }
 
-  let screenBeforeLibrary = 'home';
+  function renderShrinkResult(){
+    if(!shrinkOriginalImg) return;
+    const preset = SIZE_PRESETS[shrinkPreset];
+    const img = shrinkOriginalImg;
+    const scale = Math.min(1, preset.maxDim / Math.max(img.width, img.height));
+    const cw = Math.max(1, Math.round(img.width * scale));
+    const ch = Math.max(1, Math.round(img.height * scale));
+    shrinkCanvas.width = cw;
+    shrinkCanvas.height = ch;
+    const ctx = shrinkCanvas.getContext('2d');
+    ctx.clearRect(0,0,cw,ch);
+    ctx.drawImage(img, 0, 0, cw, ch);
+    shrinkResultDataUrl = shrinkCanvas.toDataURL('image/jpeg', preset.quality);
+    shrinkNewSize.textContent = formatBytes(dataUrlSizeBytes(shrinkResultDataUrl));
+  }
 
-  libraryBtn.addEventListener('click', () => {
-    screenBeforeLibrary = currentView === 'library' ? screenBeforeLibrary : currentView;
-    showView('library');
-    librarySearchInput.value = '';
-    renderLibrary();
+  async function handleShrinkFile(file){
+    shrinkError.style.display = 'none';
+    if(blockIfOutOfFreeUses(shrinkError)) return;
+    try{
+      const { img, originalBytes } = await loadImageFromFile(file);
+      shrinkOriginalImg = img;
+      shrinkOriginalBytes = originalBytes;
+      shrinkOriginalSize.textContent = formatBytes(originalBytes);
+      shrinkCanvasWrap.style.display = 'flex';
+      shrinkEditControls.style.display = 'block';
+      renderShrinkResult();
+    }catch(err){
+      shrinkError.textContent = err.message || 'Something went wrong reading that photo.';
+      shrinkError.style.display = 'block';
+    }
+  }
+
+  shrinkTakePhotoBtn.addEventListener('click', () => { shrinkFileInput.setAttribute('capture','environment'); shrinkFileInput.click(); });
+  shrinkUploadBtn.addEventListener('click', () => { shrinkFileInput.removeAttribute('capture'); shrinkFileInput.click(); });
+  shrinkFileInput.addEventListener('change', () => {
+    const file = shrinkFileInput.files && shrinkFileInput.files[0];
+    if(file) handleShrinkFile(file);
   });
 
-  librarySearchInput.addEventListener('input', () => {
-    renderLibrary();
+  presetButtons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      presetButtons.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      shrinkPreset = btn.getAttribute('data-preset');
+      renderShrinkResult();
+    });
   });
 
-  closeLibraryBtn.addEventListener('click', () => {
-    showView(screenBeforeLibrary);
+  shrinkSaveBtn.addEventListener('click', () => {
+    if(!shrinkResultDataUrl){
+      shrinkError.textContent = 'Take or upload a photo first.';
+      shrinkError.style.display = 'block';
+      return;
+    }
+    const a = document.createElement('a');
+    a.href = shrinkResultDataUrl;
+    a.download = 'shrunk-' + Date.now() + '.jpg';
+    a.click();
+    bumpUsage();
   });
 
-  // ---- Paywall (ScitechLectureTool Premium) ----
+  // =========================================================
+  // SIGN A DOCUMENT
+  // =========================================================
+  const signFileInput = document.getElementById('signFileInput');
+  const signTakePhotoBtn = document.getElementById('signTakePhotoBtn');
+  const signUploadBtn = document.getElementById('signUploadBtn');
+  const signCanvasWrap = document.getElementById('signCanvasWrap');
+  const signCanvas = document.getElementById('signCanvas');
+  const signOverlayCanvas = document.getElementById('signOverlayCanvas');
+  const signEditControls = document.getElementById('signEditControls');
+  const signOpenPadBtn = document.getElementById('signOpenPadBtn');
+  const signPlacementControls = document.getElementById('signPlacementControls');
+  const signSizeSlider = document.getElementById('signSizeSlider');
+  const signRedoBtn = document.getElementById('signRedoBtn');
+  const signPlaceBtn = document.getElementById('signPlaceBtn');
+  const signPlacedHint = document.getElementById('signPlacedHint');
+  const signSaveImageBtn = document.getElementById('signSaveImageBtn');
+  const signSavePdfBtn = document.getElementById('signSavePdfBtn');
+  const signError = document.getElementById('signError');
+
+  const sigPadModal = document.getElementById('sigPadModal');
+  const sigPadCanvas = document.getElementById('sigPadCanvas');
+  const sigPadClearBtn = document.getElementById('sigPadClearBtn');
+  const sigPadCancelBtn = document.getElementById('sigPadCancelBtn');
+  const sigPadUseBtn = document.getElementById('sigPadUseBtn');
+
+  let signatureImg = null;      // drawn signature, as an Image (transparent PNG)
+  let sigAspect = 3;            // width/height ratio of the drawn signature
+  let sigPos = { x: 0, y: 0 };  // top-left, in signCanvas's own pixel space
+  let sigDragging = false;
+  let sigDragOffset = { x: 0, y: 0 };
+  let signPlacedOnce = false;
+
+  function resetSignTool(){
+    signatureImg = null;
+    signPlacedOnce = false;
+    signCanvasWrap.style.display = 'none';
+    signEditControls.style.display = 'none';
+    signPlacementControls.style.display = 'none';
+    signPlacedHint.style.display = 'none';
+    signError.style.display = 'none';
+    signFileInput.value = '';
+    const octx = signOverlayCanvas.getContext('2d');
+    octx.clearRect(0,0,signOverlayCanvas.width, signOverlayCanvas.height);
+  }
+
+  async function handleSignFile(file){
+    signError.style.display = 'none';
+    if(blockIfOutOfFreeUses(signError)) return;
+    try{
+      const { img } = await loadImageFromFile(file);
+      const maxDim = 1600;
+      const scale = Math.min(1, maxDim / Math.max(img.width, img.height));
+      const cw = Math.round(img.width * scale);
+      const ch = Math.round(img.height * scale);
+      signCanvas.width = cw;
+      signCanvas.height = ch;
+      signOverlayCanvas.width = cw;
+      signOverlayCanvas.height = ch;
+      const ctx = signCanvas.getContext('2d');
+      ctx.clearRect(0,0,cw,ch);
+      ctx.drawImage(img, 0, 0, cw, ch);
+      signCanvasWrap.style.display = 'flex';
+      signEditControls.style.display = 'block';
+      signPlacementControls.style.display = 'none';
+      signPlacedHint.style.display = 'none';
+      signPlacedOnce = false;
+    }catch(err){
+      signError.textContent = err.message || 'Something went wrong reading that photo.';
+      signError.style.display = 'block';
+    }
+  }
+
+  signTakePhotoBtn.addEventListener('click', () => { signFileInput.setAttribute('capture','environment'); signFileInput.click(); });
+  signUploadBtn.addEventListener('click', () => { signFileInput.removeAttribute('capture'); signFileInput.click(); });
+  signFileInput.addEventListener('change', () => {
+    const file = signFileInput.files && signFileInput.files[0];
+    if(file) handleSignFile(file);
+  });
+
+  // ---- Signature pad modal (draw with finger/mouse) ----
+  let padDrawing = false;
+  let padHasStroke = false;
+
+  function openSigPad(){
+    sigPadModal.style.display = 'flex';
+    // Size the drawing canvas to match how big it will actually appear.
+    requestAnimationFrame(() => {
+      const rect = sigPadCanvas.getBoundingClientRect();
+      sigPadCanvas.width = Math.round(rect.width * 2);
+      sigPadCanvas.height = Math.round(rect.height * 2);
+      const ctx = sigPadCanvas.getContext('2d');
+      ctx.clearRect(0,0,sigPadCanvas.width, sigPadCanvas.height);
+      ctx.lineWidth = 5;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      ctx.strokeStyle = '#151B26';
+      padHasStroke = false;
+    });
+  }
+
+  function padPointFromEvent(evt){
+    const rect = sigPadCanvas.getBoundingClientRect();
+    const scaleX = sigPadCanvas.width / rect.width;
+    const scaleY = sigPadCanvas.height / rect.height;
+    return { x: (evt.clientX - rect.left) * scaleX, y: (evt.clientY - rect.top) * scaleY };
+  }
+
+  sigPadCanvas.addEventListener('pointerdown', (evt) => {
+    padDrawing = true;
+    padHasStroke = true;
+    sigPadCanvas.setPointerCapture(evt.pointerId);
+    const p = padPointFromEvent(evt);
+    const ctx = sigPadCanvas.getContext('2d');
+    ctx.beginPath();
+    ctx.moveTo(p.x, p.y);
+  });
+  sigPadCanvas.addEventListener('pointermove', (evt) => {
+    if(!padDrawing) return;
+    const p = padPointFromEvent(evt);
+    const ctx = sigPadCanvas.getContext('2d');
+    ctx.lineTo(p.x, p.y);
+    ctx.stroke();
+  });
+  function endPadStroke(){ padDrawing = false; }
+  sigPadCanvas.addEventListener('pointerup', endPadStroke);
+  sigPadCanvas.addEventListener('pointercancel', endPadStroke);
+  sigPadCanvas.addEventListener('pointerleave', endPadStroke);
+
+  signOpenPadBtn.addEventListener('click', openSigPad);
+  signRedoBtn.addEventListener('click', openSigPad);
+
+  sigPadClearBtn.addEventListener('click', () => {
+    const ctx = sigPadCanvas.getContext('2d');
+    ctx.clearRect(0,0,sigPadCanvas.width, sigPadCanvas.height);
+    padHasStroke = false;
+  });
+
+  sigPadCancelBtn.addEventListener('click', () => { sigPadModal.style.display = 'none'; });
+
+  sigPadUseBtn.addEventListener('click', () => {
+    if(!padHasStroke){
+      sigPadModal.style.display = 'none';
+      return;
+    }
+    const dataUrl = sigPadCanvas.toDataURL('image/png');
+    const img = new Image();
+    img.onload = () => {
+      signatureImg = img;
+      sigAspect = img.width / img.height;
+      // Default placement: bottom-right area of the document, sized by the slider.
+      const wPct = parseInt(signSizeSlider.value, 10) / 100;
+      const w = signCanvas.width * wPct;
+      const h = w / sigAspect;
+      sigPos = { x: signCanvas.width - w - (signCanvas.width * 0.04), y: signCanvas.height - h - (signCanvas.height * 0.05) };
+      signPlacementControls.style.display = 'block';
+      signPlacedHint.style.display = 'none';
+      drawSigOverlay();
+      sigPadModal.style.display = 'none';
+    };
+    img.src = dataUrl;
+  });
+
+  function currentSigSize(){
+    const wPct = parseInt(signSizeSlider.value, 10) / 100;
+    const w = signCanvas.width * wPct;
+    const h = w / sigAspect;
+    return { w, h };
+  }
+
+  function drawSigOverlay(){
+    if(!signatureImg) return;
+    const octx = signOverlayCanvas.getContext('2d');
+    octx.clearRect(0,0,signOverlayCanvas.width, signOverlayCanvas.height);
+    const { w, h } = currentSigSize();
+    octx.drawImage(signatureImg, sigPos.x, sigPos.y, w, h);
+    octx.strokeStyle = 'rgba(201,162,39,0.9)';
+    octx.lineWidth = Math.max(2, signOverlayCanvas.width * 0.003);
+    octx.strokeRect(sigPos.x, sigPos.y, w, h);
+  }
+
+  signSizeSlider.addEventListener('input', drawSigOverlay);
+
+  function overlayPointFromEvent(evt){
+    const rect = signOverlayCanvas.getBoundingClientRect();
+    const scaleX = signOverlayCanvas.width / rect.width;
+    const scaleY = signOverlayCanvas.height / rect.height;
+    return { x: (evt.clientX - rect.left) * scaleX, y: (evt.clientY - rect.top) * scaleY };
+  }
+
+  signOverlayCanvas.addEventListener('pointerdown', (evt) => {
+    if(!signatureImg) return;
+    const p = overlayPointFromEvent(evt);
+    const { w, h } = currentSigSize();
+    if(p.x >= sigPos.x && p.x <= sigPos.x + w && p.y >= sigPos.y && p.y <= sigPos.y + h){
+      sigDragging = true;
+      sigDragOffset = { x: p.x - sigPos.x, y: p.y - sigPos.y };
+      signOverlayCanvas.setPointerCapture(evt.pointerId);
+    }
+  });
+  signOverlayCanvas.addEventListener('pointermove', (evt) => {
+    if(!sigDragging) return;
+    const p = overlayPointFromEvent(evt);
+    const { w, h } = currentSigSize();
+    let nx = p.x - sigDragOffset.x;
+    let ny = p.y - sigDragOffset.y;
+    nx = Math.max(0, Math.min(signCanvas.width - w, nx));
+    ny = Math.max(0, Math.min(signCanvas.height - h, ny));
+    sigPos = { x: nx, y: ny };
+    drawSigOverlay();
+  });
+  function endSigDrag(){ sigDragging = false; }
+  signOverlayCanvas.addEventListener('pointerup', endSigDrag);
+  signOverlayCanvas.addEventListener('pointercancel', endSigDrag);
+
+  signPlaceBtn.addEventListener('click', () => {
+    if(!signatureImg) return;
+    const ctx = signCanvas.getContext('2d');
+    const { w, h } = currentSigSize();
+    ctx.drawImage(signatureImg, sigPos.x, sigPos.y, w, h);
+    const octx = signOverlayCanvas.getContext('2d');
+    octx.clearRect(0,0,signOverlayCanvas.width, signOverlayCanvas.height);
+    signatureImg = null;
+    signPlacementControls.style.display = 'none';
+    signPlacedOnce = true;
+    signPlacedHint.textContent = '✅ Signature placed. You can tap "Add Signature" again to add another, or save below.';
+    signPlacedHint.style.display = 'block';
+  });
+
+  function finishedSignPageDataUrl(){
+    const out = document.createElement('canvas');
+    out.width = signCanvas.width;
+    out.height = signCanvas.height;
+    const octx = out.getContext('2d');
+    octx.drawImage(signCanvas, 0, 0);
+    if(!isPremiumActive()){
+      octx.font = Math.max(12, Math.round(out.width * 0.028)) + 'px sans-serif';
+      octx.fillStyle = 'rgba(120,120,120,0.55)';
+      octx.textAlign = 'right';
+      octx.fillText('Signed with ScanFixAll', out.width - 10, out.height - 10);
+    }
+    return out.toDataURL('image/jpeg', 0.9);
+  }
+
+  signSaveImageBtn.addEventListener('click', () => {
+    if(!signCanvas.width){
+      signError.textContent = 'Open a document first.';
+      signError.style.display = 'block';
+      return;
+    }
+    const a = document.createElement('a');
+    a.href = finishedSignPageDataUrl();
+    a.download = 'signed-' + Date.now() + '.jpg';
+    a.click();
+    bumpUsage();
+  });
+
+  signSavePdfBtn.addEventListener('click', () => {
+    if(!signCanvas.width){
+      signError.textContent = 'Open a document first.';
+      signError.style.display = 'block';
+      return;
+    }
+    try{
+      const dataUrl = finishedSignPageDataUrl();
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF({ unit: 'pt' });
+      const img = new Image();
+      img.src = dataUrl;
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const pageHeight = doc.internal.pageSize.getHeight();
+      const ratio = Math.min(pageWidth / signCanvas.width, pageHeight / signCanvas.height);
+      const w = signCanvas.width * ratio;
+      const h = signCanvas.height * ratio;
+      doc.addImage(dataUrl, 'JPEG', (pageWidth - w) / 2, (pageHeight - h) / 2, w, h);
+      doc.save('signed-' + Date.now() + '.pdf');
+      bumpUsage();
+    }catch(err){
+      signError.textContent = 'Could not build the PDF right now. Please try again.';
+      signError.style.display = 'block';
+    }
+  });
+
+  updateFreeCountHint();
+
+
+  // ---- Paywall (ScanFixAll Premium) ----
   let screenBeforePaywall = 'home';
 
   function openPaywall(){
@@ -3442,17 +2763,16 @@
 
   function closePaywall(){
     showView(screenBeforePaywall);
-    if(screenBeforePaywall === 'library') renderLibrary();
   }
 
   paywallBtn.addEventListener('click', openPaywall);
   closePaywallBtn.addEventListener('click', closePaywall);
 
   // ---- Premium access code: unlock, store, and display ----
-  const PREMIUM_FLAG_KEY = 'se_premium_unlocked';
-  const PREMIUM_CODE_KEY = 'se_premium_code';
-  const PREMIUM_EXPIRES_KEY = 'se_premium_expires_at';
-  const CHECKOUT_SESSION_KEY = 'se_pending_checkout_session_id';
+  const PREMIUM_FLAG_KEY = 'sf_premium_unlocked';
+  const PREMIUM_CODE_KEY = 'sf_premium_code';
+  const PREMIUM_EXPIRES_KEY = 'sf_premium_expires_at';
+  const CHECKOUT_SESSION_KEY = 'sf_pending_checkout_session_id';
 
   function formatExpiryDate(iso){
     try{
@@ -3750,6 +3070,7 @@
     // Open the paywall screen so the banner has context
     openPaywall();
   })();
+
 
 })();
 </script>
