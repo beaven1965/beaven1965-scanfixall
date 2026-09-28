@@ -63,8 +63,8 @@ exports.handler = async (event) => {
       return { statusCode: 403, body: JSON.stringify({ error: 'Your access code has expired. Please renew to create family codes.' }) };
     }
 
-    // Limit: up to 5 active family codes per purchase (turned-off codes don't count).
-    const MAX_FAMILY_CODES = 5;
+    // Limit: up to 3 active family codes per purchase (turned-off codes don't count).
+    const MAX_FAMILY_CODES = 3;
     const limitStore = getStore('family-codes');
     const existing = (await limitStore.get('index:' + cleanedOwner, { type: 'json' })) || [];
     let active = 0;
