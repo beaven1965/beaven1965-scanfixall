@@ -1816,11 +1816,22 @@
         <div class="error-box" id="scanError" style="display:none;"></div>
 
         <div class="canvas-wrap" id="scanCanvasWrap" style="display:none;">
-          <canvas id="scanCanvas"></canvas>
+          <canvas id="scanCanvas" style="touch-action:none;"></canvas>
+        </div>
+
+        <div id="scanCornerControls" style="display:none;">
+          <div class="tool-hint">Drag the 4 gold dots onto the 4 corners of the paper. Then tap <b>Flatten &amp; clean</b>.</div>
+          <div class="tool-upload-row" style="margin-top:10px;">
+            <button class="tool-btn primary" id="scanFlattenBtn">✅ Flatten &amp; clean</button>
+            <button class="tool-btn" id="scanWholePhotoBtn">Use whole photo</button>
+          </div>
         </div>
 
         <div id="scanEditControls" style="display:none;">
-          <div class="rotate-row">
+          <div class="tool-upload-row">
+            <button class="tool-btn" id="scanAdjustCornersBtn">↩ Adjust corners</button>
+          </div>
+          <div class="rotate-row" style="margin-top:10px;">
             <button id="scanRotateLeftBtn">⟲ Rotate</button>
             <button id="scanRotateRightBtn">⟳ Rotate</button>
           </div>
@@ -1829,7 +1840,7 @@
             <input type="range" id="scanStraightenSlider" min="-15" max="15" step="0.5" value="0">
           </div>
           <div class="enhance-toggle-row" style="margin-top:10px;">
-            <button id="scanEnhanceBtn" class="active">✨ Auto-brighten</button>
+            <button id="scanEnhanceBtn" class="active">✨ Clean paper</button>
             <button id="scanBwBtn">⬛ Black &amp; White mode</button>
           </div>
           <div class="tool-hint" style="margin-top:10px;">Got more pages? Add them below before saving — they'll all go into one PDF.</div>
@@ -2225,55 +2236,331 @@
   const scanSavePdfBtn = document.getElementById('scanSavePdfBtn');
   const scanError = document.getElementById('scanError');
 
-  let scanCurrentImg = null;   // the Image currently being edited
-  let scanBaseRotation = 0;    // 0/90/180/270 from the rotate buttons
+  const scanCornerControls = document.getElementById('scanCornerControls');
+  const scanFlattenBtn = document.getElementById('scanFlattenBtn');
+  const scanWholePhotoBtn = document.getElementById('scanWholePhotoBtn');
+  const scanAdjustCornersBtn = document.getElementById('scanAdjustCornersBtn');
+
+  let scanCurrentImg = null;   // the photo currently being edited (null = none)
+  let scanSrcCanvas = null;    // that photo, at a working size, used for corners + flattening
+  let scanCorners = null;      // [topLeft, topRight, bottomRight, bottomLeft] in scanSrcCanvas pixels
+  let scanMode = 'corners';    // 'corners' = placing the dots, 'result' = flattened page
+  let scanFlatCanvas = null;   // the flattened (straightened + cropped) page
+  let scanCleanCache = {};     // cleaned versions of scanFlatCanvas, keyed by B&W on/off
+  let scanBaseRotation = 0;    // 0/90/180/270 from the rotate buttons (applied to the result)
   let scanFineAngle = 0;       // -15..15 from the straighten slider
-  let scanEnhanceOn = true;
+  let scanEnhanceOn = true;    // "Clean paper"
   let scanBwOn = false;
   let scanPages = [];          // finished page data URLs (JPEG), one per page
+  let scanDragIdx = -1;
 
   function scanCtx(){ return scanCanvas.getContext('2d'); }
 
-  function renderScanCanvas(){
-    if(!scanCurrentImg) return;
-    const img = scanCurrentImg;
-    const totalAngle = (scanBaseRotation + scanFineAngle) * Math.PI / 180;
-
-    // Canvas sized to fit the rotated image without cropping corners.
-    const swappedForBase = (scanBaseRotation % 180 !== 0);
-    const iw = swappedForBase ? img.height : img.width;
-    const ih = swappedForBase ? img.width : img.height;
-
-    // Cap the working resolution so this stays fast on any phone.
-    const maxDim = 1600;
-    const scale = Math.min(1, maxDim / Math.max(iw, ih));
-    const cw = Math.round(iw * scale);
-    const ch = Math.round(ih * scale);
-
-    scanCanvas.width = cw;
-    scanCanvas.height = ch;
-    const ctx = scanCtx();
-    ctx.save();
-    ctx.clearRect(0,0,cw,ch);
-    ctx.translate(cw/2, ch/2);
-    ctx.rotate(totalAngle);
-    if(scanEnhanceOn){
-      ctx.filter = scanBwOn
-        ? 'grayscale(1) contrast(1.35) brightness(1.12)'
-        : 'contrast(1.22) brightness(1.08) saturate(0.95)';
-    } else {
-      ctx.filter = scanBwOn ? 'grayscale(1)' : 'none';
+  // ---------- 1. Find the paper's 4 corners automatically ----------
+  // Shrinks the photo, finds the biggest bright area (the paper), and takes
+  // its outermost points as the corners. The user can drag them afterwards.
+  function detectPaperCorners(src){
+    const W = src.width, H = src.height;
+    const s = Math.min(1, 360 / Math.max(W, H));
+    const w = Math.max(8, Math.round(W * s)), h = Math.max(8, Math.round(H * s));
+    const c = document.createElement('canvas'); c.width = w; c.height = h;
+    const cx = c.getContext('2d'); cx.drawImage(src, 0, 0, w, h);
+    const d = cx.getImageData(0, 0, w, h).data;
+    const gray = new Uint8Array(w * h);
+    const hist = new Array(256).fill(0);
+    for(let i = 0; i < w * h; i++){
+      const g = (d[i*4] * 0.299 + d[i*4+1] * 0.587 + d[i*4+2] * 0.114) | 0;
+      gray[i] = g; hist[g]++;
     }
-    const dw = img.width * scale;
-    const dh = img.height * scale;
-    ctx.drawImage(img, -dw/2, -dh/2, dw, dh);
-    ctx.restore();
+    // Otsu threshold: best split between "paper" and "background" brightness.
+    let sum = 0; for(let i = 0; i < 256; i++) sum += i * hist[i];
+    let sumB = 0, wB = 0, best = 0, thr = 128;
+    for(let t = 0; t < 256; t++){
+      wB += hist[t]; if(!wB) continue;
+      const wF = w * h - wB; if(!wF) break;
+      sumB += t * hist[t];
+      const mB = sumB / wB, mF = (sum - sumB) / wF;
+      const between = wB * wF * (mB - mF) * (mB - mF);
+      if(between > best){ best = between; thr = t; }
+    }
+    // Largest connected bright area.
+    const label = new Int32Array(w * h).fill(-1);
+    let bestId = -1, bestSize = 0, id = 0;
+    const stack = [];
+    for(let start = 0; start < w * h; start++){
+      if(gray[start] <= thr || label[start] !== -1) continue;
+      let size = 0; stack.push(start); label[start] = id;
+      while(stack.length){
+        const p = stack.pop(); size++;
+        const x = p % w, y = (p / w) | 0;
+        const nb = [x > 0 ? p-1 : -1, x < w-1 ? p+1 : -1, y > 0 ? p-w : -1, y < h-1 ? p+w : -1];
+        for(const q of nb){ if(q >= 0 && label[q] === -1 && gray[q] > thr){ label[q] = id; stack.push(q); } }
+      }
+      if(size > bestSize){ bestSize = size; bestId = id; }
+      id++;
+    }
+    const inset = (f) => [
+      {x: W*f, y: H*f}, {x: W*(1-f), y: H*f}, {x: W*(1-f), y: H*(1-f)}, {x: W*f, y: H*(1-f)}
+    ];
+    if(bestId < 0 || bestSize < w * h * 0.12) return inset(0.04);
+    let tl = null, tr = null, br = null, bl = null;
+    let tlV = Infinity, brV = -Infinity, trV = -Infinity, blV = Infinity;
+    for(let p = 0; p < w * h; p++){
+      if(label[p] !== bestId) continue;
+      const x = p % w, y = (p / w) | 0;
+      if(x + y < tlV){ tlV = x + y; tl = {x, y}; }
+      if(x + y > brV){ brV = x + y; br = {x, y}; }
+      if(x - y > trV){ trV = x - y; tr = {x, y}; }
+      if(x - y < blV){ blV = x - y; bl = {x, y}; }
+    }
+    // If the "paper" fills basically the whole photo, keep a small margin.
+    if(bestSize > w * h * 0.97) return inset(0.02);
+    return [tl, tr, br, bl].map(p => ({ x: (p.x + 0.5) / s, y: (p.y + 0.5) / s }));
+  }
 
+  // ---------- 2. Flatten: stretch the 4-corner shape into a straight rectangle ----------
+  function solveLinear(A, b){
+    const n = b.length;
+    for(let i = 0; i < n; i++){
+      let piv = i;
+      for(let r = i + 1; r < n; r++) if(Math.abs(A[r][i]) > Math.abs(A[piv][i])) piv = r;
+      [A[i], A[piv]] = [A[piv], A[i]]; [b[i], b[piv]] = [b[piv], b[i]];
+      for(let r = i + 1; r < n; r++){
+        const f = A[r][i] / A[i][i];
+        for(let c = i; c < n; c++) A[r][c] -= f * A[i][c];
+        b[r] -= f * b[i];
+      }
+    }
+    const x = new Array(n);
+    for(let i = n - 1; i >= 0; i--){
+      let s = b[i];
+      for(let c = i + 1; c < n; c++) s -= A[i][c] * x[c];
+      x[i] = s / A[i][i];
+    }
+    return x;
+  }
+  // Maps a point in the flat output back to where it came from in the photo.
+  function homography(fromPts, toPts){
+    const A = [], b = [];
+    for(let i = 0; i < 4; i++){
+      const {x, y} = fromPts[i], {x: u, y: v} = toPts[i];
+      A.push([x, y, 1, 0, 0, 0, -u*x, -u*y]); b.push(u);
+      A.push([0, 0, 0, x, y, 1, -v*x, -v*y]); b.push(v);
+    }
+    const h = solveLinear(A, b);
+    return [h[0], h[1], h[2], h[3], h[4], h[5], h[6], h[7], 1];
+  }
+  function flattenPage(src, corners){
+    const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
+    const [tl, tr, br, bl] = corners;
+    let outW = Math.max(dist(tl, tr), dist(bl, br));
+    let outH = Math.max(dist(tl, bl), dist(tr, br));
+    const cap = Math.min(1, 1800 / Math.max(outW, outH));
+    outW = Math.max(16, Math.round(outW * cap)); outH = Math.max(16, Math.round(outH * cap));
+    const H = homography(
+      [{x:0,y:0}, {x:outW,y:0}, {x:outW,y:outH}, {x:0,y:outH}],
+      [tl, tr, br, bl]
+    );
+    const sw = src.width, sh = src.height;
+    const sd = src.getContext('2d').getImageData(0, 0, sw, sh).data;
+    const out = document.createElement('canvas'); out.width = outW; out.height = outH;
+    const octx = out.getContext('2d');
+    const od = octx.createImageData(outW, outH);
+    const o = od.data;
+    for(let y = 0; y < outH; y++){
+      for(let x = 0; x < outW; x++){
+        const X = x + 0.5, Y = y + 0.5;
+        const den = H[6]*X + H[7]*Y + 1;
+        let u = (H[0]*X + H[1]*Y + H[2]) / den - 0.5;
+        let v = (H[3]*X + H[4]*Y + H[5]) / den - 0.5;
+        u = Math.max(0, Math.min(sw - 1.001, u)); v = Math.max(0, Math.min(sh - 1.001, v));
+        const x0 = u | 0, y0 = v | 0, fx = u - x0, fy = v - y0;
+        const i00 = (y0*sw + x0) * 4, i10 = i00 + 4, i01 = i00 + sw*4, i11 = i01 + 4;
+        const k = (y*outW + x) * 4;
+        for(let ch = 0; ch < 3; ch++){
+          const top = sd[i00+ch] + (sd[i10+ch] - sd[i00+ch]) * fx;
+          const bot = sd[i01+ch] + (sd[i11+ch] - sd[i01+ch]) * fx;
+          o[k+ch] = top + (bot - top) * fy;
+        }
+        o[k+3] = 255;
+      }
+    }
+    octx.putImageData(od, 0, 0);
+    return out;
+  }
+
+  // ---------- 3. Clean paper: even out shadows and wrinkles, whiten the page ----------
+  // Estimates how bright the bare paper is at every spot (ignoring the thin
+  // dark text), then divides by it — so shadows and wrinkle shading become
+  // plain white while the text stays dark.
+  function cleanPaper(flat, bw){
+    const w = flat.width, h = flat.height;
+    // Fine enough to follow wrinkle shadows, coarse enough to skip over letters.
+    const bs = Math.min(1, 160 / Math.max(w, h));
+    const sw = Math.max(4, Math.round(w * bs)), sh = Math.max(4, Math.round(h * bs));
+    const small = document.createElement('canvas'); small.width = sw; small.height = sh;
+    const sctx = small.getContext('2d');
+    sctx.imageSmoothingQuality = 'high';
+    sctx.drawImage(flat, 0, 0, sw, sh);
+    let bg = sctx.getImageData(0, 0, sw, sh);
+    const pass = (data, fn, r) => {
+      const src = new Uint8ClampedArray(data.data), dst = data.data;
+      for(let y = 0; y < sh; y++) for(let x = 0; x < sw; x++){
+        for(let ch = 0; ch < 3; ch++){
+          let acc = fn === 'max' ? 0 : 0, n = 0;
+          for(let dy = -r; dy <= r; dy++) for(let dx = -r; dx <= r; dx++){
+            const xx = Math.min(sw-1, Math.max(0, x+dx)), yy = Math.min(sh-1, Math.max(0, y+dy));
+            const val = src[(yy*sw + xx)*4 + ch];
+            if(fn === 'max'){ if(val > acc) acc = val; } else { acc += val; n++; }
+          }
+          dst[(y*sw + x)*4 + ch] = fn === 'max' ? acc : acc / n;
+        }
+      }
+    };
+    pass(bg, 'max', 2);   // remove the text, keep the paper
+    pass(bg, 'mean', 1);  // smooth it
+    sctx.putImageData(bg, 0, 0);
+    const bgFull = document.createElement('canvas'); bgFull.width = w; bgFull.height = h;
+    const bctx = bgFull.getContext('2d');
+    bctx.imageSmoothingQuality = 'high';
+    bctx.drawImage(small, 0, 0, w, h);
+    const bd = bctx.getImageData(0, 0, w, h).data;
+
+    const out = document.createElement('canvas'); out.width = w; out.height = h;
+    const octx = out.getContext('2d');
+    const fd = flat.getContext('2d').getImageData(0, 0, w, h);
+    const d = fd.data;
+    const strength = bw ? 1.9 : 1.5;
+    for(let i = 0; i < d.length; i += 4){
+      if(bw){
+        const g = d[i]*0.299 + d[i+1]*0.587 + d[i+2]*0.114;
+        const bgv = Math.max(1, bd[i]*0.299 + bd[i+1]*0.587 + bd[i+2]*0.114);
+        let v = Math.min(255, g * 255 / bgv);
+        v = 255 - (255 - v) * strength;
+        if(v > 232) v = 255;
+        d[i] = d[i+1] = d[i+2] = v;
+      } else {
+        let allWhite = true;
+        const vals = [0,0,0];
+        for(let ch = 0; ch < 3; ch++){
+          let v = Math.min(255, d[i+ch] * 255 / Math.max(1, bd[i+ch]));
+          v = 255 - (255 - v) * strength;
+          vals[ch] = v;
+          if(v <= 236) allWhite = false;
+        }
+        d[i] = allWhite ? 255 : vals[0];
+        d[i+1] = allWhite ? 255 : vals[1];
+        d[i+2] = allWhite ? 255 : vals[2];
+      }
+    }
+    octx.putImageData(fd, 0, 0);
+    return out;
+  }
+
+  // The finished page before rotation: flattened, then cleaned or grayscale as chosen.
+  function processedPage(){
+    if(!scanFlatCanvas) return null;
+    if(scanEnhanceOn){
+      const key = scanBwOn ? 'bw' : 'color';
+      if(!scanCleanCache[key]) scanCleanCache[key] = cleanPaper(scanFlatCanvas, scanBwOn);
+      return scanCleanCache[key];
+    }
+    if(scanBwOn){
+      if(!scanCleanCache.plainBw){
+        const c = document.createElement('canvas'); c.width = scanFlatCanvas.width; c.height = scanFlatCanvas.height;
+        const cx = c.getContext('2d'); cx.drawImage(scanFlatCanvas, 0, 0);
+        const id = cx.getImageData(0, 0, c.width, c.height), d = id.data;
+        for(let i = 0; i < d.length; i += 4){ const g = d[i]*0.299 + d[i+1]*0.587 + d[i+2]*0.114; d[i] = d[i+1] = d[i+2] = g; }
+        cx.putImageData(id, 0, 0);
+        scanCleanCache.plainBw = c;
+      }
+      return scanCleanCache.plainBw;
+    }
+    return scanFlatCanvas;
+  }
+
+  function buildSrcCanvas(img){
+    const s = Math.min(1, 2000 / Math.max(img.width, img.height));
+    const c = document.createElement('canvas');
+    c.width = Math.round(img.width * s); c.height = Math.round(img.height * s);
+    c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+    return c;
+  }
+
+  function showScanMode(mode){
+    scanMode = mode;
+    scanCornerControls.style.display = mode === 'corners' ? 'block' : 'none';
+    scanEditControls.style.display = mode === 'result' ? 'block' : 'none';
+    renderScanCanvas();
+  }
+
+  function renderScanCanvas(){
+    if(!scanSrcCanvas) return;
+    const ctx = scanCtx();
+    if(scanMode === 'corners'){
+      const s = Math.min(1, 1600 / Math.max(scanSrcCanvas.width, scanSrcCanvas.height));
+      scanCanvas.width = Math.round(scanSrcCanvas.width * s);
+      scanCanvas.height = Math.round(scanSrcCanvas.height * s);
+      ctx.drawImage(scanSrcCanvas, 0, 0, scanCanvas.width, scanCanvas.height);
+      // Dim everything outside the chosen area, then draw the outline + dots.
+      const pts = scanCorners.map(p => ({x: p.x * s, y: p.y * s}));
+      ctx.save();
+      ctx.fillStyle = 'rgba(0,0,0,0.45)';
+      ctx.beginPath();
+      ctx.rect(0, 0, scanCanvas.width, scanCanvas.height);
+      ctx.moveTo(pts[0].x, pts[0].y); for(let i = 3; i >= 1; i--) ctx.lineTo(pts[i].x, pts[i].y); ctx.closePath();
+      ctx.fill('evenodd');
+      ctx.strokeStyle = '#C9A227';
+      ctx.lineWidth = Math.max(2, scanCanvas.width / 250);
+      ctx.beginPath(); ctx.moveTo(pts[0].x, pts[0].y); pts.slice(1).forEach(p => ctx.lineTo(p.x, p.y)); ctx.closePath(); ctx.stroke();
+      const rDot = Math.max(10, scanCanvas.width / 45);
+      pts.forEach(p => {
+        ctx.beginPath(); ctx.arc(p.x, p.y, rDot, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(201,162,39,0.85)'; ctx.fill();
+        ctx.lineWidth = Math.max(2, rDot / 4); ctx.strokeStyle = '#ffffff'; ctx.stroke();
+      });
+      ctx.restore();
+      scanSizeEstimate.textContent = '—';
+      return;
+    }
+    const page = processedPage();
+    const totalAngle = (scanBaseRotation + scanFineAngle) * Math.PI / 180;
+    const swapped = (scanBaseRotation % 180 !== 0);
+    const iw = swapped ? page.height : page.width;
+    const ih = swapped ? page.width : page.height;
+    const scale = Math.min(1, 1800 / Math.max(iw, ih));
+    scanCanvas.width = Math.round(iw * scale);
+    scanCanvas.height = Math.round(ih * scale);
+    ctx.save();
+    ctx.fillStyle = '#ffffff';                       // white, not black, in any corners the rotation uncovers
+    ctx.fillRect(0, 0, scanCanvas.width, scanCanvas.height);
+    ctx.translate(scanCanvas.width / 2, scanCanvas.height / 2);
+    ctx.rotate(totalAngle);
+    ctx.drawImage(page, -page.width * scale / 2, -page.height * scale / 2, page.width * scale, page.height * scale);
+    ctx.restore();
     scanSizeEstimate.textContent = '~' + formatBytes(dataUrlSizeBytes(scanCanvas.toDataURL('image/jpeg', 0.82)));
+  }
+
+  function doFlatten(){
+    if(!scanSrcCanvas) return;
+    showStatus('Flattening and cleaning…');
+    // Let the message paint before the heavy work starts.
+    setTimeout(() => {
+      scanFlatCanvas = flattenPage(scanSrcCanvas, scanCorners);
+      scanCleanCache = {};
+      scanFineAngle = 0; scanStraightenSlider.value = 0;
+      showScanMode('result');
+      showStatus('Page ready ✓', 2000);
+      scanCanvasWrap.scrollIntoView({ behavior:'smooth', block:'start' });
+    }, 30);
   }
 
   function resetScanTool(){
     scanCurrentImg = null;
+    scanSrcCanvas = null;
+    scanFlatCanvas = null;
+    scanCleanCache = {};
+    scanCorners = null;
     scanBaseRotation = 0;
     scanFineAngle = 0;
     scanStraightenSlider.value = 0;
@@ -2284,9 +2571,11 @@
     scanPages = [];
     scanPageThumbs.innerHTML = '';
     scanCanvasWrap.style.display = 'none';
+    scanCornerControls.style.display = 'none';
     scanEditControls.style.display = 'none';
     scanError.style.display = 'none';
     scanFileInput.value = '';
+    if(typeof updateScanPdfLabel === 'function') updateScanPdfLabel();
   }
 
   async function handleScanFile(file){
@@ -2295,17 +2584,50 @@
     try{
       const { img } = await loadImageFromFile(file);
       scanCurrentImg = img;
+      scanSrcCanvas = buildSrcCanvas(img);
+      scanCorners = detectPaperCorners(scanSrcCanvas);
+      scanFlatCanvas = null;
+      scanCleanCache = {};
       scanBaseRotation = 0;
       scanFineAngle = 0;
       scanStraightenSlider.value = 0;
       scanCanvasWrap.style.display = 'flex';
-      scanEditControls.style.display = 'block';
-      renderScanCanvas();
+      showScanMode('corners');
     }catch(err){
       scanError.textContent = err.message || 'Something went wrong reading that photo.';
       scanError.style.display = 'block';
     }
   }
+
+  // Dragging the corner dots.
+  function canvasPoint(e){
+    const r = scanCanvas.getBoundingClientRect();
+    const s = scanSrcCanvas.width / r.width;
+    return { x: (e.clientX - r.left) * s, y: (e.clientY - r.top) * s, perCssPx: s };
+  }
+  scanCanvas.addEventListener('pointerdown', (e) => {
+    if(scanMode !== 'corners' || !scanCorners) return;
+    const p = canvasPoint(e);
+    const grab = 34 * p.perCssPx;                 // generous finger-sized grab area
+    let best = -1, bestD = Infinity;
+    scanCorners.forEach((c, i) => { const d = Math.hypot(c.x - p.x, c.y - p.y); if(d < bestD){ bestD = d; best = i; } });
+    if(bestD <= grab){
+      scanDragIdx = best;
+      scanCanvas.setPointerCapture(e.pointerId);
+      e.preventDefault();
+    }
+  });
+  scanCanvas.addEventListener('pointermove', (e) => {
+    if(scanDragIdx < 0) return;
+    const p = canvasPoint(e);
+    scanCorners[scanDragIdx] = {
+      x: Math.max(0, Math.min(scanSrcCanvas.width, p.x)),
+      y: Math.max(0, Math.min(scanSrcCanvas.height, p.y))
+    };
+    renderScanCanvas();
+    e.preventDefault();
+  });
+  ['pointerup','pointercancel'].forEach(t => scanCanvas.addEventListener(t, () => { scanDragIdx = -1; }));
 
   scanTakePhotoBtn.addEventListener('click', () => { scanFileInput.setAttribute('capture','environment'); scanFileInput.click(); });
   scanUploadBtn.addEventListener('click', () => { scanFileInput.removeAttribute('capture'); scanFileInput.click(); });
@@ -2313,13 +2635,32 @@
     onPhotoPicked(scanFileInput, handleScanFile, scanCanvasWrap, scanError);
   });
 
+  scanFlattenBtn.addEventListener('click', doFlatten);
+  scanWholePhotoBtn.addEventListener('click', () => {
+    if(!scanSrcCanvas) return;
+    const W = scanSrcCanvas.width, H = scanSrcCanvas.height;
+    scanCorners = [{x:0,y:0},{x:W,y:0},{x:W,y:H},{x:0,y:H}];
+    doFlatten();
+  });
+  scanAdjustCornersBtn.addEventListener('click', () => showScanMode('corners'));
+
   scanRotateLeftBtn.addEventListener('click', () => { scanBaseRotation = (scanBaseRotation + 270) % 360; renderScanCanvas(); });
   scanRotateRightBtn.addEventListener('click', () => { scanBaseRotation = (scanBaseRotation + 90) % 360; renderScanCanvas(); });
   scanStraightenSlider.addEventListener('input', () => { scanFineAngle = parseFloat(scanStraightenSlider.value); renderScanCanvas(); });
   scanEnhanceBtn.addEventListener('click', () => { scanEnhanceOn = !scanEnhanceOn; scanEnhanceBtn.classList.toggle('active', scanEnhanceOn); renderScanCanvas(); });
   scanBwBtn.addEventListener('click', () => { scanBwOn = !scanBwOn; scanBwBtn.classList.toggle('active', scanBwOn); renderScanCanvas(); });
 
+  // Saving needs a finished page. If the user is still placing the dots, flatten first.
+  function ensureScanResult(){
+    if(scanMode === 'corners' && scanSrcCanvas){
+      scanFlatCanvas = flattenPage(scanSrcCanvas, scanCorners);
+      scanCleanCache = {};
+      showScanMode('result');
+    }
+  }
+
   function finishedPageDataUrl(){
+    ensureScanResult();
     // Free plan gets a small watermark on the exported page; Premium doesn't.
     const out = document.createElement('canvas');
     out.width = scanCanvas.width;
@@ -2368,8 +2709,13 @@
     scanPages.push(finishedPageDataUrl());
     renderScanPageThumbs();
     scanCurrentImg = null;
+    scanSrcCanvas = null;
+    scanFlatCanvas = null;
+    scanCleanCache = {};
     scanCanvasWrap.style.display = 'none';
+    scanCornerControls.style.display = 'none';
     scanFileInput.value = '';
+    showStatus('Page added ✓ Now take or upload the next page.', 3000);
   });
 
   scanSaveImageBtn.addEventListener('click', () => {
@@ -2403,14 +2749,15 @@
       const { jsPDF } = window.jspdf;
       const doc = new jsPDF({ unit: 'pt' });
       pages.forEach((dataUrl, idx) => {
-        const img = new Image();
-        img.src = dataUrl;
+        // Read the picture's size straight from its data (a new Image()
+        // would still be 0×0 here because it hasn't finished loading).
+        const props = doc.getImageProperties(dataUrl);
         const pageWidth = doc.internal.pageSize.getWidth();
         const pageHeight = doc.internal.pageSize.getHeight();
         // Fit the image within the page, preserving its aspect ratio.
-        const ratio = Math.min(pageWidth / img.width, pageHeight / img.height);
-        const w = img.width * ratio;
-        const h = img.height * ratio;
+        const ratio = Math.min(pageWidth / props.width, pageHeight / props.height);
+        const w = props.width * ratio;
+        const h = props.height * ratio;
         if(idx > 0) doc.addPage();
         doc.addImage(dataUrl, 'JPEG', (pageWidth - w) / 2, (pageHeight - h) / 2, w, h);
       });
