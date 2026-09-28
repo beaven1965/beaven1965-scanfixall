@@ -2078,6 +2078,17 @@
   </main>
 </div>
 
+<div id="camModal" style="display:none;position:fixed;inset:0;z-index:9000;background:rgba(10,14,20,.92);align-items:center;justify-content:center;padding:16px;">
+  <div style="width:100%;max-width:640px;display:flex;flex-direction:column;gap:12px;">
+    <div style="color:#EDE6D6;font-weight:600;text-align:center;" id="camTitle">Camera</div>
+    <video id="camVideo" autoplay playsinline muted style="width:100%;max-height:65vh;background:#000;border-radius:12px;object-fit:contain;"></video>
+    <div class="tool-upload-row">
+      <button class="tool-btn primary" id="camSnapBtn">📸 Snap</button>
+      <button class="tool-btn" id="camSwitchBtn" style="display:none;">🔄 Switch camera</button>
+      <button class="tool-btn" id="camCancelBtn">Cancel</button>
+    </div>
+  </div>
+</div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script>
 (function(){
@@ -2246,17 +2257,97 @@
     if(hideAfterMs) sfaToastTimer = setTimeout(() => { sfaToast.style.display = 'none'; }, hideAfterMs);
   }
 
+  // ---- In-page camera (for laptops, whose browsers ignore "use the camera") ----
+  const camModal = document.getElementById('camModal');
+  const camVideo = document.getElementById('camVideo');
+  const camSnapBtn = document.getElementById('camSnapBtn');
+  const camSwitchBtn = document.getElementById('camSwitchBtn');
+  const camCancelBtn = document.getElementById('camCancelBtn');
+  const camTitle = document.getElementById('camTitle');
+  let camStream = null, camDevices = [], camDeviceIdx = 0, camOnPhoto = null;
+
+  // Phones and tablets have a real camera app that the file picker opens directly —
+  // it focuses better and takes sharper photos, so they keep using it.
+  const isTouchDevice = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
+
+  function stopCamera(){
+    if(camStream){ camStream.getTracks().forEach(t => t.stop()); camStream = null; }
+    camVideo.srcObject = null;
+    camModal.style.display = 'none';
+  }
+  async function startCamera(deviceId){
+    if(camStream){ camStream.getTracks().forEach(t => t.stop()); camStream = null; }
+    const video = deviceId ? { deviceId: { exact: deviceId } } : { facingMode: 'environment' };
+    video.width = { ideal: 1920 }; video.height = { ideal: 1080 };
+    camStream = await navigator.mediaDevices.getUserMedia({ video, audio: false });
+    camVideo.srcObject = camStream;
+    try{
+      camDevices = (await navigator.mediaDevices.enumerateDevices()).filter(d => d.kind === 'videoinput');
+    }catch(e){ camDevices = []; }
+    camSwitchBtn.style.display = camDevices.length > 1 ? '' : 'none';
+  }
+  // Opens the camera window; calls onPhoto(file) after Snap. Returns false if no camera could be opened.
+  async function openCameraWindow(title, onPhoto){
+    if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return false;
+    camOnPhoto = onPhoto;
+    camTitle.textContent = title;
+    camModal.style.display = 'flex';
+    try{
+      await startCamera(null);
+      return true;
+    }catch(err){
+      stopCamera();
+      const denied = err && (err.name === 'NotAllowedError' || err.name === 'SecurityError');
+      showStatus(denied
+        ? 'Camera is blocked. Click the camera icon in the address bar to allow it — or use Upload Photo.'
+        : 'No camera was found on this device. Please use Upload Photo instead.', 6000);
+      return true;   // handled (message shown); don't also open the file window
+    }
+  }
+  camSwitchBtn.addEventListener('click', async () => {
+    if(camDevices.length < 2) return;
+    camDeviceIdx = (camDeviceIdx + 1) % camDevices.length;
+    try{ await startCamera(camDevices[camDeviceIdx].deviceId); }catch(e){ showStatus('Could not switch camera.', 3000); }
+  });
+  camCancelBtn.addEventListener('click', stopCamera);
+  camSnapBtn.addEventListener('click', () => {
+    if(!camStream || !camVideo.videoWidth){ showStatus('The camera is still starting — try again in a moment.', 2500); return; }
+    const c = document.createElement('canvas');
+    c.width = camVideo.videoWidth; c.height = camVideo.videoHeight;
+    c.getContext('2d').drawImage(camVideo, 0, 0);
+    const handler = camOnPhoto;
+    stopCamera();
+    c.toBlob(blob => {
+      if(blob && handler) handler(new File([blob], 'camera-' + Date.now() + '.jpg', { type: 'image/jpeg' }));
+    }, 'image/jpeg', 0.92);
+  });
+
+  // "Take Photo": phone camera app on phones, the in-page camera window on laptops.
+  function takePhoto(inputEl, handler, resultWrapEl, errorEl, title){
+    if(isTouchDevice){
+      inputEl.setAttribute('capture','environment');
+      inputEl.click();
+      return;
+    }
+    openCameraWindow(title, (file) => runPickedFile(file, handler, resultWrapEl, errorEl)).then(ok => {
+      if(!ok){ inputEl.removeAttribute('capture'); inputEl.click(); }   // very old browser: fall back to picking a file
+    });
+  }
+
   // Runs when a photo is picked: shows "Opening…", loads it, scrolls to it,
   // then clears the picker so the same photo can be chosen again.
   async function onPhotoPicked(inputEl, handler, resultWrapEl, errorEl){
     const file = inputEl.files && inputEl.files[0];
     if(!file) return;
-    showStatus('Opening your photo…');
     try{
-      await handler(file);
+      await runPickedFile(file, handler, resultWrapEl, errorEl);
     }finally{
       inputEl.value = '';
     }
+  }
+  async function runPickedFile(file, handler, resultWrapEl, errorEl){
+    showStatus('Opening your photo…');
+    await handler(file);
     if(errorEl && errorEl.style.display === 'block'){
       showStatus(errorEl.textContent, 5000);
       errorEl.scrollIntoView({ behavior:'smooth', block:'center' });
@@ -2680,7 +2771,7 @@
   });
   ['pointerup','pointercancel'].forEach(t => scanCanvas.addEventListener(t, () => { scanDragIdx = -1; }));
 
-  scanTakePhotoBtn.addEventListener('click', () => { scanFileInput.setAttribute('capture','environment'); scanFileInput.click(); });
+  scanTakePhotoBtn.addEventListener('click', () => takePhoto(scanFileInput, handleScanFile, scanCanvasWrap, scanError, 'Take a photo of your document'));
   scanUploadBtn.addEventListener('click', () => { scanFileInput.removeAttribute('capture'); scanFileInput.click(); });
   scanFileInput.addEventListener('change', () => {
     onPhotoPicked(scanFileInput, handleScanFile, scanCanvasWrap, scanError);
@@ -3209,7 +3300,7 @@
     }
   }
 
-  shrinkTakePhotoBtn.addEventListener('click', () => { shrinkFileInput.setAttribute('capture','environment'); shrinkFileInput.click(); });
+  shrinkTakePhotoBtn.addEventListener('click', () => takePhoto(shrinkFileInput, handleShrinkFile, shrinkCanvasWrap, shrinkError, 'Take a photo'));
   shrinkUploadBtn.addEventListener('click', () => { shrinkFileInput.removeAttribute('capture'); shrinkFileInput.click(); });
   shrinkFileInput.addEventListener('change', () => {
     onPhotoPicked(shrinkFileInput, handleShrinkFile, shrinkCanvasWrap, shrinkError);
@@ -3311,7 +3402,7 @@
     }
   }
 
-  signTakePhotoBtn.addEventListener('click', () => { signFileInput.setAttribute('capture','environment'); signFileInput.click(); });
+  signTakePhotoBtn.addEventListener('click', () => takePhoto(signFileInput, handleSignFile, signCanvasWrap, signError, 'Take a photo of the page to sign'));
   signUploadBtn.addEventListener('click', () => { signFileInput.removeAttribute('capture'); signFileInput.click(); });
   signFileInput.addEventListener('change', () => {
     onPhotoPicked(signFileInput, handleSignFile, signCanvasWrap, signError);
