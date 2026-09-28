@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ScitechLectureTool — Payment Recovery</title>
+<style>
+  body{
+    background:#151B26;
+    color:#EDE6D6;
+    font-family:sans-serif;
+    max-width:480px;
+    margin:0 auto;
+    padding:32px 20px;
+  }
+  h1{ font-size:20px; margin-bottom:4px; }
+  p.sub{ color:#9AA3B5; font-size:14px; margin-top:0; line-height:1.5; }
+  input{
+    width:100%;
+    box-sizing:border-box;
+    background:#262F40;
+    border:1px solid #3A4457;
+    color:#EDE6D6;
+    padding:12px;
+    border-radius:8px;
+    font-size:15px;
+    margin-bottom:12px;
+  }
+  button{
+    background:#C9A227;
+    color:#151B26;
+    border:none;
+    padding:12px 20px;
+    border-radius:8px;
+    font-weight:700;
+    font-size:15px;
+    cursor:pointer;
+    width:100%;
+  }
+  button:disabled{ opacity:0.6; cursor:default; }
+  .result{
+    margin-top:20px;
+    padding:14px 16px;
+    border-radius:10px;
+    font-size:14px;
+    line-height:1.5;
+    display:none;
+  }
+  .result.success{ background:rgba(201,162,39,0.12); border:1px solid #C9A227; }
+  .result.error{ background:rgba(178,76,59,0.14); border:1px solid rgba(178,76,59,0.4); color:#E8B9AF; }
+  .code{
+    font-family:monospace;
+    font-size:18px;
+    font-weight:700;
+    color:#E0BB3D;
+    word-break:break-all;
+    margin-top:8px;
+  }
+</style>
+</head>
+<body>
+  <h1>Payment Recovery</h1>
+  <p class="sub">If someone genuinely paid but never received their access code (e.g. their browser closed before the confirmation screen), enter their PayMongo Payment ID below to look it up and issue their real code. Find the Payment ID on PayMongo's own receipt screen, or in your PayMongo Dashboard → Billing → transaction list. It starts with <code>pay_</code>.</p>
+
+  <input type="text" id="paymentIdInput" placeholder="pay_XXXXXXXXXXXXXXXXXXXXXX">
+  <button id="recoverBtn">Look up and recover code</button>
+
+  <div class="result" id="resultBox"></div>
+
+  <script>
+    const input = document.getElementById('paymentIdInput');
+    const btn = document.getElementById('recoverBtn');
+    const resultBox = document.getElementById('resultBox');
+
+    btn.addEventListener('click', async () => {
+      const paymentId = input.value.trim();
+      resultBox.style.display = 'none';
+      if (!paymentId) return;
+
+      btn.disabled = true;
+      btn.textContent = 'Checking…';
+
+      try {
+        const res = await fetch('/.netlify/functions/verify-payment-by-id', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ payment_id: paymentId })
+        });
+        const data = await res.json().catch(() => ({}));
+
+        if (!res.ok) {
+          resultBox.className = 'result error';
+          resultBox.textContent = data.error || 'Could not recover a code for that Payment ID.';
+        } else {
+          resultBox.className = 'result success';
+          resultBox.innerHTML = (data.alreadyRecovered
+            ? 'This payment was already recovered before. Here is the same code again:'
+            : 'Payment confirmed! Here is the access code:')
+            + '<div class="code">' + data.code + '</div>';
+        }
+        resultBox.style.display = 'block';
+      } catch (err) {
+        resultBox.className = 'result error';
+        resultBox.textContent = 'Something went wrong. Please try again.';
+        resultBox.style.display = 'block';
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Look up and recover code';
+      }
+    });
+  </script>
+</body>
+</html>

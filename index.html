@@ -1,0 +1,3758 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ScitechLectureTool — Recorder, Transcriber &amp; Translator</title>
+<meta name="description" content="Record, transcribe, and translate lectures — built for students and teachers.">
+<meta name="theme-color" content="#151B26">
+<link rel="manifest" href="/manifest.json">
+<link rel="icon" type="image/png" sizes="32x32" href="/icon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/icon-16.png">
+<link rel="apple-touch-icon" sizes="180x180" href="/icon-180.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#1C2331;
+    --ink-deep:#151B26;
+    --surface:#262F40;
+    --surface-line:#3A4457;
+    --paper:#F3ECDD;
+    --paper-line:#DCD0B4;
+    --gold:#C9A227;
+    --gold-bright:#E0BB3D;
+    --ember:#B24C3B;
+    --ember-bright:#C85F4D;
+    --text:#EDE6D6;
+    --text-muted:#9AA3B5;
+    --ink-on-paper:#2A2013;
+    --ink-on-paper-muted:#6B5E45;
+    --link-warm:#D9BE83;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--ink);
+    color:var(--text);
+    font-family:'Inter',sans-serif;
+    min-height:100vh;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+  }
+  .shell{
+    width:100%;
+    max-width:520px;
+    min-height:100vh;
+    display:flex;
+    flex-direction:column;
+    padding:24px 20px 60px;
+  }
+  header{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    padding:8px 4px 32px;
+  }
+  .brand{
+    font-family:'Source Serif 4',serif;
+    font-size:20px;
+    font-weight:600;
+    letter-spacing:0.01em;
+    color:var(--text);
+    line-height:1.2;
+  }
+  .brand-tagline{
+    font-family:'Inter',sans-serif;
+    font-size:11px;
+    font-weight:500;
+    letter-spacing:0.03em;
+    text-transform:uppercase;
+    color:var(--text-muted);
+    margin-top:2px;
+  }
+  .gear-btn{
+    background:none;
+    border:none;
+    color:var(--text-muted);
+    cursor:pointer;
+    padding:8px;
+    border-radius:8px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    transition:background 0.15s, color 0.15s;
+  }
+  .gear-btn:hover{ background:var(--surface); color:var(--text); }
+  .gear-btn:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visible{
+    outline:2px solid var(--gold);
+    outline-offset:2px;
+  }
+  .header-actions{
+    display:flex;
+    align-items:flex-start;
+    gap:6px;
+  }
+  .icon-with-label{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:2px;
+  }
+  .icon-label{
+    font-size:10px;
+    font-weight:500;
+    letter-spacing:0.02em;
+    color:var(--text-muted);
+  }
+
+  main{
+    flex:1;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+  }
+
+  /* ---- Record stage ---- */
+  .record-stage{
+    flex:1;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    gap:28px;
+    width:100%;
+    padding:20px 0 40px;
+  }
+  .record-btn{
+    width:148px;
+    height:148px;
+    border-radius:50%;
+    border:none;
+    background:radial-gradient(circle at 35% 30%, var(--gold-bright), var(--gold));
+    box-shadow:0 0 0 8px rgba(201,162,39,0.12);
+    cursor:pointer;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    transition:transform 0.15s ease, box-shadow 0.3s ease;
+    position:relative;
+  }
+  .record-btn:hover{ transform:scale(1.03); }
+  .record-btn:active{ transform:scale(0.97); }
+  .record-btn.recording{
+    background:radial-gradient(circle at 35% 30%, var(--ember-bright), var(--ember));
+    animation:breathe 2.6s ease-in-out infinite;
+  }
+  @keyframes breathe{
+    0%,100%{ box-shadow:0 0 0 8px rgba(178,76,59,0.16); }
+    50%{ box-shadow:0 0 0 18px rgba(178,76,59,0.06); }
+  }
+  @media (prefers-reduced-motion: reduce){
+    .record-btn.recording{ animation:none; }
+  }
+  .record-icon{
+    width:40px;
+    height:40px;
+    border-radius:8px;
+    background:var(--ink-deep);
+  }
+  .record-btn.recording .record-icon{
+    border-radius:50%;
+    width:36px;
+    height:36px;
+    background:var(--ink-deep);
+  }
+  .record-btn.needs-attention{
+    animation:nudge-glow 1.8s ease-in-out infinite;
+  }
+  @keyframes nudge-glow{
+    0%,100%{ box-shadow:0 0 0 8px rgba(201,162,39,0.12); }
+    50%{ box-shadow:0 0 0 20px rgba(201,162,39,0.30); }
+  }
+  @media (prefers-reduced-motion: reduce){
+    .record-btn.needs-attention{ animation:none; }
+  }
+  .record-again-btn{
+    background:radial-gradient(circle at 35% 30%, var(--gold-bright), var(--gold));
+    color:var(--ink-deep);
+    border:none;
+    font-family:'Inter',sans-serif;
+    font-weight:700;
+    font-size:15px;
+    padding:14px 18px;
+    border-radius:12px;
+    cursor:pointer;
+    margin-top:4px;
+    transition:transform 0.15s ease;
+  }
+  .record-again-btn:hover{ transform:scale(1.02); }
+  .record-again-btn:active{ transform:scale(0.97); }
+  .record-label{
+    font-size:15px;
+    color:var(--text-muted);
+    letter-spacing:0.02em;
+  }
+  .timer{
+    font-family:'Source Serif 4',serif;
+    font-size:34px;
+    font-variant-numeric:tabular-nums;
+    color:var(--text);
+    min-height:44px;
+  }
+  .hint{
+    font-size:13px;
+    color:var(--text-muted);
+    text-align:center;
+    max-width:280px;
+    line-height:1.5;
+  }
+
+  /* ---- Home page ---- */
+  .home-view{
+    flex:1;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    gap:48px;
+    width:100%;
+    padding:20px 0 40px;
+  }
+  .home-logo{ width:120px; height:120px; }
+  .home-buttons{
+    display:flex;
+    gap:36px;
+  }
+  .home-icon-btn{
+    background:none;
+    border:none;
+    color:var(--text);
+    cursor:pointer;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:10px;
+    padding:4px;
+  }
+  .home-icon-circle{
+    width:84px;
+    height:84px;
+    border-radius:50%;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background:radial-gradient(circle at 35% 30%, var(--gold-bright), var(--gold));
+    box-shadow:0 0 0 8px rgba(201,162,39,0.12);
+    transition:transform 0.15s ease;
+  }
+  .home-icon-btn:hover .home-icon-circle{ transform:scale(1.05); }
+  .home-icon-btn:active .home-icon-circle{ transform:scale(0.96); }
+  .home-icon-btn:disabled{ cursor:default; opacity:0.4; }
+  .home-icon-btn:disabled .home-icon-circle{
+    background:var(--surface);
+    box-shadow:none;
+  }
+  .home-icon-btn:disabled:hover .home-icon-circle{ transform:none; }
+  .home-icon-label{
+    font-size:13px;
+    font-weight:600;
+    letter-spacing:0.03em;
+    text-transform:uppercase;
+    color:var(--text-muted);
+  }
+  .home-icon-circle.home-record-only{
+    width:160px;
+    height:160px;
+   background:linear-gradient(135deg, #2FDB74, #0FAE55);
+    box-shadow:0 0 0 10px rgba(15,174,85,0.18);
+  }
+  .home-icon-btn .home-icon-label{
+    margin-top:4px;
+  }
+
+  .home-triangle{
+    position:relative;
+    width:300px;
+    height:340px;
+    margin:0 auto;
+  }
+  .home-mic-wrap{
+    position:absolute;
+    top:0;
+    left:50%;
+    transform:translateX(-50%);
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:8px;
+  }
+  .home-mic-circle{
+    width:92px;
+    height:92px;
+    border-radius:50%;
+    background:radial-gradient(circle at 35% 30%, #7CC24A, #4F8A2E);
+    box-shadow:0 0 0 8px rgba(95,161,59,0.14);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
+  .home-mic-label{
+    font-size:13px;
+    font-weight:600;
+    letter-spacing:0.03em;
+    text-transform:uppercase;
+    color:var(--text-muted);
+  }
+  .home-roof-wrap{
+    position:absolute;
+    top:132px;
+    left:50%;
+    transform:translateX(-50%);
+  }
+  .home-roof{
+    animation:roof-glow 2.6s ease-in-out infinite;
+  }
+  @keyframes roof-glow{
+    0%,100%{ filter:drop-shadow(0 0 4px rgba(243,236,221,0.3)); opacity:0.88; }
+    50%{ filter:drop-shadow(0 0 16px rgba(243,236,221,0.75)); opacity:1; }
+  }
+  @media (prefers-reduced-motion: reduce){
+    .home-roof{ animation:none; }
+  }
+  .home-corner-left{
+    position:absolute;
+    bottom:0;
+    left:6px;
+  }
+  .home-corner-right{
+    position:absolute;
+    bottom:0;
+    right:6px;
+  }
+  .home-icon-circle.stop-variant{
+    position:relative;
+    overflow:hidden;
+    background:radial-gradient(circle at 32% 28%, rgba(255,140,124,0.97) 0%, rgba(230,57,70,0.94) 55%, rgba(150,26,38,0.96) 100%);
+    box-shadow:0 0 0 5px var(--paper), 0 0 0 13px rgba(230,57,70,0.28);
+  }
+  .home-icon-circle.stop-variant::after{
+    content:'';
+    position:absolute;
+    top:10%;
+    left:16%;
+    width:42%;
+    height:26%;
+    background:radial-gradient(ellipse at center, rgba(255,255,255,0.65), rgba(255,255,255,0) 72%);
+    border-radius:50%;
+    pointer-events:none;
+  }
+  .home-icon-btn:disabled .home-icon-circle.stop-variant{
+    background:radial-gradient(circle at 32% 28%, rgba(255,140,124,0.75) 0%, rgba(230,57,70,0.7) 55%, rgba(150,26,38,0.75) 100%);
+    box-shadow:0 0 0 5px rgba(243,236,221,0.55);
+    opacity:0.75;
+  }
+
+  /* ---- Idle "waiting to record" blink (Recording page) ---- */
+  .record-btn.idle-blink{
+    animation:idle-pulse 2.2s ease-in-out infinite;
+  }
+  @keyframes idle-pulse{
+    0%,100%{ box-shadow:0 0 0 8px rgba(201,162,39,0.10); opacity:1; }
+    50%{ box-shadow:0 0 0 22px rgba(201,162,39,0.24); opacity:0.85; }
+  }
+  @media (prefers-reduced-motion: reduce){
+    .record-btn.idle-blink{ animation:none; }
+  }
+
+  /* ---- Live equalizer while recording ---- */
+  .equalizer{
+    display:flex;
+    align-items:flex-end;
+    justify-content:center;
+    gap:6px;
+    height:40px;
+  }
+  .equalizer span{
+    display:block;
+    width:6px;
+    height:8px;
+    border-radius:3px;
+    background:var(--gold-bright);
+    transition:height 0.08s linear;
+  }
+  .equalizer.paused span{ background:var(--text-muted); }
+
+  .stop-btn{
+    background:none;
+    border:1px solid var(--surface-line);
+    color:var(--ember-bright);
+    font-family:'Inter',sans-serif;
+    font-size:13px;
+    padding:7px 18px;
+    border-radius:20px;
+    cursor:pointer;
+    transition:border-color 0.15s, color 0.15s;
+  }
+  .stop-btn:hover{ border-color:var(--ember); }
+
+  /* ---- Save toast ---- */
+  .save-toast{
+    position:fixed;
+    left:50%;
+    bottom:28px;
+    transform:translateX(-50%) translateY(0);
+    background:var(--surface);
+    border:1px solid var(--gold);
+    color:var(--text);
+    padding:12px 20px;
+    border-radius:20px;
+    font-size:14px;
+    box-shadow:0 6px 20px rgba(0,0,0,0.3);
+    z-index:50;
+    opacity:0;
+    pointer-events:none;
+    transition:opacity 0.25s ease;
+  }
+  .save-toast.show{ opacity:1; }
+
+  /* ---- Settings ---- */
+  .settings-list{
+    display:flex;
+    flex-direction:column;
+    gap:2px;
+  }
+  .settings-item{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    padding:16px 4px;
+    border-bottom:1px solid var(--surface-line);
+    font-size:15px;
+  }
+  .settings-item:last-child{ border-bottom:none; }
+
+  /* ---- Status / processing ---- */
+  .status-row{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    color:var(--text-muted);
+    font-size:14px;
+  }
+  .spinner{
+    width:16px;
+    height:16px;
+    border-radius:50%;
+    border:2px solid var(--surface-line);
+    border-top-color:var(--gold);
+    animation:spin 0.8s linear infinite;
+  }
+  @keyframes spin{ to{ transform:rotate(360deg); } }
+
+  .error-box{
+    background:rgba(178,76,59,0.14);
+    border:1px solid rgba(178,76,59,0.4);
+    color:#E8B9AF;
+    padding:14px 16px;
+    border-radius:10px;
+    font-size:14px;
+    line-height:1.5;
+    width:100%;
+  }
+
+  /* ---- Results ---- */
+  .results{
+    width:100%;
+    display:flex;
+    flex-direction:column;
+    gap:18px;
+    padding-top:8px;
+  }
+  .result-meta{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+  }
+  .result-meta .date{
+    font-size:13px;
+    color:var(--text-muted);
+  }
+  .new-recording-btn{
+    background:none;
+    border:1px solid var(--surface-line);
+    color:var(--text-muted);
+    font-family:'Inter',sans-serif;
+    font-size:13px;
+    padding:7px 14px;
+    border-radius:20px;
+    cursor:pointer;
+    transition:border-color 0.15s, color 0.15s;
+  }
+  .new-recording-btn:hover{ border-color:var(--gold); color:var(--gold-bright); }
+
+  .pause-btn{
+    background:none;
+    border:1px solid var(--surface-line);
+    color:var(--text-muted);
+    font-family:'Inter',sans-serif;
+    font-size:13px;
+    padding:7px 18px;
+    border-radius:20px;
+    cursor:pointer;
+    transition:border-color 0.15s, color 0.15s;
+  }
+  .pause-btn:hover{ border-color:var(--gold); color:var(--gold-bright); }
+  .pause-btn.is-paused{ border-color:var(--ember); color:var(--ember-bright); }
+  .pause-stop-row{
+    display:flex;
+    gap:12px;
+    margin-top:-8px;
+  }
+
+  .player-row{
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
+  .player-row audio{ flex:1; min-width:0; }
+  .player-row.wrap{ flex-wrap:wrap; row-gap:8px; }
+  .seek-bar{
+    flex:1;
+    min-width:60px;
+    accent-color:var(--gold);
+    cursor:pointer;
+  }
+  .skip-btn{
+    background:var(--surface);
+    border:1px solid var(--surface-line);
+    color:var(--text);
+    font-family:'Inter',sans-serif;
+    font-size:12px;
+    font-weight:600;
+    padding:8px 10px;
+    border-radius:10px;
+    cursor:pointer;
+    white-space:nowrap;
+    transition:border-color 0.15s, color 0.15s;
+  }
+  .skip-btn:hover{ border-color:var(--gold); color:var(--gold-bright); }
+
+  .upload-btn{
+    background:none;
+    border:none;
+    color:var(--text-muted);
+    font-family:'Inter',sans-serif;
+    font-size:13px;
+    text-decoration:underline;
+    cursor:pointer;
+    margin-top:4px;
+  }
+  .upload-btn:hover{ color:var(--gold-bright); }
+
+  .header-actions{
+    display:flex;
+    gap:4px;
+  }
+
+  .library{
+    display:flex;
+    flex-direction:column;
+    gap:16px;
+  }
+  .library-item{
+    background:var(--surface);
+    border:1px solid var(--surface-line);
+    border-radius:12px;
+    padding:16px;
+    cursor:pointer;
+    transition:border-color 0.15s;
+  }
+  .library-item:hover{ border-color:var(--gold); }
+  .library-item .lib-date{
+    font-size:12px;
+    color:var(--text-muted);
+    margin-bottom:6px;
+  }
+  .library-item .lib-takeaway{
+    font-size:14px;
+    line-height:1.5;
+    color:var(--text);
+    display:-webkit-box;
+    -webkit-line-clamp:2;
+    -webkit-box-orient:vertical;
+    overflow:hidden;
+  }
+  .library-item .lib-delete{
+    float:right;
+    background:none;
+    border:none;
+    color:var(--text-muted);
+    font-size:12px;
+    cursor:pointer;
+    text-decoration:underline;
+  }
+  .library-item .lib-delete:hover{ color:var(--ember-bright); }
+  .lib-actions{
+    float:right;
+    display:flex;
+    gap:12px;
+    margin-left:12px;
+  }
+  .lib-actions button{
+    background:none;
+    border:none;
+    color:var(--text-muted);
+    font-size:12px;
+    cursor:pointer;
+    text-decoration:underline;
+    padding:0;
+    font-family:'Inter',sans-serif;
+  }
+  .lib-actions button:hover{ color:var(--gold-bright); }
+  .lib-actions button.danger:hover{ color:var(--ember-bright); }
+  .lib-menu-wrap{
+    float:right;
+    position:relative;
+    margin-left:12px;
+  }
+  .lib-menu-toggle{
+    background:none;
+    border:1px solid var(--surface-line);
+    color:var(--text-muted);
+    border-radius:8px;
+    width:30px;
+    height:28px;
+    font-size:16px;
+    line-height:1;
+    cursor:pointer;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    transition:border-color 0.15s, color 0.15s;
+  }
+  .lib-menu-toggle:hover{ border-color:var(--gold); color:var(--gold-bright); }
+  .lib-menu-panel{
+    position:absolute;
+    top:34px;
+    right:0;
+    background:var(--surface);
+    border:1px solid var(--surface-line);
+    border-radius:10px;
+    box-shadow:0 8px 24px rgba(0,0,0,0.4);
+    min-width:150px;
+    z-index:8;
+    display:none;
+    flex-direction:column;
+    overflow:hidden;
+  }
+  .lib-menu-panel.open{ display:flex; }
+  .lib-menu-panel button{
+    background:none;
+    border:none;
+    color:var(--text);
+    font-family:'Inter',sans-serif;
+    font-size:13px;
+    text-align:left;
+    padding:10px 14px;
+    cursor:pointer;
+    display:flex;
+    align-items:center;
+    gap:8px;
+    white-space:nowrap;
+  }
+  .lib-menu-panel button:hover{ background:var(--ink-deep); color:var(--gold-bright); }
+  .lib-menu-panel button.danger:hover{ color:var(--ember-bright); }
+  .lib-title{
+    font-weight:600;
+    color:var(--text);
+  }
+  .comic-picker{
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+  }
+  .comic-story-btn{
+    background:var(--surface);
+    border:1px solid var(--surface-line);
+    color:var(--text);
+    font-family:'Inter',sans-serif;
+    font-size:15px;
+    text-align:left;
+    padding:14px 16px;
+    border-radius:12px;
+    cursor:pointer;
+    display:flex;
+    align-items:center;
+    gap:10px;
+    transition:border-color 0.15s;
+  }
+  .comic-story-btn:hover{ border-color:var(--gold); }
+  .comic-panel-stage{
+    display:flex;
+    flex-direction:column;
+    gap:16px;
+    align-items:center;
+  }
+  .comic-panel-img{
+    width:100%;
+    max-width:420px;
+    aspect-ratio:1/1;
+    object-fit:cover;
+    border-radius:12px;
+    border:1px solid var(--surface-line);
+    background:var(--surface);
+    opacity:0;
+    transition:opacity 0.4s ease;
+  }
+  .comic-panel-img.loaded{ opacity:1; }
+  .comic-caption{
+    width:100%;
+    box-sizing:border-box;
+    opacity:0;
+    transform:translateY(6px);
+    transition:opacity 0.4s ease, transform 0.4s ease;
+  }
+  .comic-caption.loaded{ opacity:1; transform:translateY(0); }
+  .comic-nav{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    width:100%;
+    max-width:420px;
+    margin:14px auto 0;
+  }
+  .comic-nav .hint{ max-width:none; }
+
+  .library-search{
+    width:100%;
+    box-sizing:border-box;
+    background:var(--surface);
+    border:1px solid var(--surface-line);
+    border-radius:12px;
+    padding:12px 14px;
+    color:var(--text);
+    font-family:'Inter',sans-serif;
+    font-size:15px;
+    margin-bottom:16px;
+  }
+  .library-search::placeholder{ color:var(--text-muted); }
+  .library-search:focus{ outline:none; border-color:var(--gold); }
+
+  .paper-card{
+    background:var(--paper);
+    color:var(--ink-on-paper);
+    border-radius:6px;
+    padding:28px 26px;
+    box-shadow:0 12px 30px rgba(0,0,0,0.28);
+  }
+  .paper-card .eyebrow{
+    font-size:12px;
+    color:var(--ink-on-paper-muted);
+    margin-bottom:10px;
+    font-weight:600;
+  }
+  .takeaway-text{
+    font-family:'Source Serif 4',serif;
+    font-size:19px;
+    line-height:1.55;
+    font-style:italic;
+  }
+  .divider{
+    height:1px;
+    background:var(--paper-line);
+    margin:22px 0;
+  }
+  .bullets{
+    list-style:none;
+    margin:0;
+    padding:0;
+    display:flex;
+    flex-direction:column;
+    gap:12px;
+  }
+  .bullets li{
+    display:flex;
+    gap:10px;
+    font-size:15px;
+    line-height:1.5;
+  }
+  .bullets li::before{
+    content:'—';
+    color:var(--ink-on-paper-muted);
+    flex-shrink:0;
+  }
+
+  .transcript-toggle{
+    background:none;
+    border:none;
+    color:var(--text-muted);
+    font-family:'Inter',sans-serif;
+    font-size:14px;
+    cursor:pointer;
+    padding:10px 2px;
+    text-align:left;
+    text-decoration:underline;
+    text-underline-offset:3px;
+  }
+  .transcript-toggle:hover{ color:var(--text); }
+  .translate-row{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    flex-wrap:wrap;
+    margin:0 0 14px;
+  }
+  .translate-btn{
+    background:none;
+    border:1px solid var(--gold);
+    color:var(--gold-bright);
+    border-radius:10px;
+    padding:6px 14px;
+    font-size:13px;
+    font-family:'Inter',sans-serif;
+    cursor:pointer;
+  }
+  .translate-btn:disabled{ opacity:0.6; cursor:default; }
+  .translate-note{
+    font-size:12px;
+    color:var(--text-muted);
+  }
+  .lang-select{
+    background:var(--surface);
+    border:1px solid var(--surface-line);
+    border-radius:10px;
+    padding:6px 10px;
+    color:var(--text);
+    font-size:13px;
+    font-family:'Inter',sans-serif;
+  }
+  .premium-note{
+    background:rgba(201,162,39,0.12);
+    border:1px solid var(--gold);
+    color:var(--text);
+    padding:12px 14px;
+    border-radius:10px;
+    font-size:13px;
+    line-height:1.5;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:12px;
+    flex-wrap:wrap;
+    margin:-4px 0 14px;
+  }
+  .premium-note .unlock-btn{
+    background:none;
+    border:1px solid var(--gold);
+    color:var(--gold-bright);
+    border-radius:8px;
+    padding:6px 12px;
+    font-size:12px;
+    font-weight:600;
+    font-family:'Inter',sans-serif;
+    cursor:pointer;
+    white-space:nowrap;
+  }
+  .premium-note .unlock-btn:hover{ background:rgba(201,162,39,0.18); }
+  .settings-item.clickable{ cursor:pointer; }
+  .settings-item.clickable:hover{ background:rgba(255,255,255,0.03); }
+  .settings-item .chevron{ color:var(--gold-bright); }
+  .settings-item.feature-row{
+    border-bottom:none;
+    border-left:3px solid var(--accent, var(--gold));
+    background:var(--surface);
+    border-radius:8px;
+    padding:12px 14px;
+    margin-bottom:8px;
+    color:var(--text);
+  }
+  .concordance-intro{
+    font-size:13px;
+    color:var(--text-muted);
+    margin:0 0 14px;
+    line-height:1.6;
+  }
+  .concordance-result{
+    display:flex;
+    gap:12px;
+    padding:0 0 14px;
+    margin-bottom:14px;
+    border-bottom:1px solid var(--surface-line);
+  }
+  .concordance-result:last-child{ border-bottom:none; margin-bottom:0; }
+  .concordance-result .num{
+    font-family:'Source Serif 4',serif;
+    font-weight:600;
+    color:var(--gold-bright);
+    font-size:14px;
+    min-width:20px;
+    flex-shrink:0;
+  }
+  .concordance-result .body{ flex:1; min-width:0; }
+  .concordance-result .ref{
+    font-family:'Source Serif 4',serif;
+    font-weight:600;
+    color:var(--gold-bright);
+    font-size:14px;
+    margin-bottom:4px;
+  }
+  .concordance-result .note{
+    font-size:13px;
+    color:var(--text);
+    line-height:1.5;
+  }
+  .linked-term{
+    color:var(--link-warm);
+    text-decoration:underline;
+    text-underline-offset:2px;
+    cursor:pointer;
+  }
+  .linked-term:hover{ color:var(--gold-bright); }
+  .related-topics{
+    margin-top:6px;
+    padding-top:14px;
+    border-top:1px solid var(--surface-line);
+  }
+  .related-topics-top{
+    margin:0 0 18px;
+    padding:12px 14px;
+    border:1px solid var(--paper-line);
+    border-radius:12px;
+    background:rgba(220,208,180,0.06);
+  }
+  .related-topics .label{
+    font-size:11px;
+    text-transform:uppercase;
+    letter-spacing:0.05em;
+    color:var(--text-muted);
+    margin-bottom:8px;
+  }
+  .related-topics .chips{
+    display:flex;
+    flex-wrap:wrap;
+    gap:8px;
+  }
+  .related-topics .chip{
+    background:var(--surface);
+    border:1px solid var(--paper-line);
+    color:var(--link-warm);
+    font-size:13px;
+    padding:6px 12px;
+    border-radius:16px;
+    cursor:pointer;
+  }
+  .related-topics .chip:hover{ border-color:var(--gold); color:var(--gold-bright); background:rgba(201,162,39,0.12); }
+  .quiz-question{
+    border:1px solid var(--surface-line);
+    border-radius:12px;
+    padding:14px 16px;
+    margin-bottom:12px;
+  }
+  .quiz-question .q-num{
+    font-family:'Source Serif 4',serif;
+    font-weight:600;
+    color:var(--gold-bright);
+    font-size:14px;
+    margin-bottom:6px;
+  }
+  .quiz-question .q-text{
+    font-size:14px;
+    color:var(--text);
+    line-height:1.5;
+    margin-bottom:8px;
+  }
+  .quiz-question .q-options{
+    list-style:none;
+    margin:0 0 8px;
+    padding:0;
+    display:flex;
+    flex-direction:column;
+    gap:4px;
+  }
+  .quiz-question .q-options li{
+    font-size:13px;
+    color:var(--text-muted);
+  }
+  .quiz-question .q-answer{
+    font-size:13px;
+    color:#3fbf72;
+    font-weight:600;
+  }
+  .transcript-box{
+    background:var(--surface);
+    border:1px solid var(--surface-line);
+    border-radius:10px;
+    padding:18px;
+    font-size:14px;
+    line-height:1.6;
+    color:var(--text-muted);
+    max-height:320px;
+    overflow-y:auto;
+    white-space:pre-wrap;
+  }
+  audio{ width:100%; }
+
+  /* ---- Settings modal ---- */
+  .modal-backdrop{
+    position:fixed;
+    inset:0;
+    background:rgba(10,13,20,0.6);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:20px;
+    z-index:10;
+  }
+  .modal{
+    background:var(--surface);
+    border:1px solid var(--surface-line);
+    border-radius:14px;
+    padding:28px;
+    width:100%;
+    max-width:420px;
+    max-height:88vh;
+    overflow-y:auto;
+  }
+  .modal h2{
+    font-family:'Source Serif 4',serif;
+    font-size:22px;
+    margin:0 0 6px;
+    font-weight:600;
+  }
+  .modal p.sub{
+    color:var(--text-muted);
+    font-size:13px;
+    margin:0 0 22px;
+    line-height:1.5;
+  }
+  .field{
+    margin-bottom:18px;
+  }
+  .field label{
+    display:block;
+    font-size:13px;
+    color:var(--text-muted);
+    margin-bottom:6px;
+  }
+  .field input{
+    width:100%;
+    background:var(--ink-deep);
+    border:1px solid var(--surface-line);
+    color:var(--text);
+    padding:11px 12px;
+    border-radius:8px;
+    font-family:'Inter',sans-serif;
+    font-size:14px;
+  }
+  .modal-actions{
+    display:flex;
+    gap:10px;
+    margin-top:8px;
+  }
+  .btn-primary{
+    flex:1;
+    background:var(--gold);
+    color:var(--ink-deep);
+    border:none;
+    padding:12px;
+    border-radius:8px;
+    font-family:'Inter',sans-serif;
+    font-weight:600;
+    font-size:14px;
+    cursor:pointer;
+  }
+  .btn-primary:hover{ background:var(--gold-bright); }
+  .btn-secondary{
+    background:none;
+    border:1px solid var(--surface-line);
+    color:var(--text-muted);
+    padding:12px 16px;
+    border-radius:8px;
+    font-family:'Inter',sans-serif;
+    font-size:14px;
+    cursor:pointer;
+  }
+  .btn-secondary:hover{ color:var(--text); border-color:var(--text-muted); }
+
+  .keys-note{
+    font-size:12px;
+    color:var(--text-muted);
+    line-height:1.5;
+    background:var(--ink-deep);
+    border-radius:8px;
+    padding:12px 14px;
+    margin-top:4px;
+  }
+  .keys-note a{ color:var(--gold-bright); }
+
+  .visually-hidden{
+    position:absolute;
+    width:1px;height:1px;
+    overflow:hidden;
+    clip:rect(0,0,0,0);
+  }
+
+  /* ---- Paywall ---- */
+  .paywall{
+    display:flex;
+    flex-direction:column;
+    gap:20px;
+  }
+  .paywall-hero{
+    text-align:center;
+    padding:8px 4px 4px;
+  }
+  .paywall-badge{
+    font-size:28px;
+    margin-bottom:6px;
+  }
+  .paywall-title{
+    font-family:'Source Serif 4',serif;
+    font-size:24px;
+    font-weight:600;
+    color:var(--gold-bright);
+    margin:0 0 6px;
+  }
+  .paywall-sub{
+    font-size:14px;
+    color:var(--text-muted);
+    line-height:1.5;
+    margin:0;
+  }
+  .founding-banner{
+    background:rgba(201,162,39,0.12);
+    border:1px solid var(--gold);
+    color:var(--gold-bright);
+    text-align:center;
+    padding:10px 14px;
+    border-radius:12px;
+    font-size:13px;
+    font-weight:600;
+    line-height:1.4;
+  }
+  .feature-list{
+    list-style:none;
+    margin:0;
+    padding:0;
+    display:flex;
+    flex-direction:column;
+    gap:14px;
+  }
+  .feature-list li{
+    display:flex;
+    align-items:flex-start;
+    gap:12px;
+    font-size:15px;
+    line-height:1.4;
+  }
+  .feature-list .check{
+    color:var(--gold-bright);
+    font-size:16px;
+    flex-shrink:0;
+    margin-top:1px;
+  }
+  .feature-list .soon, .settings-item .soon{
+    display:inline-block;
+    font-size:11px;
+    color:var(--text-muted);
+    border:1px solid var(--surface-line);
+    border-radius:10px;
+    padding:1px 8px;
+    margin-left:8px;
+  }
+  .price-tag{
+    text-align:center;
+    padding:6px 0 2px;
+  }
+  .price-tag .amount{
+    font-family:'Source Serif 4',serif;
+    font-size:36px;
+    font-weight:600;
+    color:var(--text);
+  }
+  .price-tag .amount span{
+    font-size:15px;
+    color:var(--text-muted);
+    font-weight:400;
+    margin-left:4px;
+  }
+  .price-tag .note{
+    font-size:12px;
+    color:var(--text-muted);
+    margin-top:4px;
+  }
+  .subscribe-btn{
+    background:radial-gradient(circle at 35% 30%, var(--gold-bright), var(--gold));
+    color:var(--ink-deep);
+    border:none;
+    font-family:'Inter',sans-serif;
+    font-weight:700;
+    font-size:16px;
+    padding:16px 20px;
+    border-radius:14px;
+    cursor:pointer;
+    transition:transform 0.15s ease;
+  }
+  .subscribe-btn:hover{ transform:scale(1.01); }
+  .subscribe-btn:active{ transform:scale(0.98); }
+  .subscribe-btn:disabled{ opacity:0.6; cursor:default; transform:none; }
+  .paywall-fine{
+    text-align:center;
+    font-size:12px;
+    color:var(--text-muted);
+    line-height:1.5;
+  }
+  .paid-banner{
+    background:var(--surface);
+    border:1px solid var(--gold);
+    border-radius:12px;
+    padding:14px 16px;
+    font-size:14px;
+    line-height:1.5;
+    margin-bottom:20px;
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-start;
+    gap:12px;
+  }
+  .paid-banner button{
+    background:none;
+    border:none;
+    color:var(--text-muted);
+    cursor:pointer;
+    font-size:16px;
+    line-height:1;
+  }
+  .code-box{
+    background:var(--surface);
+    border:1px dashed var(--gold);
+    border-radius:12px;
+    padding:14px 16px;
+    text-align:center;
+    margin-top:10px;
+  }
+  .code-box .code-label{
+    font-size:12px;
+    color:var(--text-muted);
+    margin-bottom:6px;
+  }
+  .code-box .code-value{
+    font-family:'Source Serif 4',serif;
+    font-size:19px;
+    font-weight:600;
+    letter-spacing:0.5px;
+    color:var(--gold-bright);
+    word-break:break-all;
+  }
+  .code-box .copy-code-btn{
+    display:block;
+    margin:10px auto 0;
+    background:none;
+    border:1px solid var(--gold);
+    color:var(--gold-bright);
+    border-radius:10px;
+    padding:6px 16px;
+    font-size:13px;
+    cursor:pointer;
+  }
+  .redeem-row{
+    display:flex;
+    gap:8px;
+    padding:14px 4px;
+    border-bottom:1px solid var(--surface-line);
+  }
+  .redeem-row input{
+    flex:1;
+    min-width:0;
+    background:var(--surface);
+    border:1px solid var(--surface-line);
+    border-radius:10px;
+    padding:10px 12px;
+    color:var(--text);
+    font-size:14px;
+    font-family:'Inter',sans-serif;
+  }
+  .redeem-row input::placeholder{ color:var(--text-muted); }
+  .redeem-row button{
+    background:var(--gold);
+    color:var(--ink-deep);
+    border:none;
+    border-radius:10px;
+    padding:0 16px;
+    font-weight:700;
+    font-family:'Inter',sans-serif;
+    cursor:pointer;
+    flex-shrink:0;
+  }
+  .redeem-row button:disabled{ opacity:0.6; cursor:default; }
+  .premium-badge{
+    font-size:12px;
+    padding:2px 10px;
+    border-radius:10px;
+  }
+  .premium-badge.unlocked{ color:#3fbf72; border:1px solid #3fbf72; }
+  .premium-badge.locked{ color:var(--text-muted); border:1px solid var(--surface-line); }
+  .family-code-item{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    padding:10px 0;
+    border-bottom:1px solid var(--surface-line);
+    flex-wrap:wrap;
+  }
+  .family-code-item:last-child{ border-bottom:none; }
+  .family-code-name{ font-weight:600; color:var(--text); }
+  .family-code-value{ font-family:monospace; font-size:12px; color:var(--text-muted); margin-top:2px; }
+  .family-code-right{ display:flex; align-items:center; gap:10px; }
+  .family-code-status{ font-size:12px; padding:2px 8px; border-radius:8px; white-space:nowrap; }
+  .family-code-status.active{ color:#3fbf72; border:1px solid #3fbf72; }
+  .family-code-status.revoked{ color:var(--text-muted); border:1px solid var(--surface-line); }
+  .promo-link{
+    background:none;
+    border:none;
+    color:var(--gold-bright);
+    font-family:'Inter',sans-serif;
+    font-size:13px;
+    text-decoration:underline;
+    cursor:pointer;
+    margin-top:10px;
+  }
+
+  /* ---- White-background pages: Library, Premium, Bible Concordance & Commentary ---- */
+  .page-white{
+    background:#FFFFFF;
+    color:#1C2331;
+    border-radius:16px;
+    padding:18px 16px 22px;
+    box-shadow:0 12px 30px rgba(0,0,0,0.16);
+  }
+  .page-white .result-meta .date{ color:#1C2331; }
+  .page-white .new-recording-btn{
+    border-color:#DADCE0;
+    color:#5B6472;
+  }
+  .page-white .new-recording-btn:hover{ border-color:#1a73e8; color:#1a73e8; }
+  .page-white .hint{ color:#5B6472; }
+  .page-white .library-search{
+    background:#F5F6F7;
+    border-color:#DADCE0;
+    color:#1C2331;
+  }
+  .page-white .library-search::placeholder{ color:#8A8F98; }
+  .page-white .library-search:focus{ border-color:#1a73e8; }
+  .page-white .error-box{
+    background:rgba(178,76,59,0.08);
+    border-color:rgba(178,76,59,0.35);
+    color:#8A3527;
+  }
+  .page-white .code-box{
+    background:#F5F6F7;
+    border-color:#1a73e8;
+  }
+  .page-white .code-box .code-label{ color:#5B6472; }
+  .page-white .code-box .code-value{ color:#1C2331; }
+  .page-white .code-box .copy-code-btn{
+    border-color:#1a73e8;
+    color:#1a73e8;
+  }
+
+  /* Library (past sermons) list items on white */
+  .page-white .library-item{
+    background:#F8F9FA;
+    border-color:#E3E5E8;
+  }
+  .page-white .library-item:hover{ border-color:#1a73e8; }
+  .page-white .library-item .lib-date{ color:#6B7280; }
+  .page-white .library-item .lib-takeaway{ color:#1C2331; }
+  .page-white .library-item .lib-delete{ color:#6B7280; }
+  .page-white .library-item .lib-delete:hover{ color:#B24C3B; }
+  .page-white .lib-actions button{ color:#6B7280; }
+  .page-white .lib-actions button:hover{ color:#1a73e8; }
+  .page-white .lib-actions button.danger:hover{ color:#B24C3B; }
+  .page-white .lib-menu-toggle{ border-color:#DADCE0; color:#6B7280; }
+  .page-white .lib-menu-toggle:hover{ border-color:#1a73e8; color:#1a73e8; }
+  .page-white .lib-menu-panel{
+    background:#FFFFFF;
+    border-color:#E3E5E8;
+    box-shadow:0 8px 24px rgba(0,0,0,0.12);
+  }
+  .page-white .lib-menu-panel button{ color:#1C2331; }
+  .page-white .lib-menu-panel button:hover{ background:#F5F6F7; color:#1a73e8; }
+  .page-white .lib-title{ color:#1C2331; }
+
+  /* Premium (paywall) page on white */
+  .paywall.page-white .paywall-title{ color:#1C2331; }
+  .paywall.page-white .paywall-sub{ color:#5B6472; }
+  .paywall.page-white .founding-banner{
+    background:rgba(26,115,232,0.08);
+    border-color:#1a73e8;
+    color:#1a4fa0;
+  }
+  .paywall.page-white .feature-list .check{ color:#1a73e8; }
+  .paywall.page-white .feature-list .soon{
+    color:#6B7280;
+    border-color:#DADCE0;
+  }
+  .paywall.page-white .price-tag .amount{ color:#1C2331; }
+  .paywall.page-white .price-tag .amount span{ color:#6B7280; }
+  .paywall.page-white .price-tag .note{ color:#6B7280; }
+  .paywall.page-white .paywall-fine{ color:#6B7280; }
+  .paywall.page-white .paid-banner{
+    background:#F5F6F7;
+    border-color:#1a73e8;
+    color:#1C2331;
+  }
+  .paywall.page-white .paid-banner button{ color:#6B7280; }
+
+  /* Bible Concordance & Bible Commentary research pages: white card + Google-style blue links */
+  .research-panel .concordance-intro{ color:#4B5563; }
+  .research-panel .concordance-result{ border-bottom-color:#E3E5E8; }
+  .research-panel .concordance-result .num{ color:#1C2331; }
+  .research-panel .concordance-result .ref{ color:#1C2331; }
+  .research-panel .concordance-result .note{ color:#374151; }
+  .research-panel .linked-term{
+    color:#1a73e8;
+    text-decoration:underline;
+    text-underline-offset:2px;
+  }
+  .research-panel .linked-term:hover{ color:#174EA6; }
+  .research-panel .related-topics{ border-top-color:#E3E5E8; }
+  .research-panel .related-topics-top{
+    border-color:#E3E5E8;
+    background:#F8F9FA;
+  }
+  .research-panel .related-topics .label{ color:#6B7280; }
+  .research-panel .related-topics .chip{
+    background:#F5F6F7;
+    border-color:#DADCE0;
+    color:#1a73e8;
+  }
+  .research-panel .related-topics .chip:hover{
+    border-color:#1a73e8;
+    color:#174EA6;
+    background:#EAF1FE;
+  }
+
+  /* LESSON PLAN GENERATOR */
+  .lesson-plan-form{ display:flex; flex-direction:column; gap:12px; margin-bottom:18px; }
+  .lesson-plan-field label{
+    display:block;
+    font-size:12px;
+    font-weight:600;
+    color:var(--text-muted);
+    margin-bottom:5px;
+  }
+  .lesson-plan-field input[type="text"],
+  .lesson-plan-field select{
+    width:100%;
+    background:var(--surface);
+    border:1px solid var(--surface-line);
+    border-radius:10px;
+    padding:10px 12px;
+    color:var(--text);
+    font-size:14px;
+    font-family:'Inter',sans-serif;
+  }
+  .lesson-plan-row2{ display:flex; gap:12px; }
+  .lesson-plan-row2 .lesson-plan-field{ flex:1; min-width:0; }
+  .lesson-plan-generate-btn{
+    background:var(--gold);
+    color:var(--ink-deep);
+    border:none;
+    border-radius:10px;
+    padding:12px 16px;
+    font-weight:700;
+    font-family:'Inter',sans-serif;
+    font-size:14px;
+    cursor:pointer;
+  }
+  .lesson-plan-generate-btn:disabled{ opacity:0.6; cursor:default; }
+  .lesson-plan-section{
+    padding:0 0 14px;
+    margin-bottom:14px;
+    border-bottom:1px solid var(--surface-line);
+  }
+  .lesson-plan-section:last-child{ border-bottom:none; margin-bottom:0; }
+  .lesson-plan-section .lp-title{
+    font-family:'Source Serif 4',serif;
+    font-weight:600;
+    color:var(--gold-bright);
+    font-size:14px;
+    margin-bottom:5px;
+  }
+  .lesson-plan-section .lp-body{
+    font-size:13px;
+    color:var(--text);
+    line-height:1.6;
+    white-space:pre-line;
+  }
+  .lesson-plan-section .lp-body ul{ margin:4px 0 4px 18px; padding:0; }
+  .lesson-plan-print-btn{
+    display:block;
+    margin:6px auto 0;
+    background:none;
+    border:1px solid var(--gold);
+    color:var(--gold-bright);
+    border-radius:10px;
+    padding:8px 18px;
+    font-size:13px;
+    cursor:pointer;
+  }
+  .page-white .lesson-plan-field input[type="text"],
+  .page-white .lesson-plan-field select{
+    background:#fff;
+    border:1px solid #DADCE0;
+    color:#1C2331;
+  }
+  .page-white .lesson-plan-section{ border-bottom-color:#E3E5E8; }
+  .page-white .lesson-plan-section .lp-title{ color:#1C2331; }
+  .page-white .lesson-plan-section .lp-body{ color:#374151; }
+  .page-white .lesson-plan-print-btn{
+    border-color:#1a73e8;
+    color:#1a73e8;
+  }
+</style>
+</head>
+<body>
+
+<div class="shell">
+  <header>
+    <div class="brand">
+      ScitechLectureTool
+      <div class="brand-tagline">Transcriber &amp; Translator</div>
+    </div>
+    <div class="header-actions">
+      <div class="icon-with-label">
+        <button class="gear-btn" id="homeBtn" aria-label="Home">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <path d="M3 11.5 12 4l9 7.5" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M5.5 10v9.5a1 1 0 0 0 1 1H17.5a1 1 0 0 0 1-1V10" stroke-linejoin="round"/>
+          </svg>
+        </button>
+        <span class="icon-label">Home</span>
+      </div>
+      <div class="icon-with-label">
+        <button class="gear-btn" id="paywallBtn" aria-label="Go Premium">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <path d="M12 2l2.6 6.2L21 9l-5 4.4L17.3 21 12 17.3 6.7 21 8 13.4 3 9l6.4-0.8z" stroke-linejoin="round"/>
+          </svg>
+        </button>
+        <span class="icon-label">Premium</span>
+      </div>
+      <div class="icon-with-label">
+        <button class="gear-btn" id="libraryBtn" aria-label="Library">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+            <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+          </svg>
+        </button>
+        <span class="icon-label">Library</span>
+      </div>
+      <div class="icon-with-label">
+        <button class="gear-btn" id="settingsBtn" aria-label="Settings">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <circle cx="12" cy="12" r="3"/>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15 1.65 1.65 0 0 0 3.17 14H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68 1.65 1.65 0 0 0 10 3.17V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.32 9c.14.31.22.65.22 1v.09c.66.12 1.19.64 1.31 1.3H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
+        <span class="icon-label">Settings</span>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <!-- HOME -->
+    <div class="home-view" id="homeView">
+      <button class="home-icon-btn" id="homeRecordBtn" aria-label="Record">
+        <span class="home-icon-circle home-record-only">
+               <svg width="96" height="96" viewBox="0 0 52 52" fill="none">
+            <rect x="15" y="0" width="22" height="33" rx="11" fill="#FFFFFF"/>
+            <path d="M9 22 A17 19 0 0 0 43 22" stroke="#FFFFFF" stroke-width="5" stroke-linecap="round" fill="none"/>
+            <line x1="26" y1="41" x2="26" y2="47" stroke="#FFFFFF" stroke-width="5" stroke-linecap="round"/>
+          </svg>
+        </span>
+        <span class="home-icon-label">Record</span>
+      </button>
+      <button class="home-icon-btn" id="homeStopBtn" aria-label="Stop" disabled style="display:none;">
+        <span class="home-icon-circle">
+          <svg width="30" height="30" viewBox="0 0 24 24" fill="var(--ink-deep)"><rect x="5" y="5" width="14" height="14" rx="2"/></svg>
+        </span>
+        <span class="home-icon-label">Stop</span>
+      </button>
+    </div>
+
+    <!-- SETTINGS -->
+    <div class="library" id="settingsView" style="display:none;">
+      <div class="result-meta">
+        <span class="date">Settings</span>
+        <button class="new-recording-btn" id="closeSettingsBtn">Close</button>
+      </div>
+      <div class="settings-list">
+        <div class="settings-item">
+          <span>⭐ Premium status</span>
+          <span class="premium-badge locked" id="premiumBadge">Not unlocked</span>
+        </div>
+        <div class="redeem-row">
+          <input type="text" id="redeemCodeInput" placeholder="Enter access code (e.g. SE-...)">
+          <button id="redeemCodeBtn">Unlock</button>
+        </div>
+        <div class="error-box" id="redeemError" style="display:none;"></div>
+        <div class="hint" id="myCodeHint" style="display:none;"></div>
+        <div id="familyCodesSection" style="display:none;">
+          <div class="hint">Create separate access codes for your students or family members — you can turn any of them off later.</div>
+          <div class="redeem-row">
+            <input type="text" id="familyLabelInput" placeholder="Student or family member's name (e.g. Juan)">
+            <button id="createFamilyCodeBtn">Create code</button>
+          </div>
+          <div class="error-box" id="familyCodeError" style="display:none;"></div>
+          <div id="familyCodesList"></div>
+        </div>
+        <div class="settings-item clickable feature-row" id="lessonPlanRow" style="--accent:#2E6B8C"><span>📝 Lesson Plan Generator</span><span class="chevron">→</span></div>
+      </div>
+      <div class="hint">Got an access code from a payment or from your teacher/family member? Enter it above to unlock Premium on this device. More features will appear here as they're built.</div>
+    </div>
+
+    <!-- LESSON PLAN GENERATOR -->
+    <div class="library page-white" id="lessonplanView" style="display:none;">
+      <div class="result-meta">
+        <span class="date">Lesson Plan Generator</span>
+        <button class="new-recording-btn" id="closeLessonPlanBtn">Close</button>
+      </div>
+      <div class="concordance-intro">Fill in your subject and topic, and this will draft a full DepEd-style Daily Lesson Log you can review, edit, and print. Works for any senior high subject — yours or a colleague's.</div>
+      <div class="lesson-plan-form">
+        <div class="lesson-plan-field">
+          <label for="lpSubjectInput">Subject</label>
+          <input type="text" id="lpSubjectInput" placeholder="e.g. Understanding Culture, Society and Politics">
+        </div>
+        <div class="lesson-plan-row2">
+          <div class="lesson-plan-field">
+            <label for="lpGradeSelect">Grade level</label>
+            <select id="lpGradeSelect">
+              <option value="Grade 11">Grade 11</option>
+              <option value="Grade 12" selected>Grade 12</option>
+            </select>
+          </div>
+          <div class="lesson-plan-field">
+            <label for="lpDurationSelect">Class length</label>
+            <select id="lpDurationSelect">
+              <option value="50 minutes" selected>50 minutes</option>
+              <option value="60 minutes">60 minutes</option>
+              <option value="80 minutes">80 minutes</option>
+              <option value="90 minutes">90 minutes</option>
+            </select>
+          </div>
+        </div>
+        <div class="lesson-plan-field">
+          <label for="lpTopicInput">Topic / lesson title</label>
+          <input type="text" id="lpTopicInput" placeholder="e.g. Social Stratification and Inequality">
+        </div>
+        <button class="lesson-plan-generate-btn" id="lpGenerateBtn">Generate lesson plan</button>
+      </div>
+      <div class="error-box" id="lpError" style="display:none;"></div>
+      <div class="status-row" id="lpStatusRow" style="display:none;">
+        <div class="spinner"></div>
+        <span>Writing your lesson plan…</span>
+      </div>
+      <div id="lpResults"></div>
+    </div>
+
+    <!-- LIBRARY -->
+    <div class="library page-white" id="libraryView" style="display:none;">
+      <div class="result-meta">
+        <span class="date">Past lectures</span>
+        <button class="new-recording-btn" id="closeLibraryBtn">Close</button>
+      </div>
+      <input type="text" class="library-search" id="librarySearchInput" placeholder="Search by word or topic…">
+      <div id="libraryList"></div>
+      <div class="hint" id="libraryEmpty" style="display:none;">No saved lectures yet. Once you finish a recording, it'll show up here automatically.</div>
+    </div>
+
+    <!-- PAYWALL -->
+    <div class="paywall page-white" id="paywallView" style="display:none;">
+      <div class="result-meta">
+        <span class="date">ScitechLectureTool Premium</span>
+        <button class="new-recording-btn" id="closePaywallBtn">Close</button>
+      </div>
+
+      <div id="paidBanner" style="display:none;"></div>
+
+      <div class="paywall-hero">
+        <div class="paywall-badge">⭐</div>
+        <h2 class="paywall-title">Support ScitechLectureTool</h2>
+        <p class="paywall-sub">Help keep this tool running and growing for classrooms like yours.</p>
+      </div>
+
+      <div class="founding-banner">🎉 Founding Supporter Offer — be among the first to help build this classroom tool.</div>
+
+      <ul class="feature-list">
+        <li><span class="check">✓</span> Unlimited recordings, transcribing &amp; translating — always</li>
+        <li><span class="check">✓</span> Easy-to-use recording, right from your phone or laptop</li>
+        <li><span class="check">✓</span> Instant lecture translation into 7+ languages</li>
+        <li><span class="check">✓</span> Auto-generated quiz from any lecture</li>
+        <li><span class="check">✓</span> Lesson Plan Generator for teachers</li>
+        <li><span class="check">✓</span> Class-code sharing — one recording, the whole section</li>
+        <li><span class="check">✓</span> A founding-supporter badge on your account <span class="soon">coming soon</span></li>
+        <li><span class="check">✓</span> Longer lecture storage in your library <span class="soon">coming soon</span></li>
+      </ul>
+
+      <div class="price-tag">
+        <div class="amount">₱250<span>per month</span></div>
+        <div class="note">No auto-charge, no card stored. Pay once a month here and get a fresh code good for another 30 days.</div>
+      </div>
+
+      <button class="subscribe-btn" id="subscribeBtn">Subscribe / Pay Now</button>
+      <div class="error-box" id="paywallError" style="display:none;"></div>
+
+           <p class="paywall-fine">Payments are processed securely by PayMongo. You'll be taken to their payment page and brought right back here.</p>
+           <p class="paywall-fine">After paying, your access code will show up right here — and you'll always be able to find it again under Settings → Premium status.</p>
+            <p class="paywall-fine">Didn't get your access code after paying? Email <a href="mailto:beavenbermudez@gmail.com" style="color:inherit;">beavenbermudez@gmail.com</a> and we'll sort it out.</p>
+    </div>
+  </main>
+</div>
+
+<div class="save-toast" id="saveToast">✅ Recording saved in your library</div>
+
+<script>
+(function(){
+  const recordBtn = document.getElementById('recordBtn');
+  const recordIcon = document.getElementById('recordIcon');
+  const recordLabel = document.getElementById('recordLabel');
+  const timerEl = document.getElementById('timer');
+  const hint = document.getElementById('hint');
+  const statusRow = document.getElementById('statusRow');
+  const statusText = document.getElementById('statusText');
+  const errorBox = document.getElementById('errorBox');
+  const recordAgainBtn = document.getElementById('recordAgainBtn');
+  const recordStage = document.getElementById('recordStage');
+  const results = document.getElementById('results');
+  const resultDate = document.getElementById('resultDate');
+  const takeawayText = document.getElementById('takeawayText');
+  const bulletsList = document.getElementById('bulletsList');
+  const transcriptToggle = document.getElementById('transcriptToggle');
+  const printTranscriptBtn = document.getElementById('printTranscriptBtn');
+  const transcriptBox = document.getElementById('transcriptBox');
+  const translateBtn = document.getElementById('translateBtn');
+  const retranslateBtn = document.getElementById('retranslateBtn');
+  const translateNote = document.getElementById('translateNote');
+  const translateLangSelect = document.getElementById('translateLangSelect');
+  const audioPlayback = document.getElementById('audioPlayback');
+  const skipBackBtn = document.getElementById('skipBackBtn');
+  const skipFwdBtn = document.getElementById('skipFwdBtn');
+  const downloadBtn = document.getElementById('downloadBtn');
+  const downloadNowBtn = document.getElementById('downloadNowBtn');
+  const playPauseBtn = document.getElementById('playPauseBtn');
+  const prevSermonBtn = document.getElementById('prevSermonBtn');
+  const nextSermonBtn = document.getElementById('nextSermonBtn');
+  const seekBar = document.getElementById('seekBar');
+  const timeToggleBtn = document.getElementById('timeToggleBtn');
+  const muteBtn = document.getElementById('muteBtn');
+  const speedBtn = document.getElementById('speedBtn');
+  let currentAudioBlob = null;
+
+  // ---- New: Home page, Settings, equalizer, save toast ----
+  const homeView = document.getElementById('homeView');
+  const homeRecordBtn = document.getElementById('homeRecordBtn');
+  const homeStopBtn = document.getElementById('homeStopBtn');
+  const homeBtn = document.getElementById('homeBtn');
+  const settingsBtn = document.getElementById('settingsBtn');
+  const settingsView = document.getElementById('settingsView');
+  const closeSettingsBtn = document.getElementById('closeSettingsBtn');
+  const lessonplanView = document.getElementById('lessonplanView');
+  const closeLessonPlanBtn = document.getElementById('closeLessonPlanBtn');
+  const lessonPlanRow = document.getElementById('lessonPlanRow');
+  const lpSubjectInput = document.getElementById('lpSubjectInput');
+  const lpGradeSelect = document.getElementById('lpGradeSelect');
+  const lpDurationSelect = document.getElementById('lpDurationSelect');
+  const lpTopicInput = document.getElementById('lpTopicInput');
+  const lpGenerateBtn = document.getElementById('lpGenerateBtn');
+  const lpError = document.getElementById('lpError');
+  const lpStatusRow = document.getElementById('lpStatusRow');
+  const lpResults = document.getElementById('lpResults');
+  const equalizer = document.getElementById('equalizer');
+  const pauseStopRow = document.getElementById('pauseStopRow');
+  const stopBtn = document.getElementById('stopBtn');
+  const saveToast = document.getElementById('saveToast');
+
+  let currentView = 'home';
+  let toastTimer = null;
+  function showToast(msg){
+    saveToast.textContent = msg;
+    saveToast.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => { saveToast.classList.remove('show'); }, 2600);
+  }
+
+  homeBtn.addEventListener('click', () => showView('home'));
+  homeRecordBtn.addEventListener('click', () => showRecordingPage());
+  let screenBeforeSettings = 'home';
+  settingsBtn.addEventListener('click', () => {
+    screenBeforeSettings = currentView === 'settings' ? screenBeforeSettings : currentView;
+    showView('settings');
+  });
+  closeSettingsBtn.addEventListener('click', () => showView(screenBeforeSettings));
+
+  lessonPlanRow.addEventListener('click', () => {
+    showView('lessonplan');
+    lpError.style.display = 'none';
+  });
+  closeLessonPlanBtn.addEventListener('click', () => showView('settings'));
+
+  const CHUNK_THRESHOLD_BYTES = 4 * 1024 * 1024; // ~4MB triggers splitting into chunks
+  const CHUNK_SECONDS = 90; // length of each chunk once shrunk down
+  const TARGET_SAMPLE_RATE = 16000; // matches what Whisper listens for anyway
+
+  function downloadBlob(blob, filename){
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
+  }
+  function makeFileName(blob){
+    const d = new Date();
+    const stamp = d.toISOString().slice(0,10) + '-' + String(d.getHours()).padStart(2,'0') + String(d.getMinutes()).padStart(2,'0');
+    const ext = (blob && blob.type && blob.type.includes('wav')) ? 'wav' : 'webm';
+    return 'sermon-echo-' + stamp + '.' + ext;
+  }
+  downloadBtn.addEventListener('click', () => {
+    if(currentAudioBlob) downloadBlob(currentAudioBlob, makeFileName(currentAudioBlob));
+  });
+  downloadNowBtn.addEventListener('click', () => {
+    if(currentAudioBlob) downloadBlob(currentAudioBlob, makeFileName(currentAudioBlob));
+  });
+
+  skipBackBtn.addEventListener('click', () => {
+    audioPlayback.currentTime = Math.max(0, audioPlayback.currentTime - 15);
+  });
+  skipFwdBtn.addEventListener('click', () => {
+    audioPlayback.currentTime = Math.min(audioPlayback.duration || Infinity, audioPlayback.currentTime + 15);
+  });
+
+  // ---- Custom player controls: Play/Pause, seek, speed, mute, Prev/Next ----
+  function formatPlayerTime(sec){
+    if(!isFinite(sec) || sec < 0) sec = 0;
+    return formatTime(sec * 1000);
+  }
+
+  let showRemainingTime = false;
+  const PLAYBACK_SPEEDS = [1, 1.25, 1.5, 2, 0.75];
+  let speedIndex = 0;
+  let seekBarDragging = false;
+
+  function updatePlayPauseIcon(){
+    playPauseBtn.textContent = audioPlayback.paused ? '▶' : '⏸';
+    playPauseBtn.setAttribute('aria-label', audioPlayback.paused ? 'Play' : 'Pause');
+  }
+
+  function updateTimeDisplay(){
+    const dur = audioPlayback.duration || 0;
+    const cur = audioPlayback.currentTime || 0;
+    timeToggleBtn.textContent = showRemainingTime
+      ? '-' + formatPlayerTime(Math.max(0, dur - cur))
+      : formatPlayerTime(cur) + ' / ' + formatPlayerTime(dur);
+    if(isFinite(dur) && dur > 0){
+      seekBar.max = dur;
+      if(!seekBarDragging) seekBar.value = cur;
+    }
+  }
+
+  playPauseBtn.addEventListener('click', () => {
+    if(!audioPlayback.src) return;
+    if(audioPlayback.paused) audioPlayback.play(); else audioPlayback.pause();
+  });
+  audioPlayback.addEventListener('play', updatePlayPauseIcon);
+  audioPlayback.addEventListener('pause', updatePlayPauseIcon);
+  audioPlayback.addEventListener('ended', updatePlayPauseIcon);
+  audioPlayback.addEventListener('timeupdate', updateTimeDisplay);
+  audioPlayback.addEventListener('loadedmetadata', updateTimeDisplay);
+  audioPlayback.addEventListener('durationchange', updateTimeDisplay);
+
+  seekBar.addEventListener('mousedown', () => { seekBarDragging = true; });
+  seekBar.addEventListener('touchstart', () => { seekBarDragging = true; });
+  seekBar.addEventListener('input', () => {
+    audioPlayback.currentTime = Number(seekBar.value);
+    updateTimeDisplay();
+  });
+  seekBar.addEventListener('change', () => { seekBarDragging = false; });
+
+  timeToggleBtn.addEventListener('click', () => {
+    showRemainingTime = !showRemainingTime;
+    updateTimeDisplay();
+  });
+
+  muteBtn.addEventListener('click', () => {
+    audioPlayback.muted = !audioPlayback.muted;
+    muteBtn.textContent = audioPlayback.muted ? '🔇' : '🔈';
+  });
+
+  speedBtn.addEventListener('click', () => {
+    speedIndex = (speedIndex + 1) % PLAYBACK_SPEEDS.length;
+    audioPlayback.playbackRate = PLAYBACK_SPEEDS[speedIndex];
+    speedBtn.textContent = PLAYBACK_SPEEDS[speedIndex] + 'x';
+  });
+
+  async function getSortedSermons(){
+    let sermons = [];
+    try{
+      sermons = await getAllSermons();
+    }catch(err){
+      return [];
+    }
+    sermons.sort((a, b) => new Date(b.date) - new Date(a.date));
+    return sermons;
+  }
+
+  // Library is sorted newest-first: "Previous" moves to the next-older
+  // recording (higher index), "Next" moves to the more recent one.
+  async function playAdjacentSermon(indexOffset){
+    if(!currentSermon || !currentSermon.id) return;
+    const sermons = await getSortedSermons();
+    const idx = sermons.findIndex(s => s.id === currentSermon.id);
+    if(idx === -1) return;
+    const target = sermons[idx + indexOffset];
+    if(!target) return;
+    openSavedSermon(target);
+  }
+
+  prevSermonBtn.addEventListener('click', () => playAdjacentSermon(1));
+  nextSermonBtn.addEventListener('click', () => playAdjacentSermon(-1));
+
+  async function updatePrevNextButtons(){
+    if(!currentSermon || !currentSermon.id){
+      prevSermonBtn.disabled = true;
+      nextSermonBtn.disabled = true;
+      prevSermonBtn.style.opacity = '0.4';
+      nextSermonBtn.style.opacity = '0.4';
+      return;
+    }
+    const sermons = await getSortedSermons();
+    const idx = sermons.findIndex(s => s.id === currentSermon.id);
+    prevSermonBtn.disabled = idx === -1 || idx >= sermons.length - 1;
+    nextSermonBtn.disabled = idx <= 0;
+    prevSermonBtn.style.opacity = prevSermonBtn.disabled ? '0.4' : '1';
+    nextSermonBtn.style.opacity = nextSermonBtn.disabled ? '0.4' : '1';
+  }
+
+  const newRecordingBtn = document.getElementById('newRecordingBtn');
+  const uploadBtn = document.getElementById('uploadBtn');
+  const fileInput = document.getElementById('fileInput');
+  const libraryBtn = document.getElementById('libraryBtn');
+  const closeLibraryBtn = document.getElementById('closeLibraryBtn');
+  const libraryView = document.getElementById('libraryView');
+
+  const premiumBadge = document.getElementById('premiumBadge');
+  const redeemCodeInput = document.getElementById('redeemCodeInput');
+  const redeemCodeBtn = document.getElementById('redeemCodeBtn');
+  const redeemError = document.getElementById('redeemError');
+  const myCodeHint = document.getElementById('myCodeHint');
+  const familyCodesSection = document.getElementById('familyCodesSection');
+  const familyLabelInput = document.getElementById('familyLabelInput');
+  const createFamilyCodeBtn = document.getElementById('createFamilyCodeBtn');
+  const familyCodeError = document.getElementById('familyCodeError');
+  const familyCodesList = document.getElementById('familyCodesList');  const paywallBtn = document.getElementById('paywallBtn');
+  const closePaywallBtn = document.getElementById('closePaywallBtn');
+  const paywallView = document.getElementById('paywallView');
+  const subscribeBtn = document.getElementById('subscribeBtn');
+  const paywallError = document.getElementById('paywallError');
+  const paidBanner = document.getElementById('paidBanner');
+  const libraryList = document.getElementById('libraryList');
+  const libraryEmpty = document.getElementById('libraryEmpty');
+  const librarySearchInput = document.getElementById('librarySearchInput');
+
+  // Central place that knows about every top-level "page" in the app.
+  // Call showView('home') / showView('record') / etc. instead of toggling
+  // .style.display directly, so only one page is ever visible at a time.
+  const VIEWS = {
+    home: homeView,
+    record: recordStage,
+    results: results,
+    library: libraryView,
+    settings: settingsView,
+    lessonplan: lessonplanView,
+    paywall: paywallView
+  };
+  function showView(name){
+    Object.values(VIEWS).forEach(v => { v.style.display = 'none'; });
+    VIEWS[name].style.display = 'flex';
+    currentView = name;
+    window.scrollTo(0, 0);
+  }
+  function showRecordingPage(){
+    showView('record');
+    if(!isRecording){
+      recordBtn.classList.add('idle-blink');
+      recordLabel.textContent = 'Tap to start recording';
+      hint.style.display = 'block';
+    } else {
+      recordBtn.classList.remove('idle-blink');
+    }
+  }
+
+  let mediaRecorder, chunks = [], startTime, timerInterval;
+  let isRecording = false;
+  let isPaused = false;
+  let isFinalizing = false;
+  let pausedElapsed = 0; // ms accumulated before the current pause/resume segment
+  let activeStream = null;
+  let segments = []; // separate audio blobs, one per record/pause cycle
+  let lastRecordingDurationMs = 0;
+  const pauseBtn = document.getElementById('pauseBtn');
+
+  // ---- Combining paused segments into one clean audio file ----
+  // Browsers can drop or corrupt audio when using MediaRecorder's built-in
+  // pause()/resume(), so instead we stop and start a fresh recorder for each
+  // segment, then stitch the raw audio together ourselves afterward.
+  function concatAudioBuffers(ctx, buffers){
+    const numberOfChannels = Math.max(...buffers.map(b => b.numberOfChannels));
+    const sampleRate = buffers[0].sampleRate;
+    const totalLength = buffers.reduce((sum, b) => sum + b.length, 0);
+    const result = ctx.createBuffer(numberOfChannels, totalLength, sampleRate);
+    for(let ch = 0; ch < numberOfChannels; ch++){
+      const channelData = result.getChannelData(ch);
+      let offset = 0;
+      for(const buf of buffers){
+        const src = buf.numberOfChannels > ch ? buf.getChannelData(ch) : buf.getChannelData(0);
+        channelData.set(src, offset);
+        offset += buf.length;
+      }
+    }
+    return result;
+  }
+  function writeString(view, offset, str){
+    for(let i = 0; i < str.length; i++) view.setUint8(offset + i, str.charCodeAt(i));
+  }
+  function audioBufferToWav(buffer){
+    const numChannels = buffer.numberOfChannels;
+    const sampleRate = buffer.sampleRate;
+    let samples;
+    if(numChannels === 2){
+      const left = buffer.getChannelData(0), right = buffer.getChannelData(1);
+      samples = new Float32Array(left.length + right.length);
+      for(let i = 0, j = 0; i < left.length; i++){
+        samples[j++] = left[i];
+        samples[j++] = right[i];
+      }
+    } else {
+      samples = buffer.getChannelData(0);
+    }
+    const bytesPerSample = 2, blockAlign = numChannels * bytesPerSample;
+    const dataSize = samples.length * bytesPerSample;
+    const arrBuf = new ArrayBuffer(44 + dataSize);
+    const view = new DataView(arrBuf);
+    writeString(view, 0, 'RIFF');
+    view.setUint32(4, 36 + dataSize, true);
+    writeString(view, 8, 'WAVE');
+    writeString(view, 12, 'fmt ');
+    view.setUint32(16, 16, true);
+    view.setUint16(20, 1, true);
+    view.setUint16(22, numChannels, true);
+    view.setUint32(24, sampleRate, true);
+    view.setUint32(28, sampleRate * blockAlign, true);
+    view.setUint16(32, blockAlign, true);
+    view.setUint16(34, 16, true);
+    writeString(view, 36, 'data');
+    view.setUint32(40, dataSize, true);
+    let offset = 44;
+    for(let i = 0; i < samples.length; i++, offset += 2){
+      const s = Math.max(-1, Math.min(1, samples[i]));
+      view.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
+    }
+    return new Blob([view], { type: 'audio/wav' });
+  }
+  async function combineSegments(segs){
+    if(segs.length <= 1) return segs[0];
+    const AC = window.AudioContext || window.webkitAudioContext;
+    const ctx = new AC();
+    try{
+      const buffers = [];
+      for(const seg of segs){
+        const arrayBuffer = await seg.arrayBuffer();
+        buffers.push(await ctx.decodeAudioData(arrayBuffer));
+      }
+      const combined = concatAudioBuffers(ctx, buffers);
+      return audioBufferToWav(combined);
+    } finally {
+      ctx.close();
+    }
+  }
+
+  // ---- Helpers for splitting long recordings into smaller pieces ----
+  // Netlify's functions reject any single request over ~6MB, so recordings
+  // longer than a few minutes need to be broken up before being sent.
+  async function decodeBlobToAudioBuffer(blob){
+    const AC = window.AudioContext || window.webkitAudioContext;
+    const ctx = new AC();
+    try{
+      const arrayBuffer = await blob.arrayBuffer();
+      return await ctx.decodeAudioData(arrayBuffer);
+    } finally {
+      ctx.close();
+    }
+  }
+
+  async function resampleToMono(buffer, targetRate){
+    if(buffer.sampleRate === targetRate && buffer.numberOfChannels === 1){
+      return buffer;
+    }
+    let monoBuffer = buffer;
+    if(buffer.numberOfChannels > 1){
+      const AC = window.AudioContext || window.webkitAudioContext;
+      const tempCtx = new AC();
+      monoBuffer = tempCtx.createBuffer(1, buffer.length, buffer.sampleRate);
+      const out = monoBuffer.getChannelData(0);
+      const chData = [];
+      for(let ch = 0; ch < buffer.numberOfChannels; ch++) chData.push(buffer.getChannelData(ch));
+      for(let i = 0; i < buffer.length; i++){
+        let sum = 0;
+        for(let ch = 0; ch < chData.length; ch++) sum += chData[ch][i];
+        out[i] = sum / chData.length;
+      }
+      tempCtx.close();
+    }
+    const OfflineCtx = window.OfflineAudioContext || window.webkitOfflineAudioContext;
+    const offline = new OfflineCtx(1, Math.ceil(buffer.duration * targetRate), targetRate);
+    const source = offline.createBufferSource();
+    source.buffer = monoBuffer;
+    source.connect(offline.destination);
+    source.start(0);
+    return await offline.startRendering();
+  }
+
+  function computeRms(data, start, end){
+    let sumSquares = 0;
+    for(let i = start; i < end; i++){
+      sumSquares += data[i] * data[i];
+    }
+    return Math.sqrt(sumSquares / (end - start));
+  }
+
+  // Looks for the quietest moment (a natural pause) near a chunk boundary,
+  // instead of cutting at a rigid fixed time. This avoids slicing through
+  // the middle of a word or sentence, which caused dropped/duplicated words.
+  function findQuietCutPoint(data, targetSample, sampleRate, maxTotalSamples){
+    const searchWindowSeconds = 2;
+    const windowSamples = Math.floor(searchWindowSeconds * sampleRate);
+    const analysisFrame = Math.floor(0.05 * sampleRate);
+
+    const searchStart = Math.max(0, targetSample - windowSamples);
+    const searchEnd = Math.min(maxTotalSamples, targetSample + windowSamples);
+
+    let quietestPoint = targetSample;
+    let quietestLevel = Infinity;
+
+    for(let pos = searchStart; pos + analysisFrame <= searchEnd; pos += analysisFrame){
+      const level = computeRms(data, pos, pos + analysisFrame);
+      if(level < quietestLevel){
+        quietestLevel = level;
+        quietestPoint = pos;
+      }
+    }
+    return quietestPoint;
+  }
+
+  function sliceBufferIntoChunks(buffer, chunkSeconds){
+    const data = buffer.getChannelData(0);
+    const totalSamples = buffer.length;
+    const nominalChunkSamples = Math.floor(chunkSeconds * buffer.sampleRate);
+    const chunks = [];
+    const AC = window.AudioContext || window.webkitAudioContext;
+    const ctx = new AC();
+    try{
+      let start = 0;
+      while(start < totalSamples){
+        let end = Math.min(start + nominalChunkSamples, totalSamples);
+        if(end < totalSamples){
+          end = findQuietCutPoint(data, end, buffer.sampleRate, totalSamples);
+          if(end <= start) end = Math.min(start + nominalChunkSamples, totalSamples);
+        }
+        const length = end - start;
+        const chunkBuffer = ctx.createBuffer(1, length, buffer.sampleRate);
+        chunkBuffer.getChannelData(0).set(data.subarray(start, end));
+        chunks.push(chunkBuffer);
+        start = end;
+      }
+    } finally {
+      ctx.close();
+    }
+    return chunks;
+  }
+
+  function startSegmentRecorder(){
+    chunks = [];
+    mediaRecorder = new MediaRecorder(activeStream);
+    mediaRecorder.ondataavailable = e => { if(e.data.size > 0) chunks.push(e.data); };
+    mediaRecorder.onstop = () => {
+      segments.push(new Blob(chunks, { type: 'audio/webm' }));
+      if(isFinalizing){
+        activeStream.getTracks().forEach(t => t.stop());
+        finishRecording();
+      }
+    };
+    mediaRecorder.start(1000);
+  }
+
+  function withTimeout(promise, ms){
+    return Promise.race([
+      promise,
+      new Promise((_, reject) => setTimeout(() => reject(new Error('Combining the recording took too long')), ms))
+    ]);
+  }
+
+  async function finishRecording(){
+    recordLabel.textContent = 'Processing…';
+    let audioBlob;
+    try{
+      audioBlob = await withTimeout(combineSegments(segments), 20000);
+    }catch(err){
+      console.error('Could not stitch recording segments together in time — using the largest segment instead', err);
+      // Fall back to whichever single segment has the most audio, so the
+      // user still gets something useful instead of getting stuck forever.
+      audioBlob = segments.reduce((biggest, s) => (s.size > (biggest ? biggest.size : 0) ? s : biggest), null) || segments[0];
+    }
+    segments = [];
+    isFinalizing = false;
+    await saveThenProcess(audioBlob, lastRecordingDurationMs);
+  }
+
+  // ---- Live equalizer while actively recording ----
+  let audioCtx = null, analyserNode = null, eqRafId = null;
+  function startEqualizer(){
+    try{
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      const source = audioCtx.createMediaStreamSource(activeStream);
+      analyserNode = audioCtx.createAnalyser();
+      analyserNode.fftSize = 64;
+      source.connect(analyserNode);
+      const data = new Uint8Array(analyserNode.frequencyBinCount);
+      const bars = equalizer.querySelectorAll('span');
+      equalizer.classList.remove('paused');
+      function tick(){
+        analyserNode.getByteFrequencyData(data);
+        bars.forEach((bar, i) => {
+          const idx = Math.floor((i + 1) * data.length / (bars.length + 1));
+          const v = data[idx] / 255;
+          bar.style.height = (8 + v * 32) + 'px';
+        });
+        eqRafId = requestAnimationFrame(tick);
+      }
+      tick();
+    }catch(err){
+      console.error('Equalizer unavailable', err);
+    }
+  }
+  function stopEqualizer(){
+    if(eqRafId) cancelAnimationFrame(eqRafId);
+    eqRafId = null;
+    if(audioCtx){ audioCtx.close().catch(() => {}); audioCtx = null; }
+    analyserNode = null;
+    equalizer.querySelectorAll('span').forEach(bar => { bar.style.height = '8px'; });
+  }
+
+  // ---- Timer ----
+  function formatTime(ms){
+    const totalSec = Math.floor(ms/1000);
+    const m = String(Math.floor(totalSec/60)).padStart(2,'0');
+    const s = String(totalSec%60).padStart(2,'0');
+    return m+':'+s;
+  }
+
+  // ---- Recording ----
+  async function startRecording(){
+    if(isRecording) return;
+    errorBox.style.display = 'none';
+    downloadNowBtn.style.display = 'none';
+    recordAgainBtn.style.display = 'none';
+    recordBtn.classList.remove('needs-attention');
+    try{
+      activeStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      segments = [];
+      isFinalizing = false;
+      startSegmentRecorder();
+      isRecording = true;
+      isPaused = false;
+      pausedElapsed = 0;
+      startTime = Date.now();
+      timerInterval = setInterval(() => {
+        timerEl.textContent = formatTime(pausedElapsed + (Date.now() - startTime));
+      }, 250);
+
+      recordBtn.classList.remove('idle-blink');
+      recordBtn.classList.add('recording');
+      recordBtn.setAttribute('aria-label','Recording in progress');
+      recordLabel.textContent = 'Recording — tap Pause or Stop';
+      hint.style.display = 'none';
+      recordIcon.style.display = 'none';
+      equalizer.style.display = 'flex';
+      startEqualizer();
+      pauseStopRow.style.display = 'flex';
+      pauseBtn.textContent = 'Pause';
+      pauseBtn.classList.remove('is-paused');
+      homeStopBtn.disabled = false;
+    }catch(err){
+      showError('Could not access the microphone. Please allow microphone access and try again.');
+    }
+  }
+
+  function stopRecording(){
+    if(!isRecording) return;
+    lastRecordingDurationMs = isPaused ? pausedElapsed : pausedElapsed + (Date.now() - startTime);
+    isRecording = false;
+    isPaused = false;
+    clearInterval(timerInterval);
+    stopEqualizer();
+    recordBtn.classList.remove('recording');
+    recordBtn.setAttribute('aria-label','Start recording');
+    recordLabel.textContent = 'Processing…';
+    pauseStopRow.style.display = 'none';
+    recordIcon.style.display = 'block';
+    equalizer.style.display = 'none';
+    homeStopBtn.disabled = true;
+    if(currentView !== 'record') showView('record');
+
+    if(mediaRecorder && mediaRecorder.state !== 'inactive'){
+      isFinalizing = true;
+      mediaRecorder.stop(); // onstop pushes the final segment, then finishes since isFinalizing is true
+    } else {
+      // Was already paused (recorder already stopped) — just finish now.
+      finishRecording();
+    }
+  }
+
+  recordBtn.addEventListener('click', () => { startRecording(); });
+  stopBtn.addEventListener('click', stopRecording);
+  homeStopBtn.addEventListener('click', stopRecording);
+
+  recordAgainBtn.addEventListener('click', () => {
+    startRecording();
+  });
+
+  pauseBtn.addEventListener('click', () => {
+    if(!isRecording) return;
+    if(!isPaused){
+      isPaused = true;
+      pausedElapsed += Date.now() - startTime;
+      clearInterval(timerInterval);
+      mediaRecorder.stop(); // onstop pushes this segment into the array (isFinalizing is false, so it just waits)
+      stopEqualizer();
+      equalizer.classList.add('paused');
+      pauseBtn.textContent = 'Resume';
+      pauseBtn.classList.add('is-paused');
+      recordLabel.textContent = 'Paused — tap Resume to continue, or Stop to finish';
+    } else {
+      isPaused = false;
+      startSegmentRecorder(); // starts a brand-new, clean segment
+      startTime = Date.now();
+      timerInterval = setInterval(() => {
+        timerEl.textContent = formatTime(pausedElapsed + (Date.now() - startTime));
+      }, 250);
+      startEqualizer();
+      pauseBtn.textContent = 'Pause';
+      pauseBtn.classList.remove('is-paused');
+      recordLabel.textContent = 'Recording — tap Pause or Stop';
+    }
+  });
+
+  function showError(msg, audioBlob){
+    errorBox.textContent = msg;
+    errorBox.style.display = 'block';
+    statusRow.style.display = 'none';
+    recordLabel.textContent = 'Tap to start recording';
+    hint.style.display = 'block';
+    recordAgainBtn.style.display = 'inline-block';
+    recordBtn.classList.add('needs-attention');
+    homeStopBtn.disabled = true;
+
+    if(audioBlob){
+      currentAudioBlob = audioBlob;
+      downloadNowBtn.style.display = 'inline-block';
+      errorBox.textContent = msg + ' Your recording itself is safe — you can download it below.';
+    } else {
+      downloadNowBtn.style.display = 'none';
+    }
+  }
+
+  // Saves the raw audio to the local library right away (before transcription),
+  // so the recording is never lost even if transcription or the API keys fail.
+  async function saveThenProcess(audioBlob, durationMs){
+    let pendingId = null;
+    try{
+      pendingId = await saveSermon({
+        date: new Date().toISOString(),
+        takeaway: '',
+        bullets: [],
+        transcript: '',
+        audioBlob,
+        durationMs: durationMs || 0,
+        pending: true
+      });
+      showToast('✅ Recording saved in your library');
+    }catch(err){
+      console.error('Could not save the raw recording', err);
+    }
+    await processAudio(audioBlob, pendingId);
+  }
+
+  async function processAudio(audioBlob, pendingId){
+    audioPlayback.src = URL.createObjectURL(audioBlob);
+    audioPlayback.load();
+    currentAudioBlob = audioBlob;
+
+    statusRow.style.display = 'flex';
+    statusText.textContent = 'Transcribing the recording…';
+
+    try{
+      const transcript = await transcribeAudio(audioBlob, (current, total) => {
+        statusText.textContent = 'Transcribing part ' + current + ' of ' + total + '…';
+      });
+      statusText.textContent = 'Preparing your takeaway…';
+      const summary = await summarizeTranscript(transcript);
+      showResults(transcript, summary, audioBlob, pendingId);
+    }catch(err){
+      console.error(err);
+      showError(err.message || 'Something went wrong while processing the recording. Please try again.', audioBlob);
+    }
+  }
+
+  // ---- Upload an existing recording ----
+  uploadBtn.addEventListener('click', () => {
+    fileInput.click();
+  });
+  fileInput.addEventListener('change', async () => {
+    const file = fileInput.files[0];
+    fileInput.value = '';
+    if(!file) return;
+    errorBox.style.display = 'none';
+    recordAgainBtn.style.display = 'none';
+    recordBtn.classList.remove('needs-attention');
+    statusRow.style.display = 'flex';
+    recordLabel.textContent = 'Processing…';
+    hint.style.display = 'none';
+    await saveThenProcess(file);
+  });
+
+  // Converts a Blob to a base64 string (without the "data:...;base64," prefix)
+  function blobToBase64(blob){
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(String(reader.result).split(',')[1]);
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+  }
+
+  async function transcribeOneChunk(blob){
+    const audioBase64 = await blobToBase64(blob);
+    const res = await fetch('/.netlify/functions/transcribe', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ audioBase64, mimeType: blob.type })
+    });
+    if(!res.ok){
+      const errData = await res.json().catch(() => ({}));
+      const base = errData.error || ('Transcription failed. (' + res.status + ')');
+      const detail = errData.detail ? (' Detail: ' + String(errData.detail).slice(0, 300)) : '';
+      throw new Error(base + detail);
+    }
+    const data = await res.json();
+    return data.transcript;
+  }
+
+  // ---- OpenAI Whisper transcription (via secure server function) ----
+  // Long recordings are split into smaller pieces first, since Netlify's
+  // functions reject any single request over ~6MB. Short recordings are
+  // sent as-is.
+  async function transcribeAudio(blob, onProgress){
+    if(blob.size <= CHUNK_THRESHOLD_BYTES){
+      return await transcribeOneChunk(blob);
+    }
+
+    const decoded = await decodeBlobToAudioBuffer(blob);
+    const resampled = await resampleToMono(decoded, TARGET_SAMPLE_RATE);
+    const pieces = sliceBufferIntoChunks(resampled, CHUNK_SECONDS);
+
+    const transcripts = [];
+    for(let i = 0; i < pieces.length; i++){
+      if(onProgress) onProgress(i + 1, pieces.length);
+      const chunkBlob = audioBufferToWav(pieces[i]);
+      const text = await transcribeOneChunk(chunkBlob);
+      transcripts.push(text.trim());
+    }
+    return transcripts.join(' ');
+  }
+
+  // ---- Claude summary (via secure server function) ----
+  async function summarizeTranscript(transcript){
+    const res = await fetch('/.netlify/functions/summarize', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ transcript })
+    });
+
+    if(!res.ok){
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData.error || ('Could not generate the takeaway. (' + res.status + ')'));
+    }
+    const data = await res.json();
+    if(!data.takeaway || !Array.isArray(data.bullets)){
+      throw new Error('Received an unexpected response while preparing the takeaway. Please try again.');
+    }
+    return data;
+  }
+
+  // ---- Results display ----
+  function showResults(transcript, summary, audioBlob, pendingId){
+    statusRow.style.display = 'none';
+    showView('results');
+
+    const dateObj = new Date();
+    resultDate.textContent = dateObj.toLocaleDateString(undefined, { weekday:'long', month:'long', day:'numeric' });
+    takeawayText.textContent = summary.takeaway;
+
+    bulletsList.innerHTML = '';
+    (summary.bullets || []).forEach(b => {
+      const li = document.createElement('li');
+      li.textContent = b;
+      bulletsList.appendChild(li);
+    });
+
+    transcriptBox.textContent = transcript;
+    currentAudioBlob = audioBlob || currentAudioBlob;
+
+    currentSermon = { id: pendingId || null, takeaway: summary.takeaway, bullets: summary.bullets || [], transcript, translations: {}, quiz: null };
+    resetTranslateUI();
+    resetQuizUI();
+    updatePrevNextButtons();
+
+    if(audioBlob){
+      const fields = {
+        date: dateObj.toISOString(),
+        takeaway: summary.takeaway,
+        bullets: summary.bullets || [],
+        transcript,
+        audioBlob,
+        pending: false
+      };
+      if(pendingId){
+        updateSermon(pendingId, fields).catch(err => console.error('Could not update sermon in library', err));
+      } else {
+        saveSermon(fields).then(newId => {
+          if(currentSermon && currentSermon.transcript === transcript) currentSermon.id = newId;
+        }).catch(err => console.error('Could not save sermon to library', err));
+      }
+    }
+  }
+
+  transcriptToggle.addEventListener('click', () => {
+    const showing = transcriptBox.style.display === 'block';
+    transcriptBox.style.display = showing ? 'none' : 'block';
+    transcriptToggle.textContent = showing ? 'Show full transcript' : 'Hide full transcript';
+  });
+
+  // ---- Print the full sermon text (takeaway, highlights, transcript) ----
+  // Reads directly from what's currently shown on screen, so if the user is
+  // viewing a translation, the printed page matches that language too.
+  function escapeHtml(str){
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+  }
+
+  function printSermonText(){
+    const title = (resultDate.textContent || 'ScitechLectureTool').trim();
+    const takeaway = takeawayText.textContent.trim();
+    const bullets = Array.from(bulletsList.children).map(li => li.textContent.trim()).filter(Boolean);
+    const transcript = transcriptBox.textContent.trim();
+
+    if(!takeaway && bullets.length === 0 && !transcript){
+      alert("There's nothing to print for this recording yet.");
+      return;
+    }
+
+    const bulletsHtml = bullets.map(b => '<li>' + escapeHtml(b) + '</li>').join('');
+
+    const html = '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>' + escapeHtml(title) + '</title>' +
+      '<style>' +
+      'body{font-family: Georgia, "Times New Roman", serif; color:#1a1a1a; max-width:700px; margin:40px auto; padding:0 20px; line-height:1.6;}' +
+      'h1{font-size:22px; margin-bottom:4px;}' +
+      '.meta{color:#666; font-size:13px; margin-bottom:24px;}' +
+      'h2{font-size:15px; text-transform:uppercase; letter-spacing:0.05em; color:#444; border-bottom:1px solid #ddd; padding-bottom:6px; margin-top:28px;}' +
+      '.takeaway{font-style:italic; font-size:17px;}' +
+      'ul{padding-left:20px;} li{margin-bottom:8px;}' +
+      '.transcript{white-space:pre-wrap; font-size:14px;}' +
+      '@media print{ body{margin:0; padding:24px;} }' +
+      '</style></head><body>' +
+      '<h1>' + escapeHtml(title) + '</h1>' +
+      '<div class="meta">ScitechLectureTool — Transcriber &amp; Translator</div>' +
+      (takeaway ? '<h2>Takeaway</h2><div class="takeaway">' + escapeHtml(takeaway) + '</div>' : '') +
+      (bulletsHtml ? '<h2>Highlights</h2><ul>' + bulletsHtml + '</ul>' : '') +
+      (transcript ? '<h2>Full Transcript</h2><div class="transcript">' + escapeHtml(transcript) + '</div>' : '') +
+      '</body></html>';
+
+    const win = window.open('', '_blank');
+    if(!win){
+      alert('Please allow pop-ups for this site so the print page can open.');
+      return;
+    }
+    win.document.open();
+    win.document.write(html);
+    win.document.close();
+    const triggerPrint = () => { win.focus(); win.print(); };
+    win.onload = triggerPrint;
+    setTimeout(triggerPrint, 400); // fallback in case onload doesn't fire
+  }
+
+  printTranscriptBtn.addEventListener('click', printSermonText);
+
+  // ---- Sermon translation (Premium feature) ----
+  const TRANSLATE_LANG_KEY = 'se_translate_lang';
+  const savedLang = localStorage.getItem(TRANSLATE_LANG_KEY);
+  if(savedLang) translateLangSelect.value = savedLang;
+
+  let currentSermon = null; // { id, takeaway, bullets, transcript, translations }
+  let viewingTranslation = false;
+  const translatePremiumNote = document.getElementById('translatePremiumNote');
+
+  function showTranslatePremiumNote(){
+    translatePremiumNote.innerHTML = '';
+    const text = document.createElement('span');
+    text.textContent = '⭐ Translation is a Premium feature.';
+    const btn = document.createElement('button');
+    btn.className = 'unlock-btn';
+    btn.textContent = 'Unlock in Settings';
+    btn.addEventListener('click', () => {
+      screenBeforeSettings = currentView === 'settings' ? screenBeforeSettings : currentView;
+      showView('settings');
+    });
+    translatePremiumNote.appendChild(text);
+    translatePremiumNote.appendChild(btn);
+    translatePremiumNote.style.display = 'flex';
+  }
+  function hideTranslatePremiumNote(){
+    translatePremiumNote.style.display = 'none';
+  }
+
+  function renderSermonText(data){
+    takeawayText.textContent = data.takeaway;
+    bulletsList.innerHTML = '';
+    (data.bullets || []).forEach(b => {
+      const li = document.createElement('li');
+      li.textContent = b;
+      bulletsList.appendChild(li);
+    });
+    transcriptBox.textContent = data.transcript;
+  }
+
+  function resetTranslateUI(){
+    viewingTranslation = false;
+    translateBtn.textContent = '🌐 Translate';
+    translateBtn.disabled = false;
+    translateNote.textContent = '';
+    retranslateBtn.style.display = 'none';
+    hideTranslatePremiumNote();
+  }
+
+  // ---- Quiz for Students (Premium feature) ----
+  const generateQuizBtn = document.getElementById('generateQuizBtn');
+  const quizPremiumNote = document.getElementById('quizPremiumNote');
+  const quizStatusRow = document.getElementById('quizStatusRow');
+  const quizError = document.getElementById('quizError');
+  const quizContainer = document.getElementById('quizContainer');
+  const quizQuestionsList = document.getElementById('quizQuestionsList');
+  const printQuizStudentBtn = document.getElementById('printQuizStudentBtn');
+  const printQuizAnswerKeyBtn = document.getElementById('printQuizAnswerKeyBtn');
+  let currentQuiz = null; // array of {type, question, options?, answer}
+  let quizGenerationInFlight = false;
+
+  function showQuizPremiumNote(){
+    quizPremiumNote.innerHTML = '';
+    const text = document.createElement('span');
+    text.textContent = '⭐ Quiz generation is a Premium feature.';
+    const btn = document.createElement('button');
+    btn.className = 'unlock-btn';
+    btn.textContent = 'Unlock in Settings';
+    btn.addEventListener('click', () => {
+      screenBeforeSettings = currentView === 'settings' ? screenBeforeSettings : currentView;
+      showView('settings');
+    });
+    quizPremiumNote.appendChild(text);
+    quizPremiumNote.appendChild(btn);
+    quizPremiumNote.style.display = 'flex';
+  }
+  function hideQuizPremiumNote(){
+    quizPremiumNote.style.display = 'none';
+  }
+
+  function resetQuizUI(){
+    currentQuiz = null;
+    quizContainer.style.display = 'none';
+    quizQuestionsList.innerHTML = '';
+    quizError.style.display = 'none';
+    quizStatusRow.style.display = 'none';
+    hideQuizPremiumNote();
+    generateQuizBtn.style.display = 'inline-block';
+    generateQuizBtn.textContent = '📝 Generate Quiz';
+    generateQuizBtn.disabled = false;
+  }
+
+  function renderQuiz(questions){
+    currentQuiz = questions;
+    quizQuestionsList.innerHTML = '';
+    questions.forEach((q, i) => {
+      const card = document.createElement('div');
+      card.className = 'quiz-question';
+
+      const num = document.createElement('div');
+      num.className = 'q-num';
+      num.textContent = 'Question ' + (i + 1) + (q.type === 'multiple_choice' ? ' (Multiple Choice)' : ' (Short Answer)');
+      card.appendChild(num);
+
+      const qText = document.createElement('div');
+      qText.className = 'q-text';
+      qText.textContent = q.question;
+      card.appendChild(qText);
+
+      if(q.type === 'multiple_choice' && Array.isArray(q.options)){
+        const ul = document.createElement('ul');
+        ul.className = 'q-options';
+        const letters = ['A','B','C','D','E','F'];
+        q.options.forEach((opt, oi) => {
+          const li = document.createElement('li');
+          li.textContent = letters[oi] + '. ' + opt;
+          ul.appendChild(li);
+        });
+        card.appendChild(ul);
+      }
+
+      const ans = document.createElement('div');
+      ans.className = 'q-answer';
+      ans.textContent = 'Answer: ' + q.answer;
+      card.appendChild(ans);
+
+      quizQuestionsList.appendChild(card);
+    });
+    quizContainer.style.display = 'block';
+    generateQuizBtn.style.display = 'none';
+  }
+
+  async function generateQuiz(){
+    if(!currentSermon) return;
+
+    const premium = localStorage.getItem(PREMIUM_FLAG_KEY) === 'true';
+    if(!premium){
+      showQuizPremiumNote();
+      return;
+    }
+    hideQuizPremiumNote();
+
+    if(!currentSermon.transcript){
+      quizError.textContent = "There's nothing to build a quiz from yet for this recording.";
+      quizError.style.display = 'block';
+      return;
+    }
+
+    if(quizGenerationInFlight) return;
+    quizGenerationInFlight = true;
+    quizError.style.display = 'none';
+    quizStatusRow.style.display = 'flex';
+    generateQuizBtn.disabled = true;
+
+    try {
+      const res = await fetch('/.netlify/functions/generate-quiz', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          transcript: currentSermon.transcript,
+          takeaway: currentSermon.takeaway,
+          title: resultDate.textContent || ''
+        })
+      });
+      const data = await res.json().catch(() => ({}));
+      if(!res.ok) throw new Error(data.error || ('Could not generate the quiz (' + res.status + ').'));
+      if(!Array.isArray(data.questions) || data.questions.length === 0) throw new Error('Received an unexpected response. Please try again.');
+
+      renderQuiz(data.questions);
+      currentSermon.quiz = data.questions;
+      if(currentSermon.id){
+        updateSermon(currentSermon.id, { quiz: data.questions }).catch(err => console.error('Could not save quiz', err));
+      }
+    } catch (err) {
+      quizError.textContent = err.message || 'Could not generate the quiz right now. Please try again.';
+      quizError.style.display = 'block';
+    } finally {
+      quizGenerationInFlight = false;
+      generateQuizBtn.disabled = false;
+    }
+  }
+
+  generateQuizBtn.addEventListener('click', generateQuiz);
+
+  function printQuiz(includeAnswers){
+    if(!currentQuiz || currentQuiz.length === 0) return;
+    const title = (resultDate.textContent || 'ScitechLectureTool').trim();
+    const letters = ['A','B','C','D','E','F'];
+
+    const questionsHtml = currentQuiz.map((q, i) => {
+      let optionsHtml = '';
+      if(q.type === 'multiple_choice' && Array.isArray(q.options)){
+        optionsHtml = '<ul class="opts">' + q.options.map((opt, oi) => '<li>' + letters[oi] + '. ' + escapeHtml(opt) + '</li>').join('') + '</ul>';
+      } else {
+        optionsHtml = '<div class="blank-lines"><div class="line"></div><div class="line"></div></div>';
+      }
+      const answerHtml = includeAnswers ? '<div class="answer">Answer: ' + escapeHtml(q.answer) + '</div>' : '';
+      return '<div class="question"><div class="q-head">' + (i + 1) + '. ' + escapeHtml(q.question) + '</div>' + optionsHtml + answerHtml + '</div>';
+    }).join('');
+
+    const html = '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>' + escapeHtml(title) + ' — Quiz</title>' +
+      '<style>' +
+      'body{font-family: Georgia, "Times New Roman", serif; color:#1a1a1a; max-width:700px; margin:40px auto; padding:0 20px; line-height:1.6;}' +
+      'h1{font-size:20px; margin-bottom:2px;}' +
+      '.meta{color:#666; font-size:13px; margin-bottom:6px;}' +
+      '.name-line{margin:18px 0 28px; font-size:14px;}' +
+      '.name-line span{display:inline-block; border-bottom:1px solid #999; min-width:220px; margin-left:6px;}' +
+      '.question{margin-bottom:22px;}' +
+      '.q-head{font-weight:600; margin-bottom:8px;}' +
+      '.opts{list-style:none; margin:0 0 6px; padding-left:14px;}' +
+      '.opts li{margin-bottom:4px; font-size:14px;}' +
+      '.blank-lines .line{border-bottom:1px solid #999; height:22px; margin-bottom:4px;}' +
+      '.answer{color:#0a7a3d; font-weight:600; font-size:13px; margin-top:6px;}' +
+      '@media print{ body{margin:0; padding:24px;} }' +
+      '</style></head><body>' +
+      '<h1>' + escapeHtml(title) + ' — Quiz' + (includeAnswers ? ' (Answer Key)' : '') + '</h1>' +
+      '<div class="meta">ScitechLectureTool — Transcriber &amp; Translator</div>' +
+      (includeAnswers ? '' : '<div class="name-line">Name:<span></span> &nbsp;&nbsp; Date:<span></span></div>') +
+      questionsHtml +
+      '</body></html>';
+
+    const win = window.open('', '_blank');
+    if(!win){
+      alert('Please allow pop-ups for this site so the print page can open.');
+      return;
+    }
+    win.document.open();
+    win.document.write(html);
+    win.document.close();
+    const triggerPrint = () => { win.focus(); win.print(); };
+    win.onload = triggerPrint;
+    setTimeout(triggerPrint, 400);
+  }
+
+  printQuizStudentBtn.addEventListener('click', () => printQuiz(false));
+  printQuizAnswerKeyBtn.addEventListener('click', () => printQuiz(true));
+
+  // LESSON PLAN GENERATOR
+  let currentLessonPlan = null;
+
+  function lpSection(title, bodyHtml){
+    if(!bodyHtml) return '';
+    return '<div class="lesson-plan-section"><div class="lp-title">' + escapeHtml(title) + '</div><div class="lp-body">' + bodyHtml + '</div></div>';
+  }
+  function lpText(val){
+    return val ? escapeHtml(String(val)) : '';
+  }
+  function lpList(arr){
+    if(!Array.isArray(arr) || arr.length === 0) return '';
+    return '<ul>' + arr.map(item => '<li>' + escapeHtml(String(item)) + '</li>').join('') + '</ul>';
+  }
+
+  function renderLessonPlan(lp){
+    const proc = lp.procedures || {};
+    const html =
+      lpSection('Content Standard', lpText(lp.contentStandard)) +
+      lpSection('Performance Standard', lpText(lp.performanceStandard)) +
+      lpSection('Learning Competency', lpText(lp.learningCompetency)) +
+      lpSection('Objectives', lpList(lp.objectives)) +
+      lpSection('Subject Matter', lpText(lp.subjectMatter)) +
+      lpSection('Learning Resources', lpList(lp.resources)) +
+      lpSection('A. Reviewing Previous Lesson', lpText(proc.reviewing)) +
+      lpSection('B. Motivation / Establishing Purpose', lpText(proc.motivation)) +
+      lpSection('C. Presenting Examples / Instances', lpText(proc.presentation)) +
+      lpSection('D. Discussing New Concepts', lpText(proc.discussion)) +
+      lpSection('E. Developing Mastery', lpText(proc.developingMastery)) +
+      lpSection('F. Application to Daily Life', lpText(proc.application)) +
+      lpSection('G. Making Generalizations', lpText(proc.generalization)) +
+      lpSection('H. Evaluation', lpText(proc.evaluation)) +
+      lpSection('I. Additional Activities / Assignment', lpText(proc.assignment)) +
+      lpSection('Remarks', lpText(lp.remarks)) +
+      '<button class="lesson-plan-print-btn" id="lpPrintBtn">🖨️ Print / Save as PDF</button>';
+    lpResults.innerHTML = html;
+    const printBtn = document.getElementById('lpPrintBtn');
+    if(printBtn) printBtn.addEventListener('click', printLessonPlan);
+  }
+
+  async function generateLessonPlan(){
+    const subject = lpSubjectInput.value.trim();
+    const topic = lpTopicInput.value.trim();
+    if(!subject || !topic){
+      lpError.textContent = 'Please enter both a subject and a topic.';
+      lpError.style.display = 'block';
+      return;
+    }
+    lpError.style.display = 'none';
+    lpResults.innerHTML = '';
+    lpGenerateBtn.disabled = true;
+    lpStatusRow.style.display = 'flex';
+    try {
+      const res = await fetch('/.netlify/functions/lesson-plan', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          subject,
+          gradeLevel: lpGradeSelect.value,
+          duration: lpDurationSelect.value,
+          topic
+        })
+      });
+      const data = await res.json().catch(() => ({}));
+      if(!res.ok) throw new Error(data.error || ('Could not generate the lesson plan (' + res.status + ').'));
+      currentLessonPlan = data;
+      renderLessonPlan(data);
+    } catch (err) {
+      lpError.textContent = err.message || 'Could not generate the lesson plan right now. Please try again.';
+      lpError.style.display = 'block';
+    } finally {
+      lpGenerateBtn.disabled = false;
+      lpStatusRow.style.display = 'none';
+    }
+  }
+
+  function printLessonPlan(){
+    if(!currentLessonPlan) return;
+    const lp = currentLessonPlan;
+    const proc = lp.procedures || {};
+    const title = (lpSubjectInput.value.trim() || 'Lesson Plan') + ' — ' + (lpTopicInput.value.trim() || '');
+    const rows = [
+      ['Content Standard', lp.contentStandard],
+      ['Performance Standard', lp.performanceStandard],
+      ['Learning Competency', lp.learningCompetency],
+      ['Objectives', Array.isArray(lp.objectives) ? lp.objectives.map(o => '• ' + o).join('<br>') : lp.objectives],
+      ['Subject Matter', lp.subjectMatter],
+      ['Learning Resources', Array.isArray(lp.resources) ? lp.resources.map(r => '• ' + r).join('<br>') : lp.resources],
+      ['A. Reviewing Previous Lesson', proc.reviewing],
+      ['B. Motivation / Establishing Purpose', proc.motivation],
+      ['C. Presenting Examples / Instances', proc.presentation],
+      ['D. Discussing New Concepts', proc.discussion],
+      ['E. Developing Mastery', proc.developingMastery],
+      ['F. Application to Daily Life', proc.application],
+      ['G. Making Generalizations', proc.generalization],
+      ['H. Evaluation', proc.evaluation],
+      ['I. Additional Activities / Assignment', proc.assignment],
+      ['Remarks', lp.remarks]
+    ];
+    const rowsHtml = rows.filter(r => r[1]).map(r =>
+      '<div class="sec"><div class="sec-title">' + escapeHtml(r[0]) + '</div><div class="sec-body">' + (Array.isArray(r[1]) ? r[1] : escapeHtml(String(r[1])).replace(/\n/g, '<br>')) + '</div></div>'
+    ).join('');
+
+    const html = '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>' + escapeHtml(title) + '</title>' +
+      '<style>' +
+      'body{font-family: Georgia, "Times New Roman", serif; color:#1a1a1a; max-width:760px; margin:40px auto; padding:0 20px; line-height:1.6;}' +
+      'h1{font-size:19px; margin-bottom:2px;}' +
+      '.meta{color:#666; font-size:12px; margin-bottom:18px;}' +
+      '.sec{margin-bottom:16px;}' +
+      '.sec-title{font-weight:700; font-size:13px; margin-bottom:4px;}' +
+      '.sec-body{font-size:13px;}' +
+      '@media print{ body{margin:0; padding:24px;} }' +
+      '</style></head><body>' +
+      '<h1>' + escapeHtml((lpGradeSelect.value || '') + ' — ' + (lpSubjectInput.value.trim() || '')) + '</h1>' +
+      '<div class="meta">Topic: ' + escapeHtml(lpTopicInput.value.trim() || '') + ' &nbsp;|&nbsp; Duration: ' + escapeHtml(lpDurationSelect.value || '') + '</div>' +
+      rowsHtml +
+      '</body></html>';
+
+    const win = window.open('', '_blank');
+    if(!win){
+      alert('Please allow pop-ups for this site so the print page can open.');
+      return;
+    }
+    win.document.open();
+    win.document.write(html);
+    win.document.close();
+    const triggerPrint = () => { win.focus(); win.print(); };
+    win.onload = triggerPrint;
+    setTimeout(triggerPrint, 400);
+  }
+
+  lpGenerateBtn.addEventListener('click', generateLessonPlan);
+
+  translateLangSelect.addEventListener('change', () => {
+    localStorage.setItem(TRANSLATE_LANG_KEY, translateLangSelect.value);
+    if(viewingTranslation && currentSermon){
+      renderSermonText(currentSermon);
+      resetTranslateUI();
+    }
+  });
+
+  async function attemptTranslate(lang){
+    const res = await fetch('/.netlify/functions/translate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        transcript: currentSermon.transcript,
+        takeaway: currentSermon.takeaway,
+        bullets: currentSermon.bullets,
+        targetLanguage: lang
+      })
+    });
+    const data = await res.json().catch(() => ({}));
+    if(!res.ok) throw new Error(data.error || ('Translation failed (' + res.status + ').'));
+    return data;
+  }
+
+  // forceFresh=true skips any saved translation and asks the AI again —
+  // used by "Redo translation" when an earlier saved translation reads oddly.
+  async function runTranslate(forceFresh){
+    const lang = translateLangSelect.value;
+
+    if(!forceFresh){
+      const cached = currentSermon.translations && currentSermon.translations[lang];
+      if(cached){
+        renderSermonText(cached);
+        viewingTranslation = true;
+        translateBtn.textContent = 'Show original';
+        translateNote.textContent = 'Showing ' + lang + ' translation';
+        retranslateBtn.style.display = 'inline-block';
+        return;
+      }
+    }
+
+    translateBtn.disabled = true;
+    retranslateBtn.disabled = true;
+    translateNote.textContent = 'Translating into ' + lang + '… this can take a bit for long recordings.';
+
+    try {
+      let data;
+      try {
+        data = await attemptTranslate(lang);
+      } catch (firstErr) {
+        // Some languages occasionally trip up the translator on the first
+        // try (a malformed response) — silently retry once before giving up.
+        translateNote.textContent = 'That took an extra try — still translating into ' + lang + '…';
+        data = await attemptTranslate(lang);
+      }
+
+      currentSermon.translations = currentSermon.translations || {};
+      currentSermon.translations[lang] = data;
+      renderSermonText(data);
+      viewingTranslation = true;
+      translateBtn.textContent = 'Show original';
+      translateNote.textContent = 'Showing ' + lang + ' translation';
+      retranslateBtn.style.display = 'inline-block';
+
+      if(currentSermon.id){
+        updateSermon(currentSermon.id, { translations: currentSermon.translations })
+          .catch(err => console.error('Could not save translation', err));
+      }
+    } catch (err) {
+      translateNote.textContent = err.message || 'Could not translate right now. Please try again.';
+    } finally {
+      translateBtn.disabled = false;
+      retranslateBtn.disabled = false;
+    }
+  }
+
+  translateBtn.addEventListener('click', async () => {
+    if(!currentSermon) return;
+
+    // Flip back to the original if we're currently showing a translation.
+    if(viewingTranslation){
+      renderSermonText(currentSermon);
+      resetTranslateUI();
+      return;
+    }
+
+    const premium = localStorage.getItem(PREMIUM_FLAG_KEY) === 'true';
+    if(!premium){
+      showTranslatePremiumNote();
+      return;
+    }
+    hideTranslatePremiumNote();
+
+    if(!currentSermon.transcript){
+      translateNote.textContent = "There's nothing to translate yet for this recording.";
+      return;
+    }
+
+    runTranslate(false);
+  });
+
+  retranslateBtn.addEventListener('click', () => {
+    if(!currentSermon || !viewingTranslation) return;
+    runTranslate(true);
+  });
+
+  // ---- Shared helpers: turn related-topic words into clickable inline links ----
+  function escapeHtml(str){
+    return String(str == null ? '' : str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+  }
+  function escapeRegExp(str){
+    return String(str).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  }
+  // Escapes text for safe innerHTML use, then wraps any occurrence of the
+  // given terms (matched case-insensitively, longest terms first so e.g.
+  // "God's mercy" wins over just "mercy") in a clickable <span>.
+  function highlightTerms(text, terms){
+    const escaped = escapeHtml(text);
+    const clean = (terms || []).map(t => (t || '').trim()).filter(Boolean);
+    if(!clean.length) return escaped;
+    const sorted = [...clean].sort((a, b) => b.length - a.length);
+    const pattern = sorted.map(t => escapeRegExp(escapeHtml(t))).join('|');
+    if(!pattern) return escaped;
+    const re = new RegExp('(' + pattern + ')', 'gi');
+    return escaped.replace(re, '<span class="linked-term">$1</span>');
+  }
+
+  newRecordingBtn.addEventListener('click', () => {
+    timerEl.textContent = '00:00';
+    errorBox.style.display = 'none';
+    downloadNowBtn.style.display = 'none';
+    recordAgainBtn.style.display = 'none';
+    recordBtn.classList.remove('needs-attention');
+    showView('home');
+  });
+
+  // ---- Library (saved sermons, stored locally on this device via IndexedDB) ----
+  const DB_NAME = 'sermon_echo_db';
+  const STORE_NAME = 'sermons';
+
+  function openDb(){
+    return new Promise((resolve, reject) => {
+      const req = indexedDB.open(DB_NAME, 1);
+      req.onupgradeneeded = () => {
+        const db = req.result;
+        if(!db.objectStoreNames.contains(STORE_NAME)){
+          db.createObjectStore(STORE_NAME, { keyPath: 'id', autoIncrement: true });
+        }
+      };
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => reject(req.error);
+    });
+  }
+
+  async function saveSermon(record){
+    const db = await openDb();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(STORE_NAME, 'readwrite');
+      const req = tx.objectStore(STORE_NAME).add(record);
+      req.onsuccess = () => resolve(req.result);
+      tx.onerror = () => reject(tx.error);
+    });
+  }
+
+  async function updateSermon(id, fields){
+    if(id === null || id === undefined) return;
+    const db = await openDb();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(STORE_NAME, 'readwrite');
+      const store = tx.objectStore(STORE_NAME);
+      const getReq = store.get(id);
+      getReq.onsuccess = () => {
+        const record = getReq.result;
+        if(!record){ resolve(); return; }
+        Object.assign(record, fields);
+        store.put(record);
+      };
+      getReq.onerror = () => reject(getReq.error);
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error);
+    });
+  }
+
+  async function getAllSermons(){
+    const db = await openDb();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(STORE_NAME, 'readonly');
+      const req = tx.objectStore(STORE_NAME).getAll();
+      req.onsuccess = () => resolve(req.result || []);
+      req.onerror = () => reject(req.error);
+    });
+  }
+
+  async function deleteSermon(id){
+    const db = await openDb();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(STORE_NAME, 'readwrite');
+      tx.objectStore(STORE_NAME).delete(id);
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error);
+    });
+  }
+
+  async function renderLibrary(){
+    libraryList.innerHTML = '';
+    let sermons = [];
+    try{
+      sermons = await getAllSermons();
+    }catch(err){
+      console.error('Could not load library', err);
+    }
+    sermons.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+    if(sermons.length === 0){
+      libraryEmpty.textContent = 'No saved lectures yet. Once you finish a recording, it\'ll show up here automatically.';
+      libraryEmpty.style.display = 'block';
+      return;
+    }
+
+    const query = librarySearchInput.value.trim().toLowerCase();
+    if(query){
+      sermons = sermons.filter(sermon => {
+        const haystack = [
+          sermon.takeaway || '',
+          (sermon.bullets || []).join(' '),
+          sermon.transcript || ''
+        ].join(' ').toLowerCase();
+        return haystack.includes(query);
+      });
+    }
+
+    if(sermons.length === 0){
+      libraryEmpty.textContent = 'No saved lectures match "' + librarySearchInput.value.trim() + '".';
+      libraryEmpty.style.display = 'block';
+      return;
+    }
+    libraryEmpty.style.display = 'none';
+
+    sermons.forEach(sermon => {
+      const item = document.createElement('div');
+      item.className = 'library-item';
+
+      const menuWrap = document.createElement('div');
+      menuWrap.className = 'lib-menu-wrap';
+
+      const menuToggle = document.createElement('button');
+      menuToggle.className = 'lib-menu-toggle';
+      menuToggle.textContent = '⋯';
+      menuToggle.setAttribute('aria-label', 'More actions');
+
+      const menuPanel = document.createElement('div');
+      menuPanel.className = 'lib-menu-panel';
+
+      function closeThisMenu(){ menuPanel.classList.remove('open'); }
+
+      menuToggle.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const wasOpen = menuPanel.classList.contains('open');
+        document.querySelectorAll('.lib-menu-panel.open').forEach(p => p.classList.remove('open'));
+        if(!wasOpen) menuPanel.classList.add('open');
+      });
+
+      const renameBtn = document.createElement('button');
+      renameBtn.innerHTML = '✏️ Rename';
+      renameBtn.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        closeThisMenu();
+        const next = prompt('Rename this recording:', sermon.title || '');
+        if(next === null) return;
+        await updateSermon(sermon.id, { title: next.trim() });
+        renderLibrary();
+      });
+
+      const quizBtn = document.createElement('button');
+      quizBtn.innerHTML = '📝 Quiz';
+      quizBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        closeThisMenu();
+        openSavedSermon(sermon);
+        if(!sermon.quiz || !sermon.quiz.length){
+          generateQuiz();
+        }
+      });
+
+      const printBtn = document.createElement('button');
+      printBtn.innerHTML = '🖨️ Print';
+      printBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        closeThisMenu();
+        openSavedSermon(sermon);
+        printSermonText();
+      });
+
+      const shareBtn = document.createElement('button');
+      shareBtn.innerHTML = '📤 Share';
+      shareBtn.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        closeThisMenu();
+        await shareSermonAudio(sermon);
+      });
+
+      const del = document.createElement('button');
+      del.className = 'danger';
+      del.innerHTML = '🗑️ Delete';
+      del.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        closeThisMenu();
+        if(!confirm('Delete this saved sermon? This cannot be undone.')) return;
+        await deleteSermon(sermon.id);
+        renderLibrary();
+      });
+
+      menuPanel.appendChild(renameBtn);
+      menuPanel.appendChild(quizBtn);
+      menuPanel.appendChild(printBtn);
+      menuPanel.appendChild(shareBtn);
+      menuPanel.appendChild(del);
+
+      menuWrap.appendChild(menuToggle);
+      menuWrap.appendChild(menuPanel);
+
+      const dateEl = document.createElement('div');
+      dateEl.className = 'lib-date';
+      const dateStr = new Date(sermon.date).toLocaleDateString(undefined, { weekday:'long', month:'long', day:'numeric', year:'numeric' });
+      const dateLine = sermon.durationMs ? dateStr + '  ·  ' + formatTime(sermon.durationMs) : dateStr;
+      if(sermon.title && sermon.title.trim()){
+        dateEl.innerHTML = '';
+        const titleSpan = document.createElement('span');
+        titleSpan.className = 'lib-title';
+        titleSpan.textContent = sermon.title.trim();
+        dateEl.appendChild(titleSpan);
+        dateEl.appendChild(document.createTextNode('  ·  ' + dateLine));
+      } else {
+        dateEl.textContent = dateLine;
+      }
+
+      const takeawayEl = document.createElement('div');
+      takeawayEl.className = 'lib-takeaway';
+      takeawayEl.textContent = sermon.pending
+        ? 'Recording saved — summary not available (tap to listen or download)'
+        : sermon.takeaway;
+
+      item.appendChild(menuWrap);
+      item.appendChild(dateEl);
+      item.appendChild(takeawayEl);
+
+      item.addEventListener('click', () => openSavedSermon(sermon));
+      libraryList.appendChild(item);
+    });
+  }
+
+  // Close any open library "⋯" menu when clicking anywhere outside it.
+  document.addEventListener('click', (e) => {
+    if(!e.target.closest('.lib-menu-wrap')){
+      document.querySelectorAll('.lib-menu-panel.open').forEach(p => p.classList.remove('open'));
+    }
+  });
+
+  function makeShareFileName(sermon){
+    const d = new Date(sermon.date);
+    const stamp = d.toISOString().slice(0,10);
+    const cleanTitle = (sermon.title && sermon.title.trim())
+      ? sermon.title.trim().replace(/[^a-z0-9\-_ ]/gi, '').replace(/\s+/g, '-')
+      : ('sermon-echo-' + stamp);
+    const ext = (sermon.audioBlob && sermon.audioBlob.type && sermon.audioBlob.type.includes('wav')) ? 'wav' : 'webm';
+    return cleanTitle + '.' + ext;
+  }
+
+  async function shareSermonAudio(sermon){
+    if(!sermon.audioBlob){
+      alert('No audio file is saved for this recording, so there\'s nothing to share.');
+      return;
+    }
+    const filename = makeShareFileName(sermon);
+    const file = new File([sermon.audioBlob], filename, { type: sermon.audioBlob.type || 'audio/webm' });
+
+    if(navigator.canShare && navigator.canShare({ files: [file] })){
+      try{
+        await navigator.share({
+          files: [file],
+          title: sermon.title && sermon.title.trim() ? sermon.title.trim() : 'ScitechLectureTool recording'
+        });
+      }catch(err){
+        // User cancelled the share sheet, or the browser blocked it — nothing to do here.
+      }
+    } else {
+      downloadBlob(sermon.audioBlob, filename);
+      alert('Sharing directly to other apps isn\'t supported in this browser, so the recording was downloaded instead — you can share it from there.');
+    }
+  }
+
+  function openSavedSermon(sermon){
+    showView('results');
+
+    resultDate.textContent = (sermon.title && sermon.title.trim() ? sermon.title.trim() + ' — ' : '') + new Date(sermon.date).toLocaleDateString(undefined, { weekday:'long', month:'long', day:'numeric' });
+
+    if(sermon.pending){
+      takeawayText.textContent = "This recording hasn't been summarized yet — the audio is saved safely below, but transcription or the takeaway didn't complete for it.";
+      bulletsList.innerHTML = '';
+      transcriptBox.textContent = sermon.transcript || '(No transcript available for this recording.)';
+    } else {
+      takeawayText.textContent = sermon.takeaway;
+      bulletsList.innerHTML = '';
+      (sermon.bullets || []).forEach(b => {
+        const li = document.createElement('li');
+        li.textContent = b;
+        bulletsList.appendChild(li);
+      });
+      transcriptBox.textContent = sermon.transcript;
+    }
+
+    currentAudioBlob = sermon.audioBlob || null;
+    audioPlayback.src = sermon.audioBlob ? URL.createObjectURL(sermon.audioBlob) : '';
+    audioPlayback.load();
+
+    currentSermon = {
+      id: sermon.id,
+      takeaway: sermon.pending ? '' : sermon.takeaway,
+      bullets: sermon.pending ? [] : (sermon.bullets || []),
+      transcript: sermon.transcript || '',
+      translations: sermon.translations || {},
+      quiz: sermon.quiz || null
+    };
+    resetTranslateUI();
+    if(sermon.quiz && sermon.quiz.length){
+      renderQuiz(sermon.quiz);
+    } else {
+      resetQuizUI();
+    }
+    updatePrevNextButtons();
+  }
+
+  let screenBeforeLibrary = 'home';
+
+  libraryBtn.addEventListener('click', () => {
+    screenBeforeLibrary = currentView === 'library' ? screenBeforeLibrary : currentView;
+    showView('library');
+    librarySearchInput.value = '';
+    renderLibrary();
+  });
+
+  librarySearchInput.addEventListener('input', () => {
+    renderLibrary();
+  });
+
+  closeLibraryBtn.addEventListener('click', () => {
+    showView(screenBeforeLibrary);
+  });
+
+  // ---- Paywall (ScitechLectureTool Premium) ----
+  let screenBeforePaywall = 'home';
+
+  function openPaywall(){
+    screenBeforePaywall = currentView === 'paywall' ? screenBeforePaywall : currentView;
+    showView('paywall');
+  }
+
+  function closePaywall(){
+    showView(screenBeforePaywall);
+    if(screenBeforePaywall === 'library') renderLibrary();
+  }
+
+  paywallBtn.addEventListener('click', openPaywall);
+  closePaywallBtn.addEventListener('click', closePaywall);
+
+  // ---- Premium access code: unlock, store, and display ----
+  const PREMIUM_FLAG_KEY = 'se_premium_unlocked';
+  const PREMIUM_CODE_KEY = 'se_premium_code';
+  const PREMIUM_EXPIRES_KEY = 'se_premium_expires_at';
+  const CHECKOUT_SESSION_KEY = 'se_pending_checkout_session_id';
+
+  function formatExpiryDate(iso){
+    try{
+      return new Date(iso).toLocaleDateString(undefined, { weekday:'long', month:'long', day:'numeric', year:'numeric' });
+    }catch(e){
+      return iso;
+    }
+  }
+
+  function refreshPremiumUI(){
+    // If a stored expiry has already passed, treat Premium as locked again
+    // automatically — no server round-trip needed, the code already proved
+    // itself genuine when it was first redeemed.
+    const storedExpiry = localStorage.getItem(PREMIUM_EXPIRES_KEY);
+    if(storedExpiry && Date.now() > new Date(storedExpiry).getTime()){
+      localStorage.removeItem(PREMIUM_FLAG_KEY);
+      localStorage.removeItem(PREMIUM_EXPIRES_KEY);
+      // Keep PREMIUM_CODE_KEY around so myCodeHint doesn't lose the code
+      // reference on locked state — it just won't unlock features anymore.
+    }
+
+    const unlocked = localStorage.getItem(PREMIUM_FLAG_KEY) === 'true';
+    const savedCode = localStorage.getItem(PREMIUM_CODE_KEY);
+    const expiresAt = localStorage.getItem(PREMIUM_EXPIRES_KEY);
+    if(unlocked){
+      premiumBadge.textContent = 'Unlocked ✅';
+      premiumBadge.className = 'premium-badge unlocked';
+      if(savedCode){
+        myCodeHint.style.display = 'block';
+        const expiryLine = expiresAt ? (' — active until ' + formatExpiryDate(expiresAt)) : '';
+        myCodeHint.textContent = 'Your access code (share with family to unlock their device too): ' + savedCode + expiryLine;
+      }
+      if(savedCode && savedCode.startsWith('SE-')){
+        familyCodesSection.style.display = 'block';
+        loadFamilyCodes();
+      } else {
+        familyCodesSection.style.display = 'none';
+      }
+    } else {
+      premiumBadge.textContent = 'Not unlocked';
+      premiumBadge.className = 'premium-badge locked';
+      myCodeHint.style.display = 'none';
+      familyCodesSection.style.display = 'none';
+    }
+  }
+
+  async function loadFamilyCodes(){
+    const ownerCode = localStorage.getItem(PREMIUM_CODE_KEY);
+    if(!ownerCode) return;
+    familyCodeError.style.display = 'none';
+    try{
+      const res = await fetch('/.netlify/functions/list-family-codes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ownerCode })
+      });
+      const data = await res.json().catch(() => ({}));
+      if(!res.ok) throw new Error(data.error || 'Could not load family codes.');
+      renderFamilyCodes(data.codes || []);
+    }catch(err){
+      familyCodesList.innerHTML = '';
+      familyCodeError.textContent = err.message || 'Could not load family codes right now.';
+      familyCodeError.style.display = 'block';
+    }
+  }
+
+  function renderFamilyCodes(codes){
+    familyCodesList.innerHTML = '';
+    if(codes.length === 0){
+      const p = document.createElement('div');
+      p.className = 'hint';
+      p.textContent = 'No family codes yet — create one above.';
+      familyCodesList.appendChild(p);
+      return;
+    }
+    codes.forEach(c => {
+      const item = document.createElement('div');
+      item.className = 'family-code-item';
+
+      const info = document.createElement('div');
+      const name = document.createElement('div');
+      name.className = 'family-code-name';
+      name.textContent = c.label;
+      const value = document.createElement('div');
+      value.className = 'family-code-value';
+      value.textContent = c.code;
+      info.appendChild(name);
+      info.appendChild(value);
+
+      const right = document.createElement('div');
+      right.className = 'family-code-right';
+
+      const status = document.createElement('span');
+      status.className = 'family-code-status ' + (c.revoked ? 'revoked' : 'active');
+      status.textContent = c.revoked ? 'Off' : 'Active';
+
+      const toggleBtn = document.createElement('button');
+      toggleBtn.className = 'skip-btn';
+      toggleBtn.textContent = c.revoked ? 'Turn on' : 'Turn off';
+      toggleBtn.addEventListener('click', async () => {
+        toggleBtn.disabled = true;
+        try{
+          const ownerCode = localStorage.getItem(PREMIUM_CODE_KEY);
+          const res = await fetch('/.netlify/functions/revoke-family-code', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ ownerCode, code: c.code, revoked: !c.revoked })
+          });
+          const data = await res.json().catch(() => ({}));
+          if(!res.ok || !data.ok) throw new Error(data.error || 'Could not update that code.');
+          loadFamilyCodes();
+        }catch(err){
+          familyCodeError.textContent = err.message || 'Could not update that code right now.';
+          familyCodeError.style.display = 'block';
+          toggleBtn.disabled = false;
+        }
+      });
+
+      right.appendChild(status);
+      right.appendChild(toggleBtn);
+      item.appendChild(info);
+      item.appendChild(right);
+      familyCodesList.appendChild(item);
+    });
+  }
+
+  createFamilyCodeBtn.addEventListener('click', async () => {
+    const label = familyLabelInput.value.trim();
+    familyCodeError.style.display = 'none';
+    if(!label){
+      familyCodeError.textContent = 'Please type a name first.';
+      familyCodeError.style.display = 'block';
+      return;
+    }
+    const ownerCode = localStorage.getItem(PREMIUM_CODE_KEY);
+    if(!ownerCode) return;
+    createFamilyCodeBtn.disabled = true;
+    createFamilyCodeBtn.textContent = '…';
+    try{
+      const res = await fetch('/.netlify/functions/create-family-code', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ownerCode, label })
+      });
+      const data = await res.json().catch(() => ({}));
+      if(!res.ok || !data.code) throw new Error(data.error || 'Could not create a code right now.');
+      familyLabelInput.value = '';
+      loadFamilyCodes();
+    }catch(err){
+      familyCodeError.textContent = err.message || 'Could not create a code right now.';
+      familyCodeError.style.display = 'block';
+    }finally{
+      createFamilyCodeBtn.disabled = false;
+      createFamilyCodeBtn.textContent = 'Create code';
+    }
+  });
+
+  function unlockPremium(code, expiresAt){
+    localStorage.setItem(PREMIUM_FLAG_KEY, 'true');
+    if(code) localStorage.setItem(PREMIUM_CODE_KEY, code);
+    if(expiresAt) localStorage.setItem(PREMIUM_EXPIRES_KEY, expiresAt);
+    else localStorage.removeItem(PREMIUM_EXPIRES_KEY); // old-format/tester codes: no built-in expiry to store
+    refreshPremiumUI();
+  }
+
+  redeemCodeBtn.addEventListener('click', async () => {
+    const typed = redeemCodeInput.value.trim();
+    redeemError.style.display = 'none';
+    if(!typed){
+      redeemError.textContent = 'Please type in a code first.';
+      redeemError.style.display = 'block';
+      return;
+    }
+    redeemCodeBtn.disabled = true;
+    redeemCodeBtn.textContent = '…';
+    try {
+      const res = await fetch('/.netlify/functions/verify-code', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code: typed })
+      });
+      const data = await res.json().catch(() => ({}));
+      if(!res.ok){
+        // A real server-side problem (e.g. a missing setting) — show the
+        // actual reason instead of implying the code itself was wrong.
+        throw new Error(data.error || ('Server error (' + res.status + '). Please try again in a moment.'));
+      }
+      if(data.valid){
+        unlockPremium(typed.toUpperCase(), data.expiresAt);
+        redeemCodeInput.value = '';
+      } else if(data.reason === 'expired'){
+        redeemError.textContent = 'This code has expired. Please renew to keep using Premium features.';
+        redeemError.style.display = 'block';
+      } else {
+        redeemError.textContent = "That code doesn't look right — please check for typos and try again.";
+        redeemError.style.display = 'block';
+      }
+    } catch (err) {
+      redeemError.textContent = err.message || 'Could not check that code right now. Please try again in a moment.';
+      redeemError.style.display = 'block';
+    } finally {
+      redeemCodeBtn.disabled = false;
+      redeemCodeBtn.textContent = 'Unlock';
+    }
+  });
+
+  refreshPremiumUI();
+
+  subscribeBtn.addEventListener('click', async () => {
+    paywallError.style.display = 'none';
+    subscribeBtn.disabled = true;
+    subscribeBtn.textContent = 'Redirecting to payment…';
+    try {
+      const res = await fetch('/.netlify/functions/create-checkout', { method: 'POST' });
+      if(!res.ok){
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.error || ('Could not start checkout. (' + res.status + ')'));
+      }
+      const data = await res.json();
+      if(!data.checkout_url) throw new Error('Did not receive a payment link. Please try again.');
+      // Save the session id so that when we come back after paying,
+      // we can ask the server to confirm this exact payment and issue a code.
+      if(data.session_id) sessionStorage.setItem(CHECKOUT_SESSION_KEY, data.session_id);
+      window.location.href = data.checkout_url;
+    } catch (err) {
+      paywallError.textContent = err.message;
+      paywallError.style.display = 'block';
+      subscribeBtn.disabled = false;
+      subscribeBtn.textContent = 'Subscribe / Pay Now';
+    }
+  });
+
+  // After returning from PayMongo's checkout page, show a banner explaining
+  // what happened, based on the ?paid= flag in the URL, then clean the URL up.
+  (function checkPaymentReturn(){
+    const params = new URLSearchParams(window.location.search);
+    const paid = params.get('paid');
+    if(!paid) return;
+
+    function showBanner(html){
+      paidBanner.innerHTML = html + '<button aria-label="Dismiss">✕</button>';
+      paidBanner.className = 'paid-banner';
+      paidBanner.style.display = 'flex';
+      paidBanner.querySelector('button').addEventListener('click', () => { paidBanner.style.display = 'none'; });
+    }
+
+    if(paid === 'success'){
+      showBanner('<span>🎉 Thank you for your support! Confirming your payment…</span>');
+
+      const sessionId = sessionStorage.getItem(CHECKOUT_SESSION_KEY);
+      if(sessionId){
+        fetch('/.netlify/functions/verify-payment', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ session_id: sessionId })
+        })
+          .then(res => res.json().then(data => ({ ok: res.ok, data })))
+          .then(({ ok, data }) => {
+            if(ok && data.code){
+              unlockPremium(data.code, data.expiresAt);
+              const expiryLine = data.expiresAt ? ('<div style="font-size:12px; color:var(--text-muted); margin-top:8px;">Active for 30 days, until ' + formatExpiryDate(data.expiresAt) + '</div>') : '';
+              showBanner(
+                '<div>🎉 Thank you for your support! Premium is unlocked on this device.' +
+                '<div class="code-box"><div class="code-label">Your access code (save this — it also unlocks Premium for anyone you share it with)</div>' +
+                '<div class="code-value">' + data.code + '</div>' +
+                expiryLine +
+                '<button class="copy-code-btn" id="copyCodeBtn">Copy code</button></div></div>'
+              );
+              const copyBtn = document.getElementById('copyCodeBtn');
+              if(copyBtn) copyBtn.addEventListener('click', () => {
+                navigator.clipboard.writeText(data.code).then(() => { copyBtn.textContent = 'Copied ✓'; });
+              });
+            } else {
+              showBanner('<span>🎉 Thank you for your support! We couldn\'t automatically confirm the payment on this device. If you completed payment, please try reopening the app in the same browser you paid in, or email beavenbermudez@gmail.com with your PayMongo receipt or reference number and we\'ll send your code.</span>');
+            }
+          })
+          .catch(() => {
+            showBanner('<span>🎉 Thank you for your support! We couldn\'t automatically confirm the payment right now. Please try reopening the app in the same browser you paid in.</span>');
+          })
+          .finally(() => sessionStorage.removeItem(CHECKOUT_SESSION_KEY));
+      } else {
+        showBanner('<span>🎉 Thank you for your support! We couldn\'t find this payment session on this device (perhaps a different tab was used). If you completed payment, please email beavenbermudez@gmail.com with your PayMongo receipt or reference number and we\'ll send your code.</span>');
+      }
+    } else if(paid === 'cancelled'){
+      showBanner('<span>Payment was cancelled — no charge was made. You can try again anytime.</span>');
+    } else {
+      return;
+    }
+
+    // Clean the ?paid=... param out of the address bar
+    params.delete('paid');
+    const newUrl = window.location.pathname + (params.toString() ? ('?' + params.toString()) : '');
+    window.history.replaceState({}, '', newUrl);
+
+    // Open the paywall screen so the banner has context
+    openPaywall();
+  })();
+
+})();
+</script>
+
+</body>
+</html>
