@@ -34,7 +34,7 @@ exports.handler = async (event) => {
           attributes: {
             line_items: [
               {
-                name: 'Sermon Echo Premium',
+                name: 'ScanFixAll Premium (30 days)',
                 amount: PREMIUM_PRICE_PESOS * 100, // PayMongo expects centavos
                 currency: 'PHP',
                 quantity: 1
@@ -43,7 +43,7 @@ exports.handler = async (event) => {
             payment_method_types: ['card', 'gcash', 'qrph'],
             success_url: origin + '/?paid=success',
             cancel_url: origin + '/?paid=cancelled',
-            description: 'Sermon Echo Premium — one-time payment',
+            description: 'ScanFixAll Premium — 30 days, one-time payment (no auto-renew)',
             send_email_receipt: true
           }
         }

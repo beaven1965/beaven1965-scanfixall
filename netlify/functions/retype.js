@@ -10,6 +10,17 @@
 // The browser then lays the text out on a clean new page the user can edit.
 
 const verifyCode = require('./verify-code.js');
+const { getStore, connectLambda } = require('@netlify/blobs');
+
+// Limit: 100 retyped pages per month per purchase. Family codes share
+// the pages of the purchase code that created them.
+const MONTHLY_PAGE_LIMIT = 100;
+
+function monthKey(){
+  // Month in Philippine time, e.g. "2026-09".
+  const d = new Date(Date.now() + 8 * 3600 * 1000);
+  return d.getUTCFullYear() + '-' + String(d.getUTCMonth() + 1).padStart(2, '0');
+}
 
 const MODEL = 'claude-haiku-4-5-20251001'; // fast enough for Netlify's time limit
 
@@ -59,6 +70,21 @@ exports.handler = async (event) => {
       return json(403, { error: checked.reason === 'expired'
         ? 'Your Premium code has expired. Please renew to use Retype.'
         : 'Retype is a Premium feature. Your access code could not be confirmed.' });
+    }
+
+    // Which purchase does this code belong to? (Family codes count against their owner.)
+    connectLambda(event);
+    const cleaned = String(code).trim().toUpperCase();
+    let owner = cleaned;
+    if (cleaned.startsWith('SF-')) {
+      const rec = await getStore('family-codes').get(cleaned, { type: 'json' });
+      if (rec && rec.ownerCode) owner = rec.ownerCode;
+    }
+    const usageStore = getStore('retype-usage');
+    const usageKey = owner + ':' + monthKey();
+    const used = Number(await usageStore.get(usageKey)) || 0;
+    if (used >= MONTHLY_PAGE_LIMIT) {
+      return json(429, { error: "You've used all " + MONTHLY_PAGE_LIMIT + ' Retype pages for this month. They reset on the 1st. Clean paper still works without limits.', pagesLeft: 0 });
     }
 
     const match = (image || '').match(/^data:image\/(jpeg|png);base64,(.+)$/);
@@ -117,7 +143,11 @@ exports.handler = async (event) => {
       if (bottom - top > 0.02) letterhead = { found: true, top, bottom };
     }
 
-    return json(200, { blocks, signerBlock, letterhead });
+    // Count the page only after it was read successfully.
+    await usageStore.set(usageKey, String(used + 1));
+    const pagesLeft = Math.max(0, MONTHLY_PAGE_LIMIT - used - 1);
+
+    return json(200, { blocks, signerBlock, letterhead, pagesLeft });
   } catch (err) {
     return json(500, { error: err.message || 'Something went wrong while retyping.' });
   }

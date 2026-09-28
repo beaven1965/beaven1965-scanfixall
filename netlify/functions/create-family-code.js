@@ -63,6 +63,19 @@ exports.handler = async (event) => {
       return { statusCode: 403, body: JSON.stringify({ error: 'Your access code has expired. Please renew to create family codes.' }) };
     }
 
+    // Limit: up to 5 active family codes per purchase (turned-off codes don't count).
+    const MAX_FAMILY_CODES = 5;
+    const limitStore = getStore('family-codes');
+    const existing = (await limitStore.get('index:' + cleanedOwner, { type: 'json' })) || [];
+    let active = 0;
+    for (const fc of existing) {
+      const rec = await limitStore.get(fc, { type: 'json' });
+      if (rec && !rec.revoked) active++;
+    }
+    if (active >= MAX_FAMILY_CODES) {
+      return { statusCode: 403, body: JSON.stringify({ error: 'You already have ' + MAX_FAMILY_CODES + ' active family codes. Turn one off to create a new one.' }) };
+    }
+
     const newRandom = crypto.randomBytes(5).toString('hex').toUpperCase();
     const newSignature = crypto
       .createHmac('sha256', accessSecret)
