@@ -1812,6 +1812,8 @@
           <input type="file" id="scanFileInput" accept="image/*" capture="environment" class="visually-hidden">
         </div>
 
+        <div class="error-box" id="scanError" style="display:none;"></div>
+
         <div class="canvas-wrap" id="scanCanvasWrap" style="display:none;">
           <canvas id="scanCanvas"></canvas>
         </div>
@@ -1841,7 +1843,6 @@
             <button class="tool-btn primary" id="scanSaveImageBtn">⬇ Save as Image</button>
             <button class="tool-btn primary" id="scanSavePdfBtn">⬇ Save as PDF</button>
           </div>
-          <div class="error-box" id="scanError" style="display:none;"></div>
         </div>
       </div>
     </div>
@@ -1859,6 +1860,8 @@
           <button class="tool-btn" id="shrinkUploadBtn">⬆ Upload Photo</button>
           <input type="file" id="shrinkFileInput" accept="image/*" capture="environment" class="visually-hidden">
         </div>
+
+        <div class="error-box" id="shrinkError" style="display:none;"></div>
 
         <div class="canvas-wrap" id="shrinkCanvasWrap" style="display:none;">
           <canvas id="shrinkCanvas"></canvas>
@@ -1878,7 +1881,6 @@
           <div class="tool-upload-row" style="margin-top:10px;">
             <button class="tool-btn primary" id="shrinkSaveBtn">⬇ Download Shrunk Photo</button>
           </div>
-          <div class="error-box" id="shrinkError" style="display:none;"></div>
         </div>
       </div>
     </div>
@@ -1896,6 +1898,8 @@
           <button class="tool-btn" id="signUploadBtn">⬆ Upload Photo</button>
           <input type="file" id="signFileInput" accept="image/*" capture="environment" class="visually-hidden">
         </div>
+
+        <div class="error-box" id="signError" style="display:none;"></div>
 
         <div class="canvas-wrap" id="signCanvasWrap" style="display:none;">
           <div id="signStack" style="position:relative; display:inline-block; line-height:0;">
@@ -1924,7 +1928,6 @@
             <button class="tool-btn primary" id="signSaveImageBtn">⬇ Save as Image</button>
             <button class="tool-btn primary" id="signSavePdfBtn">⬇ Save as PDF</button>
           </div>
-          <div class="error-box" id="signError" style="display:none;"></div>
         </div>
       </div>
     </div>
@@ -2143,18 +2146,61 @@
     return Math.round(base64.length * 0.75);
   }
 
+  // Explains in plain words why a file couldn't be opened as a picture.
+  function photoErrorMessage(file){
+    const name = (file && file.name) || 'that file';
+    const ext = (name.split('.').pop() || '').toLowerCase();
+    if(ext === 'pdf') return '"' + name + '" is a PDF, not a photo. Please choose a JPG or PNG picture.';
+    if(ext === 'heic' || ext === 'heif') return '"' + name + '" is an iPhone photo (HEIC), which this browser can\'t open. Please choose a JPG or PNG, or set the iPhone camera to "Most Compatible".';
+    if(ext === 'tif' || ext === 'tiff') return '"' + name + '" is a TIFF scan, which this browser can\'t open. Please save it as JPG or PNG first.';
+    if(['doc','docx','xls','xlsx','ppt','pptx','txt'].includes(ext)) return '"' + name + '" is a document, not a photo. Please choose a JPG or PNG picture.';
+    if(file && file.size === 0) return '"' + name + '" is empty. It may not have finished downloading. Please try another one.';
+    return 'Could not open "' + name + '" as a picture. Please choose a JPG or PNG photo.';
+  }
+
   function loadImageFromFile(file){
+    // Uses a lightweight object URL instead of a big text copy of the photo,
+    // so large phone photos don't run the browser out of memory.
     return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => {
-        const img = new Image();
-        img.onload = () => resolve({ img, originalBytes: file.size });
-        img.onerror = () => reject(new Error('Could not read that image. Please try another photo.'));
-        img.src = reader.result;
-      };
-      reader.onerror = () => reject(new Error('Could not read that file.'));
-      reader.readAsDataURL(file);
+      const url = URL.createObjectURL(file);
+      const img = new Image();
+      img.onload = () => { URL.revokeObjectURL(url); resolve({ img, originalBytes: file.size }); };
+      img.onerror = () => { URL.revokeObjectURL(url); reject(new Error(photoErrorMessage(file))); };
+      img.src = url;
     });
+  }
+
+  // ---- Small status message at the bottom of the screen ----
+  const sfaToast = document.createElement('div');
+  sfaToast.setAttribute('role','status');
+  sfaToast.style.cssText = 'position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:#1c2530;color:#fff;padding:12px 18px;border-radius:12px;font-size:15px;font-weight:600;box-shadow:0 4px 16px rgba(0,0,0,.3);z-index:9999;max-width:90vw;text-align:center;display:none;';
+  document.body.appendChild(sfaToast);
+  let sfaToastTimer = null;
+  function showStatus(msg, hideAfterMs){
+    clearTimeout(sfaToastTimer);
+    sfaToast.textContent = msg;
+    sfaToast.style.display = 'block';
+    if(hideAfterMs) sfaToastTimer = setTimeout(() => { sfaToast.style.display = 'none'; }, hideAfterMs);
+  }
+
+  // Runs when a photo is picked: shows "Opening…", loads it, scrolls to it,
+  // then clears the picker so the same photo can be chosen again.
+  async function onPhotoPicked(inputEl, handler, resultWrapEl, errorEl){
+    const file = inputEl.files && inputEl.files[0];
+    if(!file) return;
+    showStatus('Opening your photo…');
+    try{
+      await handler(file);
+    }finally{
+      inputEl.value = '';
+    }
+    if(errorEl && errorEl.style.display === 'block'){
+      showStatus(errorEl.textContent, 5000);
+      errorEl.scrollIntoView({ behavior:'smooth', block:'center' });
+      return;
+    }
+    showStatus('Photo ready ✓', 2000);
+    if(resultWrapEl) resultWrapEl.scrollIntoView({ behavior:'smooth', block:'start' });
   }
 
   // =========================================================
@@ -2263,8 +2309,7 @@
   scanTakePhotoBtn.addEventListener('click', () => { scanFileInput.setAttribute('capture','environment'); scanFileInput.click(); });
   scanUploadBtn.addEventListener('click', () => { scanFileInput.removeAttribute('capture'); scanFileInput.click(); });
   scanFileInput.addEventListener('change', () => {
-    const file = scanFileInput.files && scanFileInput.files[0];
-    if(file) handleScanFile(file);
+    onPhotoPicked(scanFileInput, handleScanFile, scanCanvasWrap, scanError);
   });
 
   scanRotateLeftBtn.addEventListener('click', () => { scanBaseRotation = (scanBaseRotation + 270) % 360; renderScanCanvas(); });
@@ -2439,8 +2484,7 @@
   shrinkTakePhotoBtn.addEventListener('click', () => { shrinkFileInput.setAttribute('capture','environment'); shrinkFileInput.click(); });
   shrinkUploadBtn.addEventListener('click', () => { shrinkFileInput.removeAttribute('capture'); shrinkFileInput.click(); });
   shrinkFileInput.addEventListener('change', () => {
-    const file = shrinkFileInput.files && shrinkFileInput.files[0];
-    if(file) handleShrinkFile(file);
+    onPhotoPicked(shrinkFileInput, handleShrinkFile, shrinkCanvasWrap, shrinkError);
   });
 
   presetButtons.forEach(btn => {
@@ -2541,8 +2585,7 @@
   signTakePhotoBtn.addEventListener('click', () => { signFileInput.setAttribute('capture','environment'); signFileInput.click(); });
   signUploadBtn.addEventListener('click', () => { signFileInput.removeAttribute('capture'); signFileInput.click(); });
   signFileInput.addEventListener('change', () => {
-    const file = signFileInput.files && signFileInput.files[0];
-    if(file) handleSignFile(file);
+    onPhotoPicked(signFileInput, handleSignFile, signCanvasWrap, signError);
   });
 
   // ---- Signature pad modal (draw with finger/mouse) ----
