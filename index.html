@@ -2064,7 +2064,7 @@
         <li><span class="check">✓</span> No watermark on your scanned documents</li>
         <li><span class="check">✓</span> Combine unlimited pages into one PDF</li>
         <li><span class="check">✓</span> 📝 Retype as a brand-new document — up to 100 pages a month</li>
-        <li><span class="check">✓</span> Share with up to 5 family members or students (they share the 100 Retype pages)</li>
+        <li><span class="check">✓</span> Share with up to 3 family members or students (they share the 100 Retype pages)</li>
         <li><span class="check">✓</span> A founding-supporter badge on your account <span class="soon">coming soon</span></li>
       </ul>
 
@@ -2977,6 +2977,7 @@
     retypePaper.innerHTML = blocks.map((b, i) => {
       const html = escapeHtml(b.text)
         .replace(/\*\*([\s\S]+?)\*\*/g, '<b>$1</b>')
+        .replace(/\[\?\]/g, '<mark style="background:#ffe08a;color:#111;">[?]</mark>')
         .replace(/\n/g, '<br>');
       const align = b.align === 'justify' ? 'justify' : b.align;
       const cls = 'rt-block' + (i === signerBlock ? ' rt-signer' : '');
@@ -3022,26 +3023,55 @@
       scanError.scrollIntoView({ behavior:'smooth', block:'center' });
       return;
     }
-    // Send a reasonably sized, clean copy (upright, as currently rotated).
+    // The AI reads best from the straightened photo BEFORE whitening — on
+    // crumpled paper the whitening can break letters apart. Draw it upright,
+    // turned the same way as on screen. 1568px is the largest size the
+    // reader actually uses; bigger would only be shrunk again.
+    const readSize = 1568;
+    const swappedR = (scanBaseRotation % 180 !== 0);
+    const fw = swappedR ? scanFlatCanvas.height : scanFlatCanvas.width;
+    const fh = swappedR ? scanFlatCanvas.width : scanFlatCanvas.height;
+    const rs = Math.min(1, readSize / Math.max(fw, fh));
+    const readCanvas = document.createElement('canvas');
+    readCanvas.width = Math.round(fw * rs); readCanvas.height = Math.round(fh * rs);
+    const rctx = readCanvas.getContext('2d');
+    rctx.fillStyle = '#ffffff'; rctx.fillRect(0, 0, readCanvas.width, readCanvas.height);
+    rctx.translate(readCanvas.width / 2, readCanvas.height / 2);
+    rctx.rotate((scanBaseRotation + scanFineAngle) * Math.PI / 180);
+    rctx.drawImage(scanFlatCanvas, -scanFlatCanvas.width * rs / 2, -scanFlatCanvas.height * rs / 2, scanFlatCanvas.width * rs, scanFlatCanvas.height * rs);
+    const image = readCanvas.toDataURL('image/jpeg', 0.92);
+
+    // The whitened page (as on screen) is still used to cut out a clean letterhead.
     const s = Math.min(1, 1600 / Math.max(scanCanvas.width, scanCanvas.height));
     const send = document.createElement('canvas');
     send.width = Math.round(scanCanvas.width * s); send.height = Math.round(scanCanvas.height * s);
     send.getContext('2d').drawImage(scanCanvas, 0, 0, send.width, send.height);
-    const image = send.toDataURL('image/jpeg', 0.85);
 
     retypeBusy = true;
     const label = scanRetypeBtn.textContent;
     scanRetypeBtn.textContent = '⏳ Reading your page…';
     scanRetypeBtn.disabled = true;
-    showStatus('Reading your page… this takes about 10 seconds.');
+    showStatus('Reading your page carefully… this takes about 15–20 seconds.');
     try{
-      const res = await fetch('/.netlify/functions/retype', {
+      // Careful reader first (streams its answer so it may take up to a minute);
+      // if it isn't on the server yet, use the original quick reader.
+      let res = await fetch('/.netlify/functions/retype-careful', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ code, image })
       });
-      const data = await res.json().catch(() => ({}));
-      if(!res.ok){
+      if(res.status === 404){
+        res = await fetch('/.netlify/functions/retype', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ code, image })
+        });
+      }
+      const raw = await res.text().catch(() => '');
+      let data = {};
+      try{ data = JSON.parse(raw.trim() || '{}'); }catch(e){ data = {}; }
+      if(data.error) throw new Error(data.error);
+      if(!res.ok || !Array.isArray(data.blocks)){
         throw new Error(data.error || (res.status === 504 || res.status === 502
           ? 'Reading took too long. Please try again.'
           : 'Could not retype right now (' + res.status + '). Please try again.'));
@@ -3052,7 +3082,8 @@
       retypeKeepLetterhead.checked = !!retypeLetterhead;
       refreshLetterheadPreview();
       openRetypePanel();
-      showStatus('Retyped ✓ Tap any word to fix it.' + (typeof data.pagesLeft === 'number' ? ' (' + data.pagesLeft + ' Retype pages left this month)' : ''), 4000);
+      const unsure = (retypePaper.innerHTML.match(/\[\?\]/g) || []).length;
+      showStatus((unsure ? 'Retyped ✓ ' + unsure + ' word' + (unsure > 1 ? 's' : '') + ' marked [?] could not be read clearly — please type them in.' : 'Retyped ✓ Tap any word to fix it.') + (typeof data.pagesLeft === 'number' ? ' (' + data.pagesLeft + ' Retype pages left this month)' : ''), 4000);
     }catch(err){
       sfaToast.style.display = 'none';
       scanError.textContent = err.message || 'Could not retype right now. Please try again.';
