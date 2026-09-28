@@ -1700,6 +1700,9 @@
   }
   .size-compare .big{ font-size:16px; font-weight:700; }
   .size-compare .arrow{ color:var(--text-muted); align-self:center; }
+  .retype-sheet{ background:#ffffff; border-radius:6px; box-shadow:0 2px 12px rgba(0,0,0,.25); margin-top:10px; overflow:hidden; }
+  .retype-sheet img{ display:block; width:calc(100% - 8%); margin:3% 4% 0; }
+  .retype-sheet .retype-paper{ box-shadow:none; margin-top:0; border-radius:0; }
   .retype-paper{
     background:#ffffff;
     color:#111111;
@@ -1867,7 +1870,7 @@
           <div class="tool-hint" style="margin-top:8px;">
             <b>Which should I use?</b><br>
             <b>✨ Clean paper</b> (free): keeps the <i>original</i> page — letterhead, logo and handwritten signature stay — but faint creases or stains may still show.<br>
-            <b>📝 Retype</b> (Premium): reads the text and prints it on a <i>brand-new</i> white page. Perfectly clean, but the letterhead and signature are left out — you sign it again.
+            <b>📝 Retype</b> (Premium): reads the text and prints it on a <i>brand-new</i> white page. Perfectly clean. You can keep the original letterhead/logo as a picture, and you sign it again.
           </div>
           <div class="tool-hint" style="margin-top:10px;">Got more pages? Add them below before saving — they'll all go into one PDF.</div>
           <div class="page-thumbs" id="scanPageThumbs" style="margin-top:10px;"></div>
@@ -1883,8 +1886,15 @@
           </div>
         </div>
         <div id="retypePanel" style="display:none;">
-          <div class="tool-hint">Here's your page retyped fresh. <b>Tap any word to fix it.</b> The letterhead and handwritten signature are left out — use <b>Sign this page</b> to sign it again.</div>
-          <div class="retype-paper" id="retypePaper" contenteditable="true" spellcheck="false"></div>
+          <div class="tool-hint">Here's your page retyped fresh. <b>Tap any word to fix it.</b> The handwritten signature is left out — use <b>Sign this page</b> to sign it again.</div>
+          <label class="tool-hint" id="retypeLetterheadRow" style="display:none; margin-top:10px; gap:8px; align-items:center; cursor:pointer;">
+            <input type="checkbox" id="retypeKeepLetterhead" checked style="width:20px;height:20px;">
+            <span><b>Keep original letterhead / logo</b> (the real picture from your scan, placed at the top)</span>
+          </label>
+          <div class="retype-sheet">
+            <img id="retypeLetterheadImg" alt="Original letterhead" style="display:none;">
+            <div class="retype-paper" id="retypePaper" contenteditable="true" spellcheck="false"></div>
+          </div>
           <div class="tool-hint" style="margin-top:6px;">Please only retype and re-sign your own documents.</div>
           <div class="tool-upload-row" style="margin-top:10px;">
             <button class="tool-btn primary" id="retypeSignBtn">✍️ Sign this page</button>
@@ -2822,6 +2832,43 @@
   const retypeBackBtn = document.getElementById('retypeBackBtn');
   let retypeBusy = false;
   let pendingSignHint = null;   // where to put the signature when coming from a retyped page
+  let retypeLetterhead = null;  // picture of the original letterhead, cut from the scan
+  const retypeLetterheadRow = document.getElementById('retypeLetterheadRow');
+  const retypeKeepLetterhead = document.getElementById('retypeKeepLetterhead');
+  const retypeLetterheadImg = document.getElementById('retypeLetterheadImg');
+
+  // Cuts the letterhead band out of the page the reader looked at, trims
+  // the empty white edges, and keeps it as a picture.
+  function cutLetterhead(pageCanvas, band){
+    const y0 = Math.floor(pageCanvas.height * band.top), y1 = Math.ceil(pageCanvas.height * band.bottom);
+    const w = pageCanvas.width, h = Math.max(1, y1 - y0);
+    const d = pageCanvas.getContext('2d').getImageData(0, y0, w, h).data;
+    let minX = w, maxX = -1, minY = h, maxY = -1;
+    for(let y = 0; y < h; y++) for(let x = 0; x < w; x++){
+      const i = (y*w + x)*4;
+      if(d[i] < 200 || d[i+1] < 200 || d[i+2] < 200){ if(x < minX) minX = x; if(x > maxX) maxX = x; if(y < minY) minY = y; if(y > maxY) maxY = y; }
+    }
+    if(maxX < 0) return null;
+    const pad = 6;
+    minX = Math.max(0, minX - pad); maxX = Math.min(w, maxX + pad); minY = Math.max(0, minY - pad); maxY = Math.min(h, maxY + pad);
+    const c = document.createElement('canvas');
+    c.width = maxX - minX; c.height = maxY - minY;
+    c.getContext('2d').drawImage(pageCanvas, minX, y0 + minY, c.width, c.height, 0, 0, c.width, c.height);
+    // Remember how wide it was compared to the whole page, so it keeps its real size.
+    c._pageFrac = c.width / w;
+    return c;
+  }
+
+  function refreshLetterheadPreview(){
+    const on = !!retypeLetterhead && retypeKeepLetterhead.checked;
+    retypeLetterheadImg.style.display = on ? 'block' : 'none';
+    if(on){
+      retypeLetterheadImg.src = retypeLetterhead.toDataURL('image/png');
+      retypeLetterheadImg.style.width = Math.min(92, retypeLetterhead._pageFrac * 100) + '%';
+      retypeLetterheadImg.style.marginLeft = 'auto'; retypeLetterheadImg.style.marginRight = 'auto';
+    }
+  }
+  retypeKeepLetterhead.addEventListener('change', refreshLetterheadPreview);
 
   function escapeHtml(t){ return t.replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 
@@ -2869,7 +2916,12 @@
     }
     ensureScanResult();
     const page = processedPage();
-    if(!page){ return; }
+    if(!page || scanCanvasWrap.style.display === 'none'){
+      scanError.textContent = 'Please open the page you want to retype first: tap Upload Photo (or Take Photo), then Flatten & clean, then Retype.';
+      scanError.style.display = 'block';
+      scanError.scrollIntoView({ behavior:'smooth', block:'center' });
+      return;
+    }
     // Send a reasonably sized, clean copy (upright, as currently rotated).
     const s = Math.min(1, 1600 / Math.max(scanCanvas.width, scanCanvas.height));
     const send = document.createElement('canvas');
@@ -2895,6 +2947,10 @@
           : 'Could not retype right now (' + res.status + '). Please try again.'));
       }
       showRetypedBlocks(data.blocks, data.signerBlock);
+      retypeLetterhead = (data.letterhead && data.letterhead.found) ? cutLetterhead(send, data.letterhead) : null;
+      retypeLetterheadRow.style.display = retypeLetterhead ? 'flex' : 'none';
+      retypeKeepLetterhead.checked = !!retypeLetterhead;
+      refreshLetterheadPreview();
       openRetypePanel();
       showStatus('Retyped ✓ Tap any word to fix it.', 3000);
     }catch(err){
@@ -2949,7 +3005,7 @@
   const RT_FONT = "'Tinos','Times New Roman',Times,serif";
   function rtFont(size, bold){ return (bold ? '700 ' : '400 ') + size + 'px ' + RT_FONT; }
 
-  function layoutRetype(size){
+  function layoutRetype(size, firstTop){
     const meas = document.createElement('canvas').getContext('2d');
     const lh = Math.round(size * 1.38), maxW = RT_W - RT_MX * 2;
     const items = [];       // {kind:'line', words, align, justify} | {kind:'gap', h} | {kind:'signerMark'}
@@ -2983,10 +3039,12 @@
       items.push({ kind:'gap', h: Math.round(lh * 0.55) });
     });
     // Break into pages.
-    const pages = [[]]; let y = 0; const avail = RT_H - RT_TOP - RT_BOTTOM;
+    // Page 1 may start lower to leave room for the letterhead.
+    const pages = [[]]; let y = 0;
+    const availFor = (pi) => RT_H - (pi === 0 ? firstTop : RT_TOP) - RT_BOTTOM;
     items.forEach(it => {
       const h = it.kind === 'line' ? it.lh : (it.h || 0);
-      if(it.kind === 'line' && y + h > avail){ pages.push([]); y = 0; }
+      if(it.kind === 'line' && y + h > availFor(pages.length - 1)){ pages.push([]); y = 0; }
       if(it.kind === 'gap' && y === 0) return;          // no blank space at the top of a page
       pages[pages.length-1].push({ ...it, y });
       y += h;
@@ -2996,17 +3054,28 @@
 
   function renderRetypePages(){
     // Start at 12 pt; shrink a little (not below ~10 pt) to fit one page before spilling onto a second.
+    // Room for the original letterhead at the top of page 1, if kept.
+    let lhDraw = null, firstTop = RT_TOP;
+    if(retypeLetterhead && retypeKeepLetterhead.checked){
+      let w = RT_W * Math.min(0.92, retypeLetterhead._pageFrac);
+      let h = w * retypeLetterhead.height / retypeLetterhead.width;
+      if(h > RT_H * 0.2){ h = RT_H * 0.2; w = h * retypeLetterhead.width / retypeLetterhead.height; }
+      lhDraw = { x: (RT_W - w) / 2, y: 60, w, h };
+      firstTop = Math.max(RT_TOP, 60 + h + 50);
+    }
     let lay = null;
-    for(let size = 26; size >= 21; size -= 0.5){ lay = layoutRetype(size); if(lay.pages.length === 1) break; }
+    for(let size = 26; size >= 21; size -= 0.5){ lay = layoutRetype(size, firstTop); if(lay.pages.length === 1) break; }
     const maxW = RT_W - RT_MX * 2;
     let signerFrac = null;
     const canvases = lay.pages.map((items, pi) => {
       const c = document.createElement('canvas'); c.width = RT_W; c.height = RT_H;
       const ctx = c.getContext('2d');
       ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, RT_W, RT_H);
+      if(pi === 0 && lhDraw) ctx.drawImage(retypeLetterhead, lhDraw.x, lhDraw.y, lhDraw.w, lhDraw.h);
+      const top = pi === 0 ? firstTop : RT_TOP;
       ctx.fillStyle = '#111111'; ctx.textBaseline = 'alphabetic';
       items.forEach(it => {
-        if(it.kind === 'signerMark'){ if(pi === 0 && signerFrac === null) signerFrac = (RT_TOP + it.y) / RT_H; return; }
+        if(it.kind === 'signerMark'){ if(pi === 0 && signerFrac === null) signerFrac = (top + it.y) / RT_H; return; }
         if(it.kind !== 'line') return;
         const total = it.words.reduce((a, w) => a + w.width, 0);
         const gaps = it.words.length - 1;
@@ -3016,7 +3085,7 @@
         let x = RT_MX;
         if(it.align === 'center') x = RT_MX + (maxW - lineW) / 2;
         if(it.align === 'right') x = RT_MX + maxW - lineW;
-        const baseY = RT_TOP + it.y + lay.size;
+        const baseY = top + it.y + lay.size;
         it.words.forEach((w, i) => {
           w.parts.forEach(p => { ctx.font = rtFont(lay.size, p.b); ctx.fillText(p.w, x, baseY); x += p.width; });
           if(i < gaps) x += space;
