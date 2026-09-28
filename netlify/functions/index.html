@@ -11,7 +11,7 @@
 <link rel="icon" type="image/png" sizes="16x16" href="/icon-16.png">
 <link rel="apple-touch-icon" sizes="180x180" href="/icon-180.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,500&family=Inter:wght@400;500;600;700&family=Tinos:wght@400;700&display=swap" rel="stylesheet">
 <style>
   :root{
     --ink:#1C2331;
@@ -1700,6 +1700,27 @@
   }
   .size-compare .big{ font-size:16px; font-weight:700; }
   .size-compare .arrow{ color:var(--text-muted); align-self:center; }
+  .retype-sheet{ background:#ffffff; border-radius:6px; box-shadow:0 2px 12px rgba(0,0,0,.25); margin-top:10px; overflow:hidden; }
+  .retype-sheet img{ display:block; width:calc(100% - 8%); margin:3% 4% 0; }
+  .retype-sheet .retype-paper{ box-shadow:none; margin-top:0; border-radius:0; }
+  .retype-paper{
+    background:#ffffff;
+    color:#111111;
+    font-family:'Tinos','Times New Roman',Times,serif;
+    font-size:13px;
+    line-height:1.4;
+    padding:9% 10%;
+    border-radius:6px;
+    box-shadow:0 2px 12px rgba(0,0,0,.25);
+    margin-top:10px;
+    aspect-ratio:1240/1754;
+    overflow:auto;
+    max-width:100%;
+    outline:none;
+  }
+  .retype-paper:focus{ box-shadow:0 0 0 3px var(--gold), 0 2px 12px rgba(0,0,0,.25); }
+  .retype-paper .rt-block{ margin:0 0 0.75em; white-space:pre-wrap; }
+  .retype-paper .rt-signer{ margin-top:3.2em; }
   .page-thumbs{
     display:flex;
     gap:8px;
@@ -1816,11 +1837,22 @@
         <div class="error-box" id="scanError" style="display:none;"></div>
 
         <div class="canvas-wrap" id="scanCanvasWrap" style="display:none;">
-          <canvas id="scanCanvas"></canvas>
+          <canvas id="scanCanvas" style="touch-action:none;"></canvas>
+        </div>
+
+        <div id="scanCornerControls" style="display:none;">
+          <div class="tool-hint">Drag the 4 gold dots onto the 4 corners of the paper. Then tap <b>Flatten &amp; clean</b>.</div>
+          <div class="tool-upload-row" style="margin-top:10px;">
+            <button class="tool-btn primary" id="scanFlattenBtn">✅ Flatten &amp; clean</button>
+            <button class="tool-btn" id="scanWholePhotoBtn">Use whole photo</button>
+          </div>
         </div>
 
         <div id="scanEditControls" style="display:none;">
-          <div class="rotate-row">
+          <div class="tool-upload-row">
+            <button class="tool-btn" id="scanAdjustCornersBtn">↩ Adjust corners</button>
+          </div>
+          <div class="rotate-row" style="margin-top:10px;">
             <button id="scanRotateLeftBtn">⟲ Rotate</button>
             <button id="scanRotateRightBtn">⟳ Rotate</button>
           </div>
@@ -1829,8 +1861,16 @@
             <input type="range" id="scanStraightenSlider" min="-15" max="15" step="0.5" value="0">
           </div>
           <div class="enhance-toggle-row" style="margin-top:10px;">
-            <button id="scanEnhanceBtn" class="active">✨ Auto-brighten</button>
+            <button id="scanEnhanceBtn" class="active">✨ Clean paper</button>
             <button id="scanBwBtn">⬛ Black &amp; White mode</button>
+          </div>
+          <div class="tool-upload-row" style="margin-top:10px;">
+            <button class="tool-btn" id="scanRetypeBtn">📝 Retype as new document ⭐ Premium</button>
+          </div>
+          <div class="tool-hint" style="margin-top:8px;">
+            <b>Which should I use?</b><br>
+            <b>✨ Clean paper</b> (free): keeps the <i>original</i> page — letterhead, logo and handwritten signature stay — but faint creases or stains may still show.<br>
+            <b>📝 Retype</b> (Premium): reads the text and prints it on a <i>brand-new</i> white page. Perfectly clean. You can keep the original letterhead/logo as a picture, and you sign it again.
           </div>
           <div class="tool-hint" style="margin-top:10px;">Got more pages? Add them below before saving — they'll all go into one PDF.</div>
           <div class="page-thumbs" id="scanPageThumbs" style="margin-top:10px;"></div>
@@ -1843,6 +1883,28 @@
           <div class="tool-upload-row" style="margin-top:10px;">
             <button class="tool-btn primary" id="scanSaveImageBtn">⬇ Save as Image</button>
             <button class="tool-btn primary" id="scanSavePdfBtn">⬇ Save as PDF</button>
+          </div>
+        </div>
+        <div id="retypePanel" style="display:none;">
+          <div class="tool-hint">Here's your page retyped fresh. <b>Tap any word to fix it.</b> The handwritten signature is left out — use <b>Sign this page</b> to sign it again.</div>
+          <label class="tool-hint" id="retypeLetterheadRow" style="display:none; margin-top:10px; gap:8px; align-items:center; cursor:pointer;">
+            <input type="checkbox" id="retypeKeepLetterhead" checked style="width:20px;height:20px;">
+            <span><b>Keep original letterhead / logo</b> (the real picture from your scan, placed at the top)</span>
+          </label>
+          <div class="retype-sheet">
+            <img id="retypeLetterheadImg" alt="Original letterhead" style="display:none;">
+            <div class="retype-paper" id="retypePaper" contenteditable="true" spellcheck="false"></div>
+          </div>
+          <div class="tool-hint" style="margin-top:6px;">Please only retype and re-sign your own documents.</div>
+          <div class="tool-upload-row" style="margin-top:10px;">
+            <button class="tool-btn primary" id="retypeSignBtn">✍️ Sign this page</button>
+          </div>
+          <div class="tool-upload-row" style="margin-top:10px;">
+            <button class="tool-btn primary" id="retypeSaveImageBtn">⬇ Save as Image</button>
+            <button class="tool-btn primary" id="retypeSavePdfBtn">⬇ Save as PDF</button>
+          </div>
+          <div class="tool-upload-row" style="margin-top:10px;">
+            <button class="tool-btn" id="retypeBackBtn">↩ Back to the scanned page</button>
           </div>
         </div>
       </div>
@@ -1916,7 +1978,7 @@
           <div id="signPlacementControls" style="display:none; margin-top:10px;">
             <div class="adjust-row">
               <label>Size</label>
-              <input type="range" id="signSizeSlider" min="10" max="60" step="1" value="28">
+              <input type="range" id="signSizeSlider" min="10" max="60" step="1" value="32">
             </div>
             <div class="tool-hint">Drag the signature to where it should go, then tap "Place on Document."</div>
             <div class="tool-upload-row" style="margin-top:10px;">
@@ -2016,6 +2078,17 @@
   </main>
 </div>
 
+<div id="camModal" style="display:none;position:fixed;inset:0;z-index:9000;background:rgba(10,14,20,.92);align-items:center;justify-content:center;padding:16px;">
+  <div style="width:100%;max-width:640px;display:flex;flex-direction:column;gap:12px;">
+    <div style="color:#EDE6D6;font-weight:600;text-align:center;" id="camTitle">Camera</div>
+    <video id="camVideo" autoplay playsinline muted style="width:100%;max-height:65vh;background:#000;border-radius:12px;object-fit:contain;"></video>
+    <div class="tool-upload-row">
+      <button class="tool-btn primary" id="camSnapBtn">📸 Snap</button>
+      <button class="tool-btn" id="camSwitchBtn" style="display:none;">🔄 Switch camera</button>
+      <button class="tool-btn" id="camCancelBtn">Cancel</button>
+    </div>
+  </div>
+</div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script>
 (function(){
@@ -2184,17 +2257,97 @@
     if(hideAfterMs) sfaToastTimer = setTimeout(() => { sfaToast.style.display = 'none'; }, hideAfterMs);
   }
 
+  // ---- In-page camera (for laptops, whose browsers ignore "use the camera") ----
+  const camModal = document.getElementById('camModal');
+  const camVideo = document.getElementById('camVideo');
+  const camSnapBtn = document.getElementById('camSnapBtn');
+  const camSwitchBtn = document.getElementById('camSwitchBtn');
+  const camCancelBtn = document.getElementById('camCancelBtn');
+  const camTitle = document.getElementById('camTitle');
+  let camStream = null, camDevices = [], camDeviceIdx = 0, camOnPhoto = null;
+
+  // Phones and tablets have a real camera app that the file picker opens directly —
+  // it focuses better and takes sharper photos, so they keep using it.
+  const isTouchDevice = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
+
+  function stopCamera(){
+    if(camStream){ camStream.getTracks().forEach(t => t.stop()); camStream = null; }
+    camVideo.srcObject = null;
+    camModal.style.display = 'none';
+  }
+  async function startCamera(deviceId){
+    if(camStream){ camStream.getTracks().forEach(t => t.stop()); camStream = null; }
+    const video = deviceId ? { deviceId: { exact: deviceId } } : { facingMode: 'environment' };
+    video.width = { ideal: 1920 }; video.height = { ideal: 1080 };
+    camStream = await navigator.mediaDevices.getUserMedia({ video, audio: false });
+    camVideo.srcObject = camStream;
+    try{
+      camDevices = (await navigator.mediaDevices.enumerateDevices()).filter(d => d.kind === 'videoinput');
+    }catch(e){ camDevices = []; }
+    camSwitchBtn.style.display = camDevices.length > 1 ? '' : 'none';
+  }
+  // Opens the camera window; calls onPhoto(file) after Snap. Returns false if no camera could be opened.
+  async function openCameraWindow(title, onPhoto){
+    if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return false;
+    camOnPhoto = onPhoto;
+    camTitle.textContent = title;
+    camModal.style.display = 'flex';
+    try{
+      await startCamera(null);
+      return true;
+    }catch(err){
+      stopCamera();
+      const denied = err && (err.name === 'NotAllowedError' || err.name === 'SecurityError');
+      showStatus(denied
+        ? 'Camera is blocked. Click the camera icon in the address bar to allow it — or use Upload Photo.'
+        : 'No camera was found on this device. Please use Upload Photo instead.', 6000);
+      return true;   // handled (message shown); don't also open the file window
+    }
+  }
+  camSwitchBtn.addEventListener('click', async () => {
+    if(camDevices.length < 2) return;
+    camDeviceIdx = (camDeviceIdx + 1) % camDevices.length;
+    try{ await startCamera(camDevices[camDeviceIdx].deviceId); }catch(e){ showStatus('Could not switch camera.', 3000); }
+  });
+  camCancelBtn.addEventListener('click', stopCamera);
+  camSnapBtn.addEventListener('click', () => {
+    if(!camStream || !camVideo.videoWidth){ showStatus('The camera is still starting — try again in a moment.', 2500); return; }
+    const c = document.createElement('canvas');
+    c.width = camVideo.videoWidth; c.height = camVideo.videoHeight;
+    c.getContext('2d').drawImage(camVideo, 0, 0);
+    const handler = camOnPhoto;
+    stopCamera();
+    c.toBlob(blob => {
+      if(blob && handler) handler(new File([blob], 'camera-' + Date.now() + '.jpg', { type: 'image/jpeg' }));
+    }, 'image/jpeg', 0.92);
+  });
+
+  // "Take Photo": phone camera app on phones, the in-page camera window on laptops.
+  function takePhoto(inputEl, handler, resultWrapEl, errorEl, title){
+    if(isTouchDevice){
+      inputEl.setAttribute('capture','environment');
+      inputEl.click();
+      return;
+    }
+    openCameraWindow(title, (file) => runPickedFile(file, handler, resultWrapEl, errorEl)).then(ok => {
+      if(!ok){ inputEl.removeAttribute('capture'); inputEl.click(); }   // very old browser: fall back to picking a file
+    });
+  }
+
   // Runs when a photo is picked: shows "Opening…", loads it, scrolls to it,
   // then clears the picker so the same photo can be chosen again.
   async function onPhotoPicked(inputEl, handler, resultWrapEl, errorEl){
     const file = inputEl.files && inputEl.files[0];
     if(!file) return;
-    showStatus('Opening your photo…');
     try{
-      await handler(file);
+      await runPickedFile(file, handler, resultWrapEl, errorEl);
     }finally{
       inputEl.value = '';
     }
+  }
+  async function runPickedFile(file, handler, resultWrapEl, errorEl){
+    showStatus('Opening your photo…');
+    await handler(file);
     if(errorEl && errorEl.style.display === 'block'){
       showStatus(errorEl.textContent, 5000);
       errorEl.scrollIntoView({ behavior:'smooth', block:'center' });
@@ -2225,55 +2378,331 @@
   const scanSavePdfBtn = document.getElementById('scanSavePdfBtn');
   const scanError = document.getElementById('scanError');
 
-  let scanCurrentImg = null;   // the Image currently being edited
-  let scanBaseRotation = 0;    // 0/90/180/270 from the rotate buttons
+  const scanCornerControls = document.getElementById('scanCornerControls');
+  const scanFlattenBtn = document.getElementById('scanFlattenBtn');
+  const scanWholePhotoBtn = document.getElementById('scanWholePhotoBtn');
+  const scanAdjustCornersBtn = document.getElementById('scanAdjustCornersBtn');
+
+  let scanCurrentImg = null;   // the photo currently being edited (null = none)
+  let scanSrcCanvas = null;    // that photo, at a working size, used for corners + flattening
+  let scanCorners = null;      // [topLeft, topRight, bottomRight, bottomLeft] in scanSrcCanvas pixels
+  let scanMode = 'corners';    // 'corners' = placing the dots, 'result' = flattened page
+  let scanFlatCanvas = null;   // the flattened (straightened + cropped) page
+  let scanCleanCache = {};     // cleaned versions of scanFlatCanvas, keyed by B&W on/off
+  let scanBaseRotation = 0;    // 0/90/180/270 from the rotate buttons (applied to the result)
   let scanFineAngle = 0;       // -15..15 from the straighten slider
-  let scanEnhanceOn = true;
+  let scanEnhanceOn = true;    // "Clean paper"
   let scanBwOn = false;
   let scanPages = [];          // finished page data URLs (JPEG), one per page
+  let scanDragIdx = -1;
 
   function scanCtx(){ return scanCanvas.getContext('2d'); }
 
-  function renderScanCanvas(){
-    if(!scanCurrentImg) return;
-    const img = scanCurrentImg;
-    const totalAngle = (scanBaseRotation + scanFineAngle) * Math.PI / 180;
-
-    // Canvas sized to fit the rotated image without cropping corners.
-    const swappedForBase = (scanBaseRotation % 180 !== 0);
-    const iw = swappedForBase ? img.height : img.width;
-    const ih = swappedForBase ? img.width : img.height;
-
-    // Cap the working resolution so this stays fast on any phone.
-    const maxDim = 1600;
-    const scale = Math.min(1, maxDim / Math.max(iw, ih));
-    const cw = Math.round(iw * scale);
-    const ch = Math.round(ih * scale);
-
-    scanCanvas.width = cw;
-    scanCanvas.height = ch;
-    const ctx = scanCtx();
-    ctx.save();
-    ctx.clearRect(0,0,cw,ch);
-    ctx.translate(cw/2, ch/2);
-    ctx.rotate(totalAngle);
-    if(scanEnhanceOn){
-      ctx.filter = scanBwOn
-        ? 'grayscale(1) contrast(1.35) brightness(1.12)'
-        : 'contrast(1.22) brightness(1.08) saturate(0.95)';
-    } else {
-      ctx.filter = scanBwOn ? 'grayscale(1)' : 'none';
+  // ---------- 1. Find the paper's 4 corners automatically ----------
+  // Shrinks the photo, finds the biggest bright area (the paper), and takes
+  // its outermost points as the corners. The user can drag them afterwards.
+  function detectPaperCorners(src){
+    const W = src.width, H = src.height;
+    const s = Math.min(1, 360 / Math.max(W, H));
+    const w = Math.max(8, Math.round(W * s)), h = Math.max(8, Math.round(H * s));
+    const c = document.createElement('canvas'); c.width = w; c.height = h;
+    const cx = c.getContext('2d'); cx.drawImage(src, 0, 0, w, h);
+    const d = cx.getImageData(0, 0, w, h).data;
+    const gray = new Uint8Array(w * h);
+    const hist = new Array(256).fill(0);
+    for(let i = 0; i < w * h; i++){
+      const g = (d[i*4] * 0.299 + d[i*4+1] * 0.587 + d[i*4+2] * 0.114) | 0;
+      gray[i] = g; hist[g]++;
     }
-    const dw = img.width * scale;
-    const dh = img.height * scale;
-    ctx.drawImage(img, -dw/2, -dh/2, dw, dh);
-    ctx.restore();
+    // Otsu threshold: best split between "paper" and "background" brightness.
+    let sum = 0; for(let i = 0; i < 256; i++) sum += i * hist[i];
+    let sumB = 0, wB = 0, best = 0, thr = 128;
+    for(let t = 0; t < 256; t++){
+      wB += hist[t]; if(!wB) continue;
+      const wF = w * h - wB; if(!wF) break;
+      sumB += t * hist[t];
+      const mB = sumB / wB, mF = (sum - sumB) / wF;
+      const between = wB * wF * (mB - mF) * (mB - mF);
+      if(between > best){ best = between; thr = t; }
+    }
+    // Largest connected bright area.
+    const label = new Int32Array(w * h).fill(-1);
+    let bestId = -1, bestSize = 0, id = 0;
+    const stack = [];
+    for(let start = 0; start < w * h; start++){
+      if(gray[start] <= thr || label[start] !== -1) continue;
+      let size = 0; stack.push(start); label[start] = id;
+      while(stack.length){
+        const p = stack.pop(); size++;
+        const x = p % w, y = (p / w) | 0;
+        const nb = [x > 0 ? p-1 : -1, x < w-1 ? p+1 : -1, y > 0 ? p-w : -1, y < h-1 ? p+w : -1];
+        for(const q of nb){ if(q >= 0 && label[q] === -1 && gray[q] > thr){ label[q] = id; stack.push(q); } }
+      }
+      if(size > bestSize){ bestSize = size; bestId = id; }
+      id++;
+    }
+    const inset = (f) => [
+      {x: W*f, y: H*f}, {x: W*(1-f), y: H*f}, {x: W*(1-f), y: H*(1-f)}, {x: W*f, y: H*(1-f)}
+    ];
+    if(bestId < 0 || bestSize < w * h * 0.12) return inset(0.04);
+    let tl = null, tr = null, br = null, bl = null;
+    let tlV = Infinity, brV = -Infinity, trV = -Infinity, blV = Infinity;
+    for(let p = 0; p < w * h; p++){
+      if(label[p] !== bestId) continue;
+      const x = p % w, y = (p / w) | 0;
+      if(x + y < tlV){ tlV = x + y; tl = {x, y}; }
+      if(x + y > brV){ brV = x + y; br = {x, y}; }
+      if(x - y > trV){ trV = x - y; tr = {x, y}; }
+      if(x - y < blV){ blV = x - y; bl = {x, y}; }
+    }
+    // If the "paper" fills basically the whole photo, keep a small margin.
+    if(bestSize > w * h * 0.97) return inset(0.02);
+    return [tl, tr, br, bl].map(p => ({ x: (p.x + 0.5) / s, y: (p.y + 0.5) / s }));
+  }
 
+  // ---------- 2. Flatten: stretch the 4-corner shape into a straight rectangle ----------
+  function solveLinear(A, b){
+    const n = b.length;
+    for(let i = 0; i < n; i++){
+      let piv = i;
+      for(let r = i + 1; r < n; r++) if(Math.abs(A[r][i]) > Math.abs(A[piv][i])) piv = r;
+      [A[i], A[piv]] = [A[piv], A[i]]; [b[i], b[piv]] = [b[piv], b[i]];
+      for(let r = i + 1; r < n; r++){
+        const f = A[r][i] / A[i][i];
+        for(let c = i; c < n; c++) A[r][c] -= f * A[i][c];
+        b[r] -= f * b[i];
+      }
+    }
+    const x = new Array(n);
+    for(let i = n - 1; i >= 0; i--){
+      let s = b[i];
+      for(let c = i + 1; c < n; c++) s -= A[i][c] * x[c];
+      x[i] = s / A[i][i];
+    }
+    return x;
+  }
+  // Maps a point in the flat output back to where it came from in the photo.
+  function homography(fromPts, toPts){
+    const A = [], b = [];
+    for(let i = 0; i < 4; i++){
+      const {x, y} = fromPts[i], {x: u, y: v} = toPts[i];
+      A.push([x, y, 1, 0, 0, 0, -u*x, -u*y]); b.push(u);
+      A.push([0, 0, 0, x, y, 1, -v*x, -v*y]); b.push(v);
+    }
+    const h = solveLinear(A, b);
+    return [h[0], h[1], h[2], h[3], h[4], h[5], h[6], h[7], 1];
+  }
+  function flattenPage(src, corners){
+    const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
+    const [tl, tr, br, bl] = corners;
+    let outW = Math.max(dist(tl, tr), dist(bl, br));
+    let outH = Math.max(dist(tl, bl), dist(tr, br));
+    const cap = Math.min(1, 1800 / Math.max(outW, outH));
+    outW = Math.max(16, Math.round(outW * cap)); outH = Math.max(16, Math.round(outH * cap));
+    const H = homography(
+      [{x:0,y:0}, {x:outW,y:0}, {x:outW,y:outH}, {x:0,y:outH}],
+      [tl, tr, br, bl]
+    );
+    const sw = src.width, sh = src.height;
+    const sd = src.getContext('2d').getImageData(0, 0, sw, sh).data;
+    const out = document.createElement('canvas'); out.width = outW; out.height = outH;
+    const octx = out.getContext('2d');
+    const od = octx.createImageData(outW, outH);
+    const o = od.data;
+    for(let y = 0; y < outH; y++){
+      for(let x = 0; x < outW; x++){
+        const X = x + 0.5, Y = y + 0.5;
+        const den = H[6]*X + H[7]*Y + 1;
+        let u = (H[0]*X + H[1]*Y + H[2]) / den - 0.5;
+        let v = (H[3]*X + H[4]*Y + H[5]) / den - 0.5;
+        u = Math.max(0, Math.min(sw - 1.001, u)); v = Math.max(0, Math.min(sh - 1.001, v));
+        const x0 = u | 0, y0 = v | 0, fx = u - x0, fy = v - y0;
+        const i00 = (y0*sw + x0) * 4, i10 = i00 + 4, i01 = i00 + sw*4, i11 = i01 + 4;
+        const k = (y*outW + x) * 4;
+        for(let ch = 0; ch < 3; ch++){
+          const top = sd[i00+ch] + (sd[i10+ch] - sd[i00+ch]) * fx;
+          const bot = sd[i01+ch] + (sd[i11+ch] - sd[i01+ch]) * fx;
+          o[k+ch] = top + (bot - top) * fy;
+        }
+        o[k+3] = 255;
+      }
+    }
+    octx.putImageData(od, 0, 0);
+    return out;
+  }
+
+  // ---------- 3. Clean paper: even out shadows and wrinkles, whiten the page ----------
+  // Estimates how bright the bare paper is at every spot (ignoring the thin
+  // dark text), then divides by it — so shadows and wrinkle shading become
+  // plain white while the text stays dark.
+  function cleanPaper(flat, bw){
+    const w = flat.width, h = flat.height;
+    // Fine enough to follow wrinkle shadows, coarse enough to skip over letters.
+    const bs = Math.min(1, 160 / Math.max(w, h));
+    const sw = Math.max(4, Math.round(w * bs)), sh = Math.max(4, Math.round(h * bs));
+    const small = document.createElement('canvas'); small.width = sw; small.height = sh;
+    const sctx = small.getContext('2d');
+    sctx.imageSmoothingQuality = 'high';
+    sctx.drawImage(flat, 0, 0, sw, sh);
+    let bg = sctx.getImageData(0, 0, sw, sh);
+    const pass = (data, fn, r) => {
+      const src = new Uint8ClampedArray(data.data), dst = data.data;
+      for(let y = 0; y < sh; y++) for(let x = 0; x < sw; x++){
+        for(let ch = 0; ch < 3; ch++){
+          let acc = fn === 'max' ? 0 : 0, n = 0;
+          for(let dy = -r; dy <= r; dy++) for(let dx = -r; dx <= r; dx++){
+            const xx = Math.min(sw-1, Math.max(0, x+dx)), yy = Math.min(sh-1, Math.max(0, y+dy));
+            const val = src[(yy*sw + xx)*4 + ch];
+            if(fn === 'max'){ if(val > acc) acc = val; } else { acc += val; n++; }
+          }
+          dst[(y*sw + x)*4 + ch] = fn === 'max' ? acc : acc / n;
+        }
+      }
+    };
+    pass(bg, 'max', 2);   // remove the text, keep the paper
+    pass(bg, 'mean', 1);  // smooth it
+    sctx.putImageData(bg, 0, 0);
+    const bgFull = document.createElement('canvas'); bgFull.width = w; bgFull.height = h;
+    const bctx = bgFull.getContext('2d');
+    bctx.imageSmoothingQuality = 'high';
+    bctx.drawImage(small, 0, 0, w, h);
+    const bd = bctx.getImageData(0, 0, w, h).data;
+
+    const out = document.createElement('canvas'); out.width = w; out.height = h;
+    const octx = out.getContext('2d');
+    const fd = flat.getContext('2d').getImageData(0, 0, w, h);
+    const d = fd.data;
+    const strength = bw ? 1.9 : 1.5;
+    for(let i = 0; i < d.length; i += 4){
+      if(bw){
+        const g = d[i]*0.299 + d[i+1]*0.587 + d[i+2]*0.114;
+        const bgv = Math.max(1, bd[i]*0.299 + bd[i+1]*0.587 + bd[i+2]*0.114);
+        let v = Math.min(255, g * 255 / bgv);
+        v = 255 - (255 - v) * strength;
+        if(v > 232) v = 255;
+        d[i] = d[i+1] = d[i+2] = v;
+      } else {
+        let allWhite = true;
+        const vals = [0,0,0];
+        for(let ch = 0; ch < 3; ch++){
+          let v = Math.min(255, d[i+ch] * 255 / Math.max(1, bd[i+ch]));
+          v = 255 - (255 - v) * strength;
+          vals[ch] = v;
+          if(v <= 236) allWhite = false;
+        }
+        d[i] = allWhite ? 255 : vals[0];
+        d[i+1] = allWhite ? 255 : vals[1];
+        d[i+2] = allWhite ? 255 : vals[2];
+      }
+    }
+    octx.putImageData(fd, 0, 0);
+    return out;
+  }
+
+  // The finished page before rotation: flattened, then cleaned or grayscale as chosen.
+  function processedPage(){
+    if(!scanFlatCanvas) return null;
+    if(scanEnhanceOn){
+      const key = scanBwOn ? 'bw' : 'color';
+      if(!scanCleanCache[key]) scanCleanCache[key] = cleanPaper(scanFlatCanvas, scanBwOn);
+      return scanCleanCache[key];
+    }
+    if(scanBwOn){
+      if(!scanCleanCache.plainBw){
+        const c = document.createElement('canvas'); c.width = scanFlatCanvas.width; c.height = scanFlatCanvas.height;
+        const cx = c.getContext('2d'); cx.drawImage(scanFlatCanvas, 0, 0);
+        const id = cx.getImageData(0, 0, c.width, c.height), d = id.data;
+        for(let i = 0; i < d.length; i += 4){ const g = d[i]*0.299 + d[i+1]*0.587 + d[i+2]*0.114; d[i] = d[i+1] = d[i+2] = g; }
+        cx.putImageData(id, 0, 0);
+        scanCleanCache.plainBw = c;
+      }
+      return scanCleanCache.plainBw;
+    }
+    return scanFlatCanvas;
+  }
+
+  function buildSrcCanvas(img){
+    const s = Math.min(1, 2000 / Math.max(img.width, img.height));
+    const c = document.createElement('canvas');
+    c.width = Math.round(img.width * s); c.height = Math.round(img.height * s);
+    c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+    return c;
+  }
+
+  function showScanMode(mode){
+    scanMode = mode;
+    scanCornerControls.style.display = mode === 'corners' ? 'block' : 'none';
+    scanEditControls.style.display = mode === 'result' ? 'block' : 'none';
+    renderScanCanvas();
+  }
+
+  function renderScanCanvas(){
+    if(!scanSrcCanvas) return;
+    const ctx = scanCtx();
+    if(scanMode === 'corners'){
+      const s = Math.min(1, 1600 / Math.max(scanSrcCanvas.width, scanSrcCanvas.height));
+      scanCanvas.width = Math.round(scanSrcCanvas.width * s);
+      scanCanvas.height = Math.round(scanSrcCanvas.height * s);
+      ctx.drawImage(scanSrcCanvas, 0, 0, scanCanvas.width, scanCanvas.height);
+      // Dim everything outside the chosen area, then draw the outline + dots.
+      const pts = scanCorners.map(p => ({x: p.x * s, y: p.y * s}));
+      ctx.save();
+      ctx.fillStyle = 'rgba(0,0,0,0.45)';
+      ctx.beginPath();
+      ctx.rect(0, 0, scanCanvas.width, scanCanvas.height);
+      ctx.moveTo(pts[0].x, pts[0].y); for(let i = 3; i >= 1; i--) ctx.lineTo(pts[i].x, pts[i].y); ctx.closePath();
+      ctx.fill('evenodd');
+      ctx.strokeStyle = '#C9A227';
+      ctx.lineWidth = Math.max(2, scanCanvas.width / 250);
+      ctx.beginPath(); ctx.moveTo(pts[0].x, pts[0].y); pts.slice(1).forEach(p => ctx.lineTo(p.x, p.y)); ctx.closePath(); ctx.stroke();
+      const rDot = Math.max(10, scanCanvas.width / 45);
+      pts.forEach(p => {
+        ctx.beginPath(); ctx.arc(p.x, p.y, rDot, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(201,162,39,0.85)'; ctx.fill();
+        ctx.lineWidth = Math.max(2, rDot / 4); ctx.strokeStyle = '#ffffff'; ctx.stroke();
+      });
+      ctx.restore();
+      scanSizeEstimate.textContent = '—';
+      return;
+    }
+    const page = processedPage();
+    const totalAngle = (scanBaseRotation + scanFineAngle) * Math.PI / 180;
+    const swapped = (scanBaseRotation % 180 !== 0);
+    const iw = swapped ? page.height : page.width;
+    const ih = swapped ? page.width : page.height;
+    const scale = Math.min(1, 1800 / Math.max(iw, ih));
+    scanCanvas.width = Math.round(iw * scale);
+    scanCanvas.height = Math.round(ih * scale);
+    ctx.save();
+    ctx.fillStyle = '#ffffff';                       // white, not black, in any corners the rotation uncovers
+    ctx.fillRect(0, 0, scanCanvas.width, scanCanvas.height);
+    ctx.translate(scanCanvas.width / 2, scanCanvas.height / 2);
+    ctx.rotate(totalAngle);
+    ctx.drawImage(page, -page.width * scale / 2, -page.height * scale / 2, page.width * scale, page.height * scale);
+    ctx.restore();
     scanSizeEstimate.textContent = '~' + formatBytes(dataUrlSizeBytes(scanCanvas.toDataURL('image/jpeg', 0.82)));
+  }
+
+  function doFlatten(){
+    if(!scanSrcCanvas) return;
+    showStatus('Flattening and cleaning…');
+    // Let the message paint before the heavy work starts.
+    setTimeout(() => {
+      scanFlatCanvas = flattenPage(scanSrcCanvas, scanCorners);
+      scanCleanCache = {};
+      scanFineAngle = 0; scanStraightenSlider.value = 0;
+      showScanMode('result');
+      showStatus('Page ready ✓', 2000);
+      scanCanvasWrap.scrollIntoView({ behavior:'smooth', block:'start' });
+    }, 30);
   }
 
   function resetScanTool(){
     scanCurrentImg = null;
+    scanSrcCanvas = null;
+    scanFlatCanvas = null;
+    scanCleanCache = {};
+    scanCorners = null;
     scanBaseRotation = 0;
     scanFineAngle = 0;
     scanStraightenSlider.value = 0;
@@ -2284,9 +2713,11 @@
     scanPages = [];
     scanPageThumbs.innerHTML = '';
     scanCanvasWrap.style.display = 'none';
+    scanCornerControls.style.display = 'none';
     scanEditControls.style.display = 'none';
     scanError.style.display = 'none';
     scanFileInput.value = '';
+    if(typeof updateScanPdfLabel === 'function') updateScanPdfLabel();
   }
 
   async function handleScanFile(file){
@@ -2295,23 +2726,65 @@
     try{
       const { img } = await loadImageFromFile(file);
       scanCurrentImg = img;
+      scanSrcCanvas = buildSrcCanvas(img);
+      scanCorners = detectPaperCorners(scanSrcCanvas);
+      scanFlatCanvas = null;
+      scanCleanCache = {};
       scanBaseRotation = 0;
       scanFineAngle = 0;
       scanStraightenSlider.value = 0;
       scanCanvasWrap.style.display = 'flex';
-      scanEditControls.style.display = 'block';
-      renderScanCanvas();
+      showScanMode('corners');
     }catch(err){
       scanError.textContent = err.message || 'Something went wrong reading that photo.';
       scanError.style.display = 'block';
     }
   }
 
-  scanTakePhotoBtn.addEventListener('click', () => { scanFileInput.setAttribute('capture','environment'); scanFileInput.click(); });
+  // Dragging the corner dots.
+  function canvasPoint(e){
+    const r = scanCanvas.getBoundingClientRect();
+    const s = scanSrcCanvas.width / r.width;
+    return { x: (e.clientX - r.left) * s, y: (e.clientY - r.top) * s, perCssPx: s };
+  }
+  scanCanvas.addEventListener('pointerdown', (e) => {
+    if(scanMode !== 'corners' || !scanCorners) return;
+    const p = canvasPoint(e);
+    const grab = 34 * p.perCssPx;                 // generous finger-sized grab area
+    let best = -1, bestD = Infinity;
+    scanCorners.forEach((c, i) => { const d = Math.hypot(c.x - p.x, c.y - p.y); if(d < bestD){ bestD = d; best = i; } });
+    if(bestD <= grab){
+      scanDragIdx = best;
+      scanCanvas.setPointerCapture(e.pointerId);
+      e.preventDefault();
+    }
+  });
+  scanCanvas.addEventListener('pointermove', (e) => {
+    if(scanDragIdx < 0) return;
+    const p = canvasPoint(e);
+    scanCorners[scanDragIdx] = {
+      x: Math.max(0, Math.min(scanSrcCanvas.width, p.x)),
+      y: Math.max(0, Math.min(scanSrcCanvas.height, p.y))
+    };
+    renderScanCanvas();
+    e.preventDefault();
+  });
+  ['pointerup','pointercancel'].forEach(t => scanCanvas.addEventListener(t, () => { scanDragIdx = -1; }));
+
+  scanTakePhotoBtn.addEventListener('click', () => takePhoto(scanFileInput, handleScanFile, scanCanvasWrap, scanError, 'Take a photo of your document'));
   scanUploadBtn.addEventListener('click', () => { scanFileInput.removeAttribute('capture'); scanFileInput.click(); });
   scanFileInput.addEventListener('change', () => {
     onPhotoPicked(scanFileInput, handleScanFile, scanCanvasWrap, scanError);
   });
+
+  scanFlattenBtn.addEventListener('click', doFlatten);
+  scanWholePhotoBtn.addEventListener('click', () => {
+    if(!scanSrcCanvas) return;
+    const W = scanSrcCanvas.width, H = scanSrcCanvas.height;
+    scanCorners = [{x:0,y:0},{x:W,y:0},{x:W,y:H},{x:0,y:H}];
+    doFlatten();
+  });
+  scanAdjustCornersBtn.addEventListener('click', () => showScanMode('corners'));
 
   scanRotateLeftBtn.addEventListener('click', () => { scanBaseRotation = (scanBaseRotation + 270) % 360; renderScanCanvas(); });
   scanRotateRightBtn.addEventListener('click', () => { scanBaseRotation = (scanBaseRotation + 90) % 360; renderScanCanvas(); });
@@ -2319,7 +2792,17 @@
   scanEnhanceBtn.addEventListener('click', () => { scanEnhanceOn = !scanEnhanceOn; scanEnhanceBtn.classList.toggle('active', scanEnhanceOn); renderScanCanvas(); });
   scanBwBtn.addEventListener('click', () => { scanBwOn = !scanBwOn; scanBwBtn.classList.toggle('active', scanBwOn); renderScanCanvas(); });
 
+  // Saving needs a finished page. If the user is still placing the dots, flatten first.
+  function ensureScanResult(){
+    if(scanMode === 'corners' && scanSrcCanvas){
+      scanFlatCanvas = flattenPage(scanSrcCanvas, scanCorners);
+      scanCleanCache = {};
+      showScanMode('result');
+    }
+  }
+
   function finishedPageDataUrl(){
+    ensureScanResult();
     // Free plan gets a small watermark on the exported page; Premium doesn't.
     const out = document.createElement('canvas');
     out.width = scanCanvas.width;
@@ -2368,8 +2851,13 @@
     scanPages.push(finishedPageDataUrl());
     renderScanPageThumbs();
     scanCurrentImg = null;
+    scanSrcCanvas = null;
+    scanFlatCanvas = null;
+    scanCleanCache = {};
     scanCanvasWrap.style.display = 'none';
+    scanCornerControls.style.display = 'none';
     scanFileInput.value = '';
+    showStatus('Page added ✓ Now take or upload the next page.', 3000);
   });
 
   scanSaveImageBtn.addEventListener('click', () => {
@@ -2403,14 +2891,15 @@
       const { jsPDF } = window.jspdf;
       const doc = new jsPDF({ unit: 'pt' });
       pages.forEach((dataUrl, idx) => {
-        const img = new Image();
-        img.src = dataUrl;
+        // Read the picture's size straight from its data (a new Image()
+        // would still be 0×0 here because it hasn't finished loading).
+        const props = doc.getImageProperties(dataUrl);
         const pageWidth = doc.internal.pageSize.getWidth();
         const pageHeight = doc.internal.pageSize.getHeight();
         // Fit the image within the page, preserving its aspect ratio.
-        const ratio = Math.min(pageWidth / img.width, pageHeight / img.height);
-        const w = img.width * ratio;
-        const h = img.height * ratio;
+        const ratio = Math.min(pageWidth / props.width, pageHeight / props.height);
+        const w = props.width * ratio;
+        const h = props.height * ratio;
         if(idx > 0) doc.addPage();
         doc.addImage(dataUrl, 'JPEG', (pageWidth - w) / 2, (pageHeight - h) / 2, w, h);
       });
@@ -2420,6 +2909,324 @@
       scanError.textContent = 'Could not build the PDF right now. Please try again.';
       scanError.style.display = 'block';
     }
+  });
+
+  // =========================================================
+  // RETYPE AS NEW DOCUMENT (Premium)
+  // =========================================================
+  const scanRetypeBtn = document.getElementById('scanRetypeBtn');
+  const retypePanel = document.getElementById('retypePanel');
+  const retypePaper = document.getElementById('retypePaper');
+  const retypeSignBtn = document.getElementById('retypeSignBtn');
+  const retypeSaveImageBtn = document.getElementById('retypeSaveImageBtn');
+  const retypeSavePdfBtn = document.getElementById('retypeSavePdfBtn');
+  const retypeBackBtn = document.getElementById('retypeBackBtn');
+  let retypeBusy = false;
+  let pendingSignHint = null;   // where to put the signature when coming from a retyped page
+  let retypeLetterhead = null;  // picture of the original letterhead, cut from the scan
+  const retypeLetterheadRow = document.getElementById('retypeLetterheadRow');
+  const retypeKeepLetterhead = document.getElementById('retypeKeepLetterhead');
+  const retypeLetterheadImg = document.getElementById('retypeLetterheadImg');
+
+  // Cuts the letterhead band out of the page the reader looked at, trims
+  // the empty white edges, and keeps it as a picture.
+  function cutLetterhead(pageCanvas, band){
+    const y0 = Math.floor(pageCanvas.height * band.top), y1 = Math.ceil(pageCanvas.height * band.bottom);
+    const w = pageCanvas.width, h = Math.max(1, y1 - y0);
+    const d = pageCanvas.getContext('2d').getImageData(0, y0, w, h).data;
+    let minX = w, maxX = -1, minY = h, maxY = -1;
+    for(let y = 0; y < h; y++) for(let x = 0; x < w; x++){
+      const i = (y*w + x)*4;
+      if(d[i] < 200 || d[i+1] < 200 || d[i+2] < 200){ if(x < minX) minX = x; if(x > maxX) maxX = x; if(y < minY) minY = y; if(y > maxY) maxY = y; }
+    }
+    if(maxX < 0) return null;
+    const pad = 6;
+    minX = Math.max(0, minX - pad); maxX = Math.min(w, maxX + pad); minY = Math.max(0, minY - pad); maxY = Math.min(h, maxY + pad);
+    const c = document.createElement('canvas');
+    c.width = maxX - minX; c.height = maxY - minY;
+    c.getContext('2d').drawImage(pageCanvas, minX, y0 + minY, c.width, c.height, 0, 0, c.width, c.height);
+    // Remember how wide it was compared to the whole page, so it keeps its real size.
+    c._pageFrac = c.width / w;
+    return c;
+  }
+
+  function refreshLetterheadPreview(){
+    const on = !!retypeLetterhead && retypeKeepLetterhead.checked;
+    retypeLetterheadImg.style.display = on ? 'block' : 'none';
+    if(on){
+      retypeLetterheadImg.src = retypeLetterhead.toDataURL('image/png');
+      retypeLetterheadImg.style.width = Math.min(92, retypeLetterhead._pageFrac * 100) + '%';
+      retypeLetterheadImg.style.marginLeft = 'auto'; retypeLetterheadImg.style.marginRight = 'auto';
+    }
+  }
+  retypeKeepLetterhead.addEventListener('change', refreshLetterheadPreview);
+
+  function escapeHtml(t){ return t.replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+  // Turns the reader's blocks into editable HTML on the white page.
+  function showRetypedBlocks(blocks, signerBlock){
+    retypePaper.innerHTML = blocks.map((b, i) => {
+      const html = escapeHtml(b.text)
+        .replace(/\*\*([\s\S]+?)\*\*/g, '<b>$1</b>')
+        .replace(/\n/g, '<br>');
+      const align = b.align === 'justify' ? 'justify' : b.align;
+      const cls = 'rt-block' + (i === signerBlock ? ' rt-signer' : '');
+      return '<div class="' + cls + '" data-type="' + b.type + '" data-align="' + b.align + '" style="text-align:' + align + '">' + html + '</div>';
+    }).join('');
+  }
+
+  function openRetypePanel(){
+    scanCanvasWrap.style.display = 'none';
+    scanEditControls.style.display = 'none';
+    scanCornerControls.style.display = 'none';
+    retypePanel.style.display = 'block';
+    retypePanel.scrollIntoView({ behavior:'smooth', block:'start' });
+  }
+  function closeRetypePanel(){
+    retypePanel.style.display = 'none';
+    if(scanSrcCanvas){
+      scanCanvasWrap.style.display = 'flex';
+      showScanMode(scanFlatCanvas ? 'result' : 'corners');
+    }
+  }
+
+  scanRetypeBtn.addEventListener('click', async () => {
+    if(retypeBusy) return;
+    scanError.style.display = 'none';
+    if(!isPremiumActive()){
+      scanError.textContent = 'Retype is a Premium feature. Tap the ⭐ Premium tab above to unlock it.';
+      scanError.style.display = 'block';
+      scanError.scrollIntoView({ behavior:'smooth', block:'center' });
+      return;
+    }
+    const code = localStorage.getItem(PREMIUM_CODE_KEY);
+    if(!code){
+      scanError.textContent = 'Please re-enter your access code in ⭐ Premium, then try Retype again.';
+      scanError.style.display = 'block';
+      return;
+    }
+    ensureScanResult();
+    const page = processedPage();
+    if(!page || scanCanvasWrap.style.display === 'none'){
+      scanError.textContent = 'Please open the page you want to retype first: tap Upload Photo (or Take Photo), then Flatten & clean, then Retype.';
+      scanError.style.display = 'block';
+      scanError.scrollIntoView({ behavior:'smooth', block:'center' });
+      return;
+    }
+    // Send a reasonably sized, clean copy (upright, as currently rotated).
+    const s = Math.min(1, 1600 / Math.max(scanCanvas.width, scanCanvas.height));
+    const send = document.createElement('canvas');
+    send.width = Math.round(scanCanvas.width * s); send.height = Math.round(scanCanvas.height * s);
+    send.getContext('2d').drawImage(scanCanvas, 0, 0, send.width, send.height);
+    const image = send.toDataURL('image/jpeg', 0.85);
+
+    retypeBusy = true;
+    const label = scanRetypeBtn.textContent;
+    scanRetypeBtn.textContent = '⏳ Reading your page…';
+    scanRetypeBtn.disabled = true;
+    showStatus('Reading your page… this takes about 10 seconds.');
+    try{
+      const res = await fetch('/.netlify/functions/retype', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code, image })
+      });
+      const data = await res.json().catch(() => ({}));
+      if(!res.ok){
+        throw new Error(data.error || (res.status === 504 || res.status === 502
+          ? 'Reading took too long. Please try again.'
+          : 'Could not retype right now (' + res.status + '). Please try again.'));
+      }
+      showRetypedBlocks(data.blocks, data.signerBlock);
+      retypeLetterhead = (data.letterhead && data.letterhead.found) ? cutLetterhead(send, data.letterhead) : null;
+      retypeLetterheadRow.style.display = retypeLetterhead ? 'flex' : 'none';
+      retypeKeepLetterhead.checked = !!retypeLetterhead;
+      refreshLetterheadPreview();
+      openRetypePanel();
+      showStatus('Retyped ✓ Tap any word to fix it.', 3000);
+    }catch(err){
+      sfaToast.style.display = 'none';
+      scanError.textContent = err.message || 'Could not retype right now. Please try again.';
+      scanError.style.display = 'block';
+      scanError.scrollIntoView({ behavior:'smooth', block:'center' });
+    }finally{
+      retypeBusy = false;
+      scanRetypeBtn.textContent = label;
+      scanRetypeBtn.disabled = false;
+    }
+  });
+  retypeBackBtn.addEventListener('click', closeRetypePanel);
+
+  // ---- Read the (possibly edited) page back into lines of bold/normal text ----
+  function readRetypeBlocks(){
+    const blocks = [];
+    Array.from(retypePaper.childNodes).forEach(node => {
+      if(node.nodeType === 3){                       // loose text typed outside a block
+        if(node.textContent.trim()) blocks.push({ type:'paragraph', align:'left', signer:false, lines:[[{ t: node.textContent, b:false }]] });
+        return;
+      }
+      if(node.nodeType !== 1) return;
+      const lines = [[]];
+      const walk = (n, bold) => {
+        if(n.nodeType === 3){ if(n.textContent) lines[lines.length-1].push({ t: n.textContent.replace(/\n/g,' '), b: bold }); return; }
+        if(n.nodeType !== 1) return;
+        const tag = n.tagName;
+        if(tag === 'BR'){ lines.push([]); return; }
+        const isBlock = /^(DIV|P)$/.test(tag) && n !== node;
+        if(isBlock && lines[lines.length-1].length) lines.push([]);
+        const b = bold || tag === 'B' || tag === 'STRONG' || parseInt(getComputedStyle(n).fontWeight, 10) >= 600;
+        n.childNodes.forEach(c => walk(c, b));
+        if(isBlock) lines.push([]);
+      };
+      walk(node, false);
+      while(lines.length > 1 && lines[lines.length-1].length === 0) lines.pop();
+      if(!lines.some(l => l.some(r => r.t.trim()))) return;
+      blocks.push({
+        type: node.dataset && node.dataset.type === 'lines' ? 'lines' : 'paragraph',
+        align: (node.dataset && node.dataset.align) || 'left',
+        signer: node.classList && node.classList.contains('rt-signer'),
+        lines
+      });
+    });
+    return blocks;
+  }
+
+  // ---- Draw the retyped document onto clean A4 pages (150 dpi) ----
+  const RT_W = 1240, RT_H = 1754, RT_MX = 150, RT_TOP = 150, RT_BOTTOM = 130;
+  const RT_FONT = "'Tinos','Times New Roman',Times,serif";
+  function rtFont(size, bold){ return (bold ? '700 ' : '400 ') + size + 'px ' + RT_FONT; }
+
+  function layoutRetype(size, firstTop){
+    const meas = document.createElement('canvas').getContext('2d');
+    const lh = Math.round(size * 1.38), maxW = RT_W - RT_MX * 2;
+    const items = [];       // {kind:'line', words, align, justify} | {kind:'gap', h} | {kind:'signerMark'}
+    readRetypeBlocks().forEach(block => {
+      if(block.signer) items.push({ kind:'gap', h: Math.round(lh * 2.6) }, { kind:'signerMark' });
+      block.lines.forEach(runs => {
+        // Split into words that remember bold, keeping pieces that touch (e.g. "services" + ",") together.
+        const words = []; let cur = null, prevSpace = true;
+        runs.forEach(r => r.t.split(/(\s+)/).forEach(piece => {
+          if(!piece) return;
+          if(/^\s+$/.test(piece)){ prevSpace = true; return; }
+          if(!prevSpace && cur) cur.parts.push({ w: piece, b: r.b });
+          else { cur = { parts: [{ w: piece, b: r.b }] }; words.push(cur); }
+          prevSpace = false;
+        }));
+        words.forEach(wd => { wd.width = wd.parts.reduce((a, p) => { meas.font = rtFont(size, p.b); p.width = meas.measureText(p.w).width; return a + p.width; }, 0); });
+        meas.font = rtFont(size, false);
+        const space = meas.measureText(' ').width;
+        if(words.length === 0){ items.push({ kind:'gap', h: lh }); return; }
+        let line = [], lineW = 0;
+        const flush = (last) => {
+          items.push({ kind:'line', words: line, align: block.align, justify: block.type === 'paragraph' && block.align === 'justify' && !last, lh });
+          line = []; lineW = 0;
+        };
+        words.forEach(wd => {
+          if(line.length && lineW + space + wd.width > maxW) flush(false);
+          lineW += (line.length ? space : 0) + wd.width; line.push(wd);
+        });
+        if(line.length) flush(true);
+      });
+      items.push({ kind:'gap', h: Math.round(lh * 0.55) });
+    });
+    // Break into pages.
+    // Page 1 may start lower to leave room for the letterhead.
+    const pages = [[]]; let y = 0;
+    const availFor = (pi) => RT_H - (pi === 0 ? firstTop : RT_TOP) - RT_BOTTOM;
+    items.forEach(it => {
+      const h = it.kind === 'line' ? it.lh : (it.h || 0);
+      if(it.kind === 'line' && y + h > availFor(pages.length - 1)){ pages.push([]); y = 0; }
+      if(it.kind === 'gap' && y === 0) return;          // no blank space at the top of a page
+      pages[pages.length-1].push({ ...it, y });
+      y += h;
+    });
+    return { pages, size, space: (() => { meas.font = rtFont(size, false); return meas.measureText(' ').width; })() };
+  }
+
+  function renderRetypePages(){
+    // Start at 12 pt; shrink a little (not below ~10 pt) to fit one page before spilling onto a second.
+    // Room for the original letterhead at the top of page 1, if kept.
+    let lhDraw = null, firstTop = RT_TOP;
+    if(retypeLetterhead && retypeKeepLetterhead.checked){
+      let w = RT_W * Math.min(0.92, retypeLetterhead._pageFrac);
+      let h = w * retypeLetterhead.height / retypeLetterhead.width;
+      if(h > RT_H * 0.2){ h = RT_H * 0.2; w = h * retypeLetterhead.width / retypeLetterhead.height; }
+      lhDraw = { x: (RT_W - w) / 2, y: 60, w, h };
+      firstTop = Math.max(RT_TOP, 60 + h + 50);
+    }
+    let lay = null;
+    for(let size = 26; size >= 21; size -= 0.5){ lay = layoutRetype(size, firstTop); if(lay.pages.length === 1) break; }
+    const maxW = RT_W - RT_MX * 2;
+    let signerFrac = null;
+    const canvases = lay.pages.map((items, pi) => {
+      const c = document.createElement('canvas'); c.width = RT_W; c.height = RT_H;
+      const ctx = c.getContext('2d');
+      ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, RT_W, RT_H);
+      if(pi === 0 && lhDraw) ctx.drawImage(retypeLetterhead, lhDraw.x, lhDraw.y, lhDraw.w, lhDraw.h);
+      const top = pi === 0 ? firstTop : RT_TOP;
+      ctx.fillStyle = '#111111'; ctx.textBaseline = 'alphabetic';
+      items.forEach(it => {
+        if(it.kind === 'signerMark'){ if(pi === 0 && signerFrac === null) signerFrac = (top + it.y) / RT_H; return; }
+        if(it.kind !== 'line') return;
+        const total = it.words.reduce((a, w) => a + w.width, 0);
+        const gaps = it.words.length - 1;
+        let space = lay.space;
+        if(it.justify && gaps > 0) space = (maxW - total) / gaps;
+        const lineW = total + space * gaps;
+        let x = RT_MX;
+        if(it.align === 'center') x = RT_MX + (maxW - lineW) / 2;
+        if(it.align === 'right') x = RT_MX + maxW - lineW;
+        const baseY = top + it.y + lay.size;
+        it.words.forEach((w, i) => {
+          w.parts.forEach(p => { ctx.font = rtFont(lay.size, p.b); ctx.fillText(p.w, x, baseY); x += p.width; });
+          if(i < gaps) x += space;
+        });
+      });
+      return c;
+    });
+    return { canvases, signerFrac };
+  }
+
+  async function retypeReadyFonts(){
+    if(!document.fonts) return;
+    try{ await Promise.race([Promise.all([document.fonts.load("400 26px Tinos"), document.fonts.load("700 26px Tinos")]), new Promise(r => setTimeout(r, 2500))]); }catch(e){}
+  }
+
+  retypeSaveImageBtn.addEventListener('click', async () => {
+    await retypeReadyFonts();
+    const { canvases } = renderRetypePages();
+    const a = document.createElement('a');
+    a.href = canvases[0].toDataURL('image/jpeg', 0.92);
+    a.download = 'retyped-' + Date.now() + '.jpg';
+    a.click();
+    showStatus(canvases.length > 1 ? 'Saved page 1. This document has ' + canvases.length + ' pages — use Save as PDF to get them all.' : 'Saved to your Downloads folder ✓', 4000);
+  });
+
+  retypeSavePdfBtn.addEventListener('click', async () => {
+    await retypeReadyFonts();
+    const { canvases } = renderRetypePages();
+    try{
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF({ unit: 'pt', format: 'a4' });
+      const pw = doc.internal.pageSize.getWidth(), ph = doc.internal.pageSize.getHeight();
+      canvases.forEach((c, i) => { if(i) doc.addPage(); doc.addImage(c.toDataURL('image/jpeg', 0.92), 'JPEG', 0, 0, pw, ph); });
+      doc.save('retyped-' + Date.now() + '.pdf');
+      showStatus('Saved to your Downloads folder ✓', 3000);
+    }catch(err){
+      scanError.textContent = 'Could not build the PDF right now. Please try again.';
+      scanError.style.display = 'block';
+    }
+  });
+
+  retypeSignBtn.addEventListener('click', async () => {
+    await retypeReadyFonts();
+    const { canvases, signerFrac } = renderRetypePages();
+    const blob = await new Promise(r => canvases[0].toBlob(r, 'image/jpeg', 0.92));
+    const file = new File([blob], 'retyped-page.jpg', { type: 'image/jpeg' });
+    pendingSignHint = signerFrac !== null ? { xFrac: RT_MX / RT_W, yFrac: signerFrac } : null;
+    showView('sign');
+    await handleSignFile(file);
+    showStatus('Now tap ✍️ Add Signature and draw your signature.', 4000);
   });
 
   // =========================================================
@@ -2493,7 +3300,7 @@
     }
   }
 
-  shrinkTakePhotoBtn.addEventListener('click', () => { shrinkFileInput.setAttribute('capture','environment'); shrinkFileInput.click(); });
+  shrinkTakePhotoBtn.addEventListener('click', () => takePhoto(shrinkFileInput, handleShrinkFile, shrinkCanvasWrap, shrinkError, 'Take a photo'));
   shrinkUploadBtn.addEventListener('click', () => { shrinkFileInput.removeAttribute('capture'); shrinkFileInput.click(); });
   shrinkFileInput.addEventListener('change', () => {
     onPhotoPicked(shrinkFileInput, handleShrinkFile, shrinkCanvasWrap, shrinkError);
@@ -2555,6 +3362,7 @@
   let signPlacedOnce = false;
 
   function resetSignTool(){
+    pendingSignHint = null;
     signatureImg = null;
     signPlacedOnce = false;
     signCanvasWrap.style.display = 'none';
@@ -2594,7 +3402,7 @@
     }
   }
 
-  signTakePhotoBtn.addEventListener('click', () => { signFileInput.setAttribute('capture','environment'); signFileInput.click(); });
+  signTakePhotoBtn.addEventListener('click', () => takePhoto(signFileInput, handleSignFile, signCanvasWrap, signError, 'Take a photo of the page to sign'));
   signUploadBtn.addEventListener('click', () => { signFileInput.removeAttribute('capture'); signFileInput.click(); });
   signFileInput.addEventListener('change', () => {
     onPhotoPicked(signFileInput, handleSignFile, signCanvasWrap, signError);
@@ -2665,16 +3473,21 @@
       sigPadModal.style.display = 'none';
       return;
     }
-    const dataUrl = sigPadCanvas.toDataURL('image/png');
+    const dataUrl = trimmedSignatureDataUrl(sigPadCanvas);
     const img = new Image();
     img.onload = () => {
       signatureImg = img;
       sigAspect = img.width / img.height;
-      // Default placement: bottom-right area of the document, sized by the slider.
       const wPct = parseInt(signSizeSlider.value, 10) / 100;
       const w = signCanvas.width * wPct;
       const h = w / sigAspect;
-      sigPos = { x: signCanvas.width - w - (signCanvas.width * 0.04), y: signCanvas.height - h - (signCanvas.height * 0.05) };
+      if(pendingSignHint){
+        // Coming from a retyped page: sit just above the printed name.
+        sigPos = { x: signCanvas.width * pendingSignHint.xFrac, y: Math.max(0, signCanvas.height * pendingSignHint.yFrac - h * 1.0) };
+      } else {
+        // Otherwise start in the middle of the page, where it's easy to see and drag.
+        sigPos = { x: (signCanvas.width - w) / 2, y: (signCanvas.height - h) / 2 };
+      }
       signPlacementControls.style.display = 'block';
       signPlacedHint.style.display = 'none';
       drawSigOverlay();
@@ -2682,6 +3495,24 @@
     };
     img.src = dataUrl;
   });
+
+  // Cuts away the empty space around the drawn signature so its size slider
+  // controls the ink itself, not a mostly-blank box.
+  function trimmedSignatureDataUrl(c){
+    const w = c.width, h = c.height;
+    const d = c.getContext('2d').getImageData(0, 0, w, h).data;
+    let minX = w, minY = h, maxX = -1, maxY = -1;
+    for(let y = 0; y < h; y += 2) for(let x = 0; x < w; x += 2){
+      if(d[(y*w + x)*4 + 3] > 20){ if(x < minX) minX = x; if(x > maxX) maxX = x; if(y < minY) minY = y; if(y > maxY) maxY = y; }
+    }
+    if(maxX < 0) return c.toDataURL('image/png');
+    const pad = 6;
+    minX = Math.max(0, minX - pad); minY = Math.max(0, minY - pad);
+    maxX = Math.min(w, maxX + pad); maxY = Math.min(h, maxY + pad);
+    const out = document.createElement('canvas'); out.width = maxX - minX; out.height = maxY - minY;
+    out.getContext('2d').drawImage(c, minX, minY, out.width, out.height, 0, 0, out.width, out.height);
+    return out.toDataURL('image/png');
+  }
 
   function currentSigSize(){
     const wPct = parseInt(signSizeSlider.value, 10) / 100;
