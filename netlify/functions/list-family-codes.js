@@ -17,7 +17,7 @@ exports.handler = async (event) => {
     const { ownerCode } = JSON.parse(event.body || '{}');
     const cleanedOwner = (ownerCode || '').trim().toUpperCase();
 
-    if (!cleanedOwner.match(/^SE-[0-9A-F]{10}-[0-9A-F]{6}$/)) {
+    if (!cleanedOwner.match(/^SE-[0-9A-F]{10}-([0-9A-F]{8}-)?[0-9A-F]{6}$/)) {
       return { statusCode: 200, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ codes: [] }) };
     }
 

@@ -120,8 +120,22 @@ exports.handler = async (event) => {
 
       const store = getStore('family-codes');
       const record = await store.get(cleaned, { type: 'json' });
-      const valid = !!record && record.revoked !== true;
-      return { statusCode: 200, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ valid, reason: valid ? undefined : 'invalid' }) };
+      if (!record || record.revoked === true) {
+        return { statusCode: 200, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ valid: false, reason: 'invalid' }) };
+      }
+      // A family code made from a NEW-style owner code ends when the
+      // owner's code ends, so it can't outlive the paid month.
+      const ownerExpiry = (record.ownerCode || '').match(/^SE-[0-9A-F]{10}-([0-9A-F]{8})-[0-9A-F]{6}$/);
+      if (ownerExpiry) {
+        const ownerExpiresAtMs = parseInt(ownerExpiry[1], 16) * 1000;
+        const stillValid = Date.now() < ownerExpiresAtMs;
+        return {
+          statusCode: 200,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ valid: stillValid, reason: stillValid ? undefined : 'expired', expiresAt: new Date(ownerExpiresAtMs).toISOString() })
+        };
+      }
+      return { statusCode: 200, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ valid: true }) };
     }
 
     // Didn't match any known shape at all.

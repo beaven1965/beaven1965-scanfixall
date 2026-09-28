@@ -38,21 +38,29 @@ exports.handler = async (event) => {
       return { statusCode: 400, body: JSON.stringify({ error: 'Please type a name for this family member.' }) };
     }
 
-    const ownerMatch = cleanedOwner.match(/^SE-([0-9A-F]{10})-([0-9A-F]{6})$/);
-    if (!ownerMatch) {
+    // The owner's code can be the OLD style (SE-xxxxxxxxxx-yyyyyy) or the
+    // NEW style with an expiry date built in (SE-xxxxxxxxxx-eeeeeeee-yyyyyy).
+    const oldOwner = cleanedOwner.match(/^SE-([0-9A-F]{10})-([0-9A-F]{6})$/);
+    const newOwner = cleanedOwner.match(/^SE-([0-9A-F]{10})-([0-9A-F]{8})-([0-9A-F]{6})$/);
+    if (!oldOwner && !newOwner) {
       return { statusCode: 403, body: JSON.stringify({ error: 'Only your original access code can be used to create family codes.' }) };
     }
 
-    const [, ownerRandom, ownerSignature] = ownerMatch;
+    const signedPart = newOwner ? newOwner[1] + newOwner[2] : oldOwner[1];
+    const ownerSignature = newOwner ? newOwner[3] : oldOwner[2];
     const expectedOwnerSig = crypto
       .createHmac('sha256', accessSecret)
-      .update(ownerRandom)
+      .update(signedPart)
       .digest('hex')
       .slice(0, 6)
       .toUpperCase();
 
     if (!signaturesMatch(expectedOwnerSig, ownerSignature)) {
       return { statusCode: 403, body: JSON.stringify({ error: "That access code doesn't look right." }) };
+    }
+
+    if (newOwner && Date.now() >= parseInt(newOwner[2], 16) * 1000) {
+      return { statusCode: 403, body: JSON.stringify({ error: 'Your access code has expired. Please renew to create family codes.' }) };
     }
 
     const newRandom = crypto.randomBytes(5).toString('hex').toUpperCase();
