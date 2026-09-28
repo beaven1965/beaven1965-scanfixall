@@ -1693,6 +1693,7 @@
     display:flex;
     justify-content:space-between;
     background:var(--surface);
+    color:var(--text);
     border-radius:10px;
     padding:12px 16px;
     font-size:13px;
@@ -2349,6 +2350,17 @@
       wrap.appendChild(rm);
       scanPageThumbs.appendChild(wrap);
     });
+    updateScanPdfLabel();
+  }
+
+  // Tells free users up front that a multi-page PDF needs Premium,
+  // instead of surprising them after they tap Save.
+  const scanPdfLabelDefault = scanSavePdfBtn.textContent;
+  function updateScanPdfLabel(){
+    const multiPage = scanPages.length >= 1;
+    scanSavePdfBtn.textContent = (multiPage && !isPremiumActive())
+      ? scanPdfLabelDefault + ' ⭐ Premium'
+      : scanPdfLabelDefault;
   }
 
   scanAddPageBtn.addEventListener('click', () => {
@@ -2824,6 +2836,7 @@
   }
 
   function refreshPremiumUI(){
+    if(typeof updateScanPdfLabel === 'function') updateScanPdfLabel();
     // If a stored expiry has already passed, treat Premium as locked again
     // automatically — no server round-trip needed, the code already proved
     // itself genuine when it was first redeemed.
