@@ -8,7 +8,23 @@ import crypto from 'node:crypto';
 import { getStore } from '@netlify/blobs';
 
 const MODEL = 'claude-sonnet-5';     // better with Philippine languages than the small model
-const PAGE_LIMIT = { family: 100, class: 100 };
+const PAGE_LIMIT = { family: 100, class: 100 };   // pages per 30-day PAID code
+const FREE_PAGE_LIMIT = 10;                         // free (promo) codes: 10 pages in total
+
+// Paid codes are marked in the 'paid-codes' store by verify-payment when PayMongo
+// confirms the payment. Any other code is a free promo code. The owner can also
+// list codes (comma-separated) in the PAID_CODES environment variable.
+async function pageLimitFor(checked){
+  const owner = checked.owner;
+  const extra = String(process.env.PAID_CODES || '').toUpperCase().split(',').map(t => t.trim()).filter(Boolean);
+  const paid = extra.includes(owner) || !!(await getStore('paid-codes').get(owner));
+  return { paid, limit: paid ? (PAGE_LIMIT[checked.plan] || 100) : FREE_PAGE_LIMIT };
+}
+function limitReachedMsg(limit, paid){
+  return paid
+    ? limitReachedMsg(limit, paid)
+    : "You've used your " + limit + ' free Retype/Translate pages. Get Premium (₱250 a month) for 100 pages every month. Scanning, Clean paper, Shrink and Sign stay free.';
+}
 const OLD_FORMAT_CUTOFF_MS = new Date('2026-09-30T00:00:00+08:00').getTime();
 
 // Only languages written left-to-right with spaces between words,
@@ -91,10 +107,10 @@ async function doTranslate(body, deadline){
   if (!Array.isArray(blocks) || !blocks.length) return { error: 'There is no text on the page to translate.' };
   const texts = blocks.slice(0, 80).map(t => String(t || '').slice(0, 5000));
 
-  const limit = PAGE_LIMIT[checked.plan] || 100;
+  const { limit, paid } = await pageLimitFor(checked);
   const usageStore = getStore('retype-pages');
   const used = Number(await usageStore.get(checked.owner)) || 0;
-  if (used >= limit) return { error: "You've used all " + limit + ' pages for this 30-day period. You get ' + limit + ' new pages when you renew.', pagesLeft: 0 };
+  if (used >= limit) return { error: limitReachedMsg(limit, paid), pagesLeft: 0 };
 
   const numbered = texts.map((t, i) => 'Block ' + i + ':\n' + t).join('\n\n');
   const abort = new AbortController();

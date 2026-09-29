@@ -79,6 +79,7 @@ exports.handler = async (event) => {
     const storeKey = `session:${session_id}`;
     const existing = await store.get(storeKey, { type: 'json' });
     if (existing && existing.code) {
+      await getStore('paid-codes').set(existing.code, '1');
       return {
         statusCode: 200,
         headers: { 'Content-Type': 'application/json' },
@@ -113,6 +114,7 @@ exports.handler = async (event) => {
       || Number(lineItem && lineItem.amount) || 0;
     const { code, expiresAt, plan } = issueAccessCode(accessSecret, paidCentavos >= CLASS_MIN_CENTAVOS ? 'class' : 'family');
     await store.setJSON(storeKey, { code, expiresAt, plan, issuedAt: new Date().toISOString() });
+    await getStore('paid-codes').set(code, JSON.stringify({ plan, paidAt: new Date().toISOString() }));   // counts as a paid code (100 Retype pages)
 
     return {
       statusCode: 200,

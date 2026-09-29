@@ -17,7 +17,23 @@ import crypto from 'node:crypto';
 import { getStore } from '@netlify/blobs';
 
 const MODEL = 'claude-sonnet-5';
-const PAGE_LIMIT = { family: 100, class: 100 };   // pages per 30-day payment
+const PAGE_LIMIT = { family: 100, class: 100 };   // pages per 30-day PAID code
+const FREE_PAGE_LIMIT = 10;                         // free (promo) codes: 10 pages in total
+
+// Paid codes are marked in the 'paid-codes' store by verify-payment when PayMongo
+// confirms the payment. Any other code is a free promo code. The owner can also
+// list codes (comma-separated) in the PAID_CODES environment variable.
+async function pageLimitFor(checked){
+  const owner = checked.owner;
+  const extra = String(process.env.PAID_CODES || '').toUpperCase().split(',').map(t => t.trim()).filter(Boolean);
+  const paid = extra.includes(owner) || !!(await getStore('paid-codes').get(owner));
+  return { paid, limit: paid ? (PAGE_LIMIT[checked.plan] || 100) : FREE_PAGE_LIMIT };
+}
+function limitReachedMsg(limit, paid){
+  return paid
+    ? limitReachedMsg(limit, paid)
+    : "You've used your " + limit + ' free Retype/Translate pages. Get Premium (₱250 a month) for 100 pages every month. Scanning, Clean paper, Shrink and Sign stay free.';
+}
 const TOO_LONG_MSG = 'This page has too much writing to read in one go. Drag the gold corner dots to include only the part you need (for example, just the handwritten part), then tap Retype again. You were not charged for this page.';
 const OLD_FORMAT_CUTOFF_MS = new Date('2026-09-30T00:00:00+08:00').getTime();
 
@@ -48,6 +64,7 @@ Layout rules:
 - Keep the blocks in the same order as the page. One block per paragraph or group of lines.
 - LEAVE OUT: letterheads, logos, seals, stamps, watermarks, handwritten signatures, handwritten initials, page numbers, and anything that is not part of the page (phone screen buttons, background objects).
 - "letterhead" describes the printed letterhead band at the TOP of the page (organization name, logo, seal, address header, usually above the date). "top" and "bottom" are where that band starts and ends, as a fraction of the page height from 0 (top edge) to 1 (bottom edge). Make the band cover the whole letterhead including any line under it, but no body text. If there is no letterhead, use { "found": false, "top": 0, "bottom": 0 }.
+- CHARTS AND DIAGRAMS: if the page is mainly a flowchart, decision chart, diagram, mind map or concept map (boxes joined by arrows or lines) rather than a letter or document, do NOT list the boxes one by one. Instead write it as an easy-to-follow outline in "lines" blocks: one block per box or question, its text first, then each branch on its own line as "  – LABEL → where it leads" (for example "  – YES → POLYTHEIST"). Put final results/end points in **bold**, start with the box marked "start" if there is one, and note special arrows in brackets, like "(dashed line back)". A table: one line per row, cells separated by " | ".
 - "signerBlock" is the index (starting at 0) of the block holding the printed name of the person who signs, usually right after the closing. Use -1 if there is none.`;
 
 const NOTES_INSTRUCTIONS = `You are retyping a photographed page of handwritten CLASS NOTES (a notebook page, pad paper or handout) so a student or teacher can read and print them neatly. Accuracy matters more than anything.
@@ -76,7 +93,7 @@ Layout rules for notes:
 - Sub-points written further to the right: start the line with two spaces then "– ".
 - Sentences that flow across lines: "paragraph" blocks, align "left".
 - Formulas and equations: copy them on their own line in a "lines" block, as plain text (for example "A = πr²", "H2O", "x^2 + 3x = 10").
-- LEAVE OUT: notebook ruled lines, margin lines, holes, page numbers printed on the notebook, doodles, drawings and anything that is not part of the page. If there is a drawing or diagram, put a line "[drawing]" where it is.
+- LEAVE OUT: notebook ruled lines, margin lines, holes, page numbers printed on the notebook, doodles, drawings and anything that is not part of the page. A picture or doodle: put a line "[drawing]" where it is. A flowchart, decision chart, mind map or labelled diagram: write it as an outline — each box on its own line, then its branches as "  – LABEL → where it leads", with end results in **bold**.
 - Keep the blocks in the same order as the page.
 - Always return "signerBlock": -1 and "letterhead": { "found": false, "top": 0, "bottom": 0 }.`;
 
@@ -137,12 +154,12 @@ async function doRetype(body, deadline){
       : 'Retype is a Premium feature. Your access code could not be confirmed.' };
   }
 
-  const limit = PAGE_LIMIT[checked.plan] || 100;
+  const { limit, paid } = await pageLimitFor(checked);
   const usageStore = getStore('retype-pages');
   const usageKey = checked.owner;              // one count per payment (per purchase code)
   const used = Number(await usageStore.get(usageKey)) || 0;
   if (used >= limit) {
-    return { error: "You've used all " + limit + ' Retype pages for this 30-day period. You get ' + limit + ' new pages when you renew. Clean paper still works without limits.', pagesLeft: 0 };
+    return { error: limitReachedMsg(limit, paid), pagesLeft: 0 };
   }
 
   const match = String(image || '').match(/^data:image\/(jpeg|png);base64,(.+)$/);

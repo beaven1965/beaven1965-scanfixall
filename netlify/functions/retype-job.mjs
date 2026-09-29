@@ -8,7 +8,23 @@
 import crypto from 'node:crypto';
 import { getStore } from '@netlify/blobs';
 
-const PAGE_LIMIT = { family: 100, class: 100 };
+const PAGE_LIMIT = { family: 100, class: 100 };   // pages per 30-day PAID code
+const FREE_PAGE_LIMIT = 10;                         // free (promo) codes: 10 pages in total
+
+// Paid codes are marked in the 'paid-codes' store by verify-payment when PayMongo
+// confirms the payment. Any other code is a free promo code. The owner can also
+// list codes (comma-separated) in the PAID_CODES environment variable.
+async function pageLimitFor(checked){
+  const owner = checked.owner;
+  const extra = String(process.env.PAID_CODES || '').toUpperCase().split(',').map(t => t.trim()).filter(Boolean);
+  const paid = extra.includes(owner) || !!(await getStore('paid-codes').get(owner));
+  return { paid, limit: paid ? (PAGE_LIMIT[checked.plan] || 100) : FREE_PAGE_LIMIT };
+}
+function limitReachedMsg(limit, paid){
+  return paid
+    ? limitReachedMsg(limit, paid)
+    : "You've used your " + limit + ' free Retype/Translate pages. Get Premium (₱250 a month) for 100 pages every month. Scanning, Clean paper, Shrink and Sign stay free.';
+}
 const OLD_FORMAT_CUTOFF_MS = new Date('2026-09-30T00:00:00+08:00').getTime();
 
 function sig6(secret, text){
@@ -80,9 +96,9 @@ export default async (req) => {
         ? 'Your Premium code has expired. Please renew to use Retype.'
         : 'Retype is a Premium feature. Your access code could not be confirmed.' });
     }
-    const limit = PAGE_LIMIT[checked.plan] || 100;
+    const { limit, paid } = await pageLimitFor(checked);
     const used = Number(await getStore('retype-pages').get(checked.owner)) || 0;
-    if (used >= limit) return json({ error: "You've used all " + limit + ' Retype pages for this 30-day period. You get ' + limit + ' new pages when you renew. Clean paper still works without limits.', pagesLeft: 0 });
+    if (used >= limit) return json({ error: limitReachedMsg(limit, paid), pagesLeft: 0 });
     if (!/^data:image\/(jpeg|png);base64,/.test(String(body.image || ''))) return json({ error: 'No page picture was received. Please try again.' });
     const jobId = crypto.randomUUID();
     await jobs.setJSON(jobId, { code: body.code, image: body.image, mode: body.mode === 'notes' ? 'notes' : 'letter', at: Date.now() });
