@@ -1597,6 +1597,14 @@
     border:none;
   }
   .tool-btn:disabled{ opacity:0.55; cursor:default; }
+  /* Fold-open sections on the scan page */
+  .fold{ margin-top:12px; border:1px solid #d9dde5; border-radius:12px; background:#f7f8fa; }
+  .fold > summary{ list-style:none; cursor:pointer; padding:14px 44px 14px 14px; position:relative; color:#1f2633; font-weight:700; font-size:15px; }
+  .fold > summary::-webkit-details-marker{ display:none; }
+  .fold > summary::after{ content:'▾'; position:absolute; right:16px; top:50%; transform:translateY(-50%) rotate(-90deg); transition:transform .15s; color:#8a93a3; font-size:16px; }
+  .fold[open] > summary::after{ transform:translateY(-50%) rotate(0deg); }
+  .fold > summary small{ display:block; font-weight:400; color:#6b7384; font-size:12.5px; margin-top:2px; }
+  .fold > .fold-body{ padding:0 12px 14px; }
   .canvas-wrap{
     background:var(--ink-deep);
     border:1px solid var(--surface-line);
@@ -1863,6 +1871,9 @@
         </div>
 
         <div id="scanEditControls" style="display:none;">
+          <details class="fold" id="foldFix">
+            <summary>🔧 Fix the photo<small>Clean paper · Black &amp; White · rotate · straighten · corners</small></summary>
+            <div class="fold-body">
           <div class="tool-upload-row">
             <button class="tool-btn" id="scanAdjustCornersBtn">↩ Adjust corners</button>
           </div>
@@ -1878,7 +1889,12 @@
             <button id="scanEnhanceBtn" class="active">✨ Clean paper</button>
             <button id="scanBwBtn">⬛ Black &amp; White mode</button>
           </div>
-          <div class="tool-hint" style="margin-top:12px; display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+            </div>
+          </details>
+          <details class="fold" id="foldRetype" open>
+            <summary>📝 Retype as a new typed page<small>Letters, class notes and charts — then translate or check grammar</small></summary>
+            <div class="fold-body">
+          <div class="tool-hint" style="margin-top:0; display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
             <b>This page is:</b>
             <label style="display:flex; align-items:center; gap:4px; cursor:pointer;"><input type="radio" name="retypeKind" value="letter" checked style="width:18px;height:18px;"> 📄 Letter / document</label>
             <label style="display:flex; align-items:center; gap:4px; cursor:pointer;"><input type="radio" name="retypeKind" value="notes" style="width:18px;height:18px;"> 📓 Class notes</label>
@@ -1887,11 +1903,16 @@
             <button class="tool-btn" id="scanRetypeBtn">📝 Retype as new document ⭐ Premium</button>
           </div>
           <div class="tool-hint" style="margin-top:8px;">
-            <b>Which should I use?</b><br>
+            <b>Clean or Retype?</b><br>
             <b>✨ Clean paper</b> (free): keeps the <i>original</i> page — letterhead, logo and handwritten signature stay — but faint creases or stains may still show.<br>
             <b>📝 Retype</b> (<span id="retypePlanWord">Premium</span>): reads the text and prints it on a <i>brand-new</i> white page. Perfectly clean. You can keep the original letterhead/logo as a picture, and you sign it again.
           </div>
-          <div class="tool-hint" style="margin-top:10px;">Got more pages? Add them below before saving — they'll all go into one PDF.</div>
+            </div>
+          </details>
+          <details class="fold" id="foldSave" open>
+            <summary>💾 Save or add more pages<small>Image, PDF, or several pages in one PDF</small></summary>
+            <div class="fold-body">
+          <div class="tool-hint" style="margin-top:0;">Got more pages? Add them before saving — they'll all go into one PDF.</div>
           <div class="page-thumbs" id="scanPageThumbs" style="margin-top:10px;"></div>
           <div class="tool-upload-row" style="margin-top:10px;">
             <button class="tool-btn" id="scanAddPageBtn">➕ Add another page</button>
@@ -1903,6 +1924,8 @@
             <button class="tool-btn primary" id="scanSaveImageBtn">⬇ Save as Image</button>
             <button class="tool-btn primary" id="scanSavePdfBtn">⬇ Save as PDF</button>
           </div>
+            </div>
+          </details>
         </div>
         <div id="retypePanel" style="display:none;">
           <div class="tool-hint">Here's your page retyped fresh. <b>Tap any word to fix it.</b> The handwritten signature is left out — use <b>Sign this page</b> to sign it again.</div>
@@ -1916,7 +1939,10 @@
             <div id="retypeCopyNote" style="display:none; text-align:center; font:11px Arial,sans-serif; color:#888; padding:4px 0 8px; background:#fff;">Retyped copy — made with ScanFixAll. Not the original document.</div>
           </div>
           <div class="tool-hint" style="margin-top:6px;">Please only retype and re-sign your own documents.</div>
-          <div class="tool-upload-row" style="margin-top:10px;">
+          <details class="fold" id="foldExtras">
+            <summary>🌐 Translate · ✏️ Grammar check<small>17 languages · optional grammar suggestions</small></summary>
+            <div class="fold-body">
+          <div class="tool-upload-row" style="margin-top:0;">
             <button class="tool-btn" id="retypeGrammarBtn">✏️ Suggest grammar fixes (optional)</button>
           </div>
           <div id="retypeGrammarBox" style="display:none; margin-top:10px;">
@@ -1953,6 +1979,8 @@
           <div class="tool-upload-row" id="retypeOriginalRow" style="margin-top:6px; display:none;">
             <button class="tool-btn" id="retypeOriginalBtn">↩ Show original</button>
           </div>
+            </div>
+          </details>
           <div class="tool-upload-row" style="margin-top:10px;">
             <button class="tool-btn primary" id="retypeSignBtn">✍️ Sign this page</button>
           </div>
@@ -4261,11 +4289,11 @@
     const lbl = document.getElementById('premiumStatusLabel');
     if(lbl) lbl.textContent = '🔑 Access code (for Retype)';
     const rh = document.getElementById('redeemHint');
-    if(rh) rh.textContent = 'Everything in ScanFixAll is free during October 2026. Retype needs a free access code from your teacher — enter it above.';
+    if(rh) rh.textContent = 'October promo: scanning, Clean paper, Shrink and Sign are free. Each free access code also includes 10 free Retype/Translate pages — enter your code above.';
     const rb = document.getElementById('scanRetypeBtn');
     if(rb) rb.textContent = '📝 Retype as new document (free access code)';
     const rw = document.getElementById('retypePlanWord');
-    if(rw) rw.textContent = 'free with an access code';
+    if(rw) rw.textContent = '10 free pages with an access code';
   })();
   refreshPremiumUI();
 
