@@ -50,6 +50,36 @@ Layout rules:
 - "letterhead" describes the printed letterhead band at the TOP of the page (organization name, logo, seal, address header, usually above the date). "top" and "bottom" are where that band starts and ends, as a fraction of the page height from 0 (top edge) to 1 (bottom edge). Make the band cover the whole letterhead including any line under it, but no body text. If there is no letterhead, use { "found": false, "top": 0, "bottom": 0 }.
 - "signerBlock" is the index (starting at 0) of the block holding the printed name of the person who signs, usually right after the closing. Use -1 if there is none.`;
 
+const NOTES_INSTRUCTIONS = `You are retyping a photographed page of handwritten CLASS NOTES (a notebook page, pad paper or handout) so a student or teacher can read and print them neatly. Accuracy matters more than anything.
+
+Read the page slowly, word by word, and return ONLY a JSON object, no other text, in this shape:
+{
+  "blocks": [
+    { "type": "lines", "align": "left", "text": "**Photosynthesis**" },
+    { "type": "lines", "align": "left", "text": "• Happens in the chloroplast\\n• Needs sunlight, water and CO2" },
+    { "type": "paragraph", "align": "left", "text": "A sentence or two of flowing notes." }
+  ],
+  "signerBlock": -1,
+  "letterhead": { "found": false, "top": 0, "bottom": 0 }
+}
+
+Accuracy rules — the most important part:
+- Copy every word EXACTLY as written, letter by letter, including cursive. Keep the student's own spelling, abbreviations (w/, b/c, =, →) and wording. Do not fix grammar or spelling, and do not add, remove or reorder anything.
+- NEVER guess. If you cannot read a word with confidence, write [?] in its place. It is much better to write [?] than a wrong word.
+- NUMBERS NEED EXTRA CARE: dates, years, formulas, measurements, amounts and page numbers. If you are not completely sure of EVERY digit or symbol, write [?] for the whole number or formula part.
+- Keep words in Filipino or other languages exactly as written; do not translate.
+
+Layout rules for notes:
+- Titles, topics and headings: their own "lines" block, wrapped in **double asterisks**.
+- Words the writer underlined, boxed, circled or highlighted as key terms: wrap them in **double asterisks** too.
+- Bulleted or dashed items: one item per line, starting with "• ". Numbered or lettered items: keep the writer's own "1." "2." "a." "b.". Put a list in one "lines" block with \\n between items.
+- Sub-points written further to the right: start the line with two spaces then "– ".
+- Sentences that flow across lines: "paragraph" blocks, align "left".
+- Formulas and equations: copy them on their own line in a "lines" block, as plain text (for example "A = πr²", "H2O", "x^2 + 3x = 10").
+- LEAVE OUT: notebook ruled lines, margin lines, holes, page numbers printed on the notebook, doodles, drawings and anything that is not part of the page. If there is a drawing or diagram, put a line "[drawing]" where it is.
+- Keep the blocks in the same order as the page.
+- Always return "signerBlock": -1 and "letterhead": { "found": false, "top": 0, "bottom": 0 }.`;
+
 function sig6(secret, text){
   return crypto.createHmac('sha256', secret).update(text).digest('hex').slice(0, 6).toUpperCase();
 }
@@ -98,6 +128,7 @@ async function doRetype(body, deadline){
   if (!secret) return { error: 'Server is missing ACCESS_CODE_SECRET as a Netlify environment variable.' };
 
   const { code, image } = body || {};
+  const notes = body && body.mode === 'notes';
   if (!code) return { error: 'Retype is a Premium feature. Please unlock Premium first.' };
   const checked = await checkCode(code, secret);
   if (!checked.valid) {
@@ -134,7 +165,7 @@ async function doRetype(body, deadline){
         stream: true,
         messages: [{ role: 'user', content: [
           { type: 'image', source: { type: 'base64', media_type: 'image/' + match[1], data: match[2] } },
-          { type: 'text', text: INSTRUCTIONS }
+          { type: 'text', text: notes ? NOTES_INSTRUCTIONS : INSTRUCTIONS }
         ] }]
       })
     });
@@ -188,7 +219,7 @@ async function doRetype(body, deadline){
 
   let letterhead = { found: false, top: 0, bottom: 0 };
   const lh = parsed.letterhead;
-  if (lh && lh.found === true && typeof lh.top === 'number' && typeof lh.bottom === 'number') {
+  if (!notes && lh && lh.found === true && typeof lh.top === 'number' && typeof lh.bottom === 'number') {
     const top = Math.max(0, Math.min(1, lh.top)), bottom = Math.max(0, Math.min(0.6, lh.bottom));
     if (bottom - top > 0.02) letterhead = { found: true, top, bottom };
   }

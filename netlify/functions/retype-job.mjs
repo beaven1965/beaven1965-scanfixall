@@ -85,7 +85,7 @@ export default async (req) => {
     if (used >= limit) return json({ error: "You've used all " + limit + ' Retype pages for this 30-day period. You get ' + limit + ' new pages when you renew. Clean paper still works without limits.', pagesLeft: 0 });
     if (!/^data:image\/(jpeg|png);base64,/.test(String(body.image || ''))) return json({ error: 'No page picture was received. Please try again.' });
     const jobId = crypto.randomUUID();
-    await jobs.setJSON(jobId, { code: body.code, image: body.image, at: Date.now() });
+    await jobs.setJSON(jobId, { code: body.code, image: body.image, mode: body.mode === 'notes' ? 'notes' : 'letter', at: Date.now() });
     return json({ jobId });
   }
 
