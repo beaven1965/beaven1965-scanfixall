@@ -29,20 +29,27 @@ const { getStore, connectLambda } = require('@netlify/blobs');
 
 const CODE_VALID_DAYS = 30;
 
+// Class Plan payments are ₱1,500; anything at or above this amount gets a
+// Class code (SC-), anything below gets a Family code (SE-).
+const CLASS_MIN_CENTAVOS = 150000;
+
 // Issues a code good for 30 days from right now. The expiry is baked
 // into the code itself (as 8 hex digits of a Unix timestamp), so
 // verify-code.js can check it later with no database lookup at all.
-function issueAccessCode(secret) {
+// Class codes are signed with "CLASS" in front, so a Family code can't
+// be turned into a Class code by changing its first letters.
+function issueAccessCode(secret, plan) {
   const randomPart = crypto.randomBytes(5).toString('hex').toUpperCase(); // 10 hex characters
   const expiresAtMs = Date.now() + CODE_VALID_DAYS * 24 * 60 * 60 * 1000;
   const expiryHex = Math.floor(expiresAtMs / 1000).toString(16).toUpperCase().padStart(8, '0');
+  const isClass = plan === 'class';
   const signature = crypto
     .createHmac('sha256', secret)
-    .update(randomPart + expiryHex)
+    .update((isClass ? 'CLASS' : '') + randomPart + expiryHex)
     .digest('hex')
     .slice(0, 6)
     .toUpperCase();
-  return { code: `SE-${randomPart}-${expiryHex}-${signature}`, expiresAt: new Date(expiresAtMs).toISOString() };
+  return { code: `${isClass ? 'SC' : 'SE'}-${randomPart}-${expiryHex}-${signature}`, expiresAt: new Date(expiresAtMs).toISOString(), plan: isClass ? 'class' : 'family' };
 }
 
 exports.handler = async (event) => {
@@ -99,13 +106,18 @@ exports.handler = async (event) => {
       return { statusCode: 402, body: JSON.stringify({ error: 'PayMongo has not confirmed this payment yet. Please wait a moment and try again.' }) };
     }
 
-    const { code, expiresAt } = issueAccessCode(accessSecret);
-    await store.setJSON(storeKey, { code, expiresAt, issuedAt: new Date().toISOString() });
+    // How much was paid? (Read from PayMongo, never from the browser.)
+    const firstPayment = attrs && Array.isArray(attrs.payments) && attrs.payments[0];
+    const lineItem = attrs && Array.isArray(attrs.line_items) && attrs.line_items[0];
+    const paidCentavos = Number(firstPayment && firstPayment.attributes && firstPayment.attributes.amount)
+      || Number(lineItem && lineItem.amount) || 0;
+    const { code, expiresAt, plan } = issueAccessCode(accessSecret, paidCentavos >= CLASS_MIN_CENTAVOS ? 'class' : 'family');
+    await store.setJSON(storeKey, { code, expiresAt, plan, issuedAt: new Date().toISOString() });
 
     return {
       statusCode: 200,
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ code, expiresAt })
+      body: JSON.stringify({ code, expiresAt, plan })
     };
   } catch (err) {
     return { statusCode: 500, body: JSON.stringify({ error: err.message }) };

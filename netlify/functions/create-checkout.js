@@ -6,7 +6,13 @@
 // hosted by PayMongo itself — and hands back the URL to send the visitor to.
 // We never touch card numbers ourselves; PayMongo's page handles that.
 
-const PREMIUM_PRICE_PESOS = 250; // ← change this number any time to adjust the price
+// Prices in pesos — change these numbers any time to adjust them.
+// verify-payment.js and verify-payment-by-id.js tell the plans apart by amount,
+// so if you change CLASS here, change CLASS_MIN_CENTAVOS there too.
+const PLANS = {
+  family: { pesos: 250,  name: 'ScanFixAll Family Premium (30 days)', description: 'ScanFixAll Family Premium — you + up to 5 family members, 30 days, one-time payment (no auto-renew)' },
+  class:  { pesos: 1500, name: 'ScanFixAll Class Plan (30 days)',     description: 'ScanFixAll Class Plan — teacher + up to 50 students, 30 days, one-time payment (no auto-renew)' }
+};
 
 exports.handler = async (event) => {
   if (event.httpMethod !== 'POST') {
@@ -23,6 +29,10 @@ exports.handler = async (event) => {
     // send the visitor back to after they pay (works on the live site).
     const origin = event.headers.origin || ('https://' + event.headers.host);
 
+    let chosen = 'family';
+    try { if (JSON.parse(event.body || '{}').plan === 'class') chosen = 'class'; } catch (e) {}
+    const plan = PLANS[chosen];
+
     const res = await fetch('https://api.paymongo.com/v2/checkout_sessions', {
       method: 'POST',
       headers: {
@@ -34,8 +44,8 @@ exports.handler = async (event) => {
           attributes: {
             line_items: [
               {
-                name: 'ScanFixAll Premium (30 days)',
-                amount: PREMIUM_PRICE_PESOS * 100, // PayMongo expects centavos
+                name: plan.name,
+                amount: plan.pesos * 100, // PayMongo expects centavos
                 currency: 'PHP',
                 quantity: 1
               }
@@ -43,7 +53,7 @@ exports.handler = async (event) => {
             payment_method_types: ['card', 'gcash', 'qrph'],
             success_url: origin + '/?paid=success',
             cancel_url: origin + '/?paid=cancelled',
-            description: 'ScanFixAll Premium — 30 days, one-time payment (no auto-renew)',
+            description: plan.description,
             send_email_receipt: true
           }
         }

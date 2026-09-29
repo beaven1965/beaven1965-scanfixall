@@ -8,14 +8,16 @@
 //
 // Steps:
 // 1. Check the Premium access code (same rules as verify-code.js).
-// 2. Check the monthly page limit (100 per purchase, shared by family codes).
+// 2. Check the page limit: 100 Retype pages per payment (per purchase code),
+//    shared with its family/student codes. No carry-over: each new payment
+//    gives a new code, so the count starts again at zero.
 // 3. Ask Claude to read the page — never guessing — and return the layout.
 
 import crypto from 'node:crypto';
 import { getStore } from '@netlify/blobs';
 
 const MODEL = 'claude-sonnet-5';
-const MONTHLY_PAGE_LIMIT = 100;
+const PAGE_LIMIT = { family: 100, class: 100 };   // pages per 30-day payment
 const OLD_FORMAT_CUTOFF_MS = new Date('2026-09-30T00:00:00+08:00').getTime();
 
 const INSTRUCTIONS = `You are retyping a photographed paper document so it can be printed fresh. Accuracy matters more than anything: this may be an official letter, and a wrong name, place or word could embarrass the sender.
@@ -46,10 +48,6 @@ Layout rules:
 - "letterhead" describes the printed letterhead band at the TOP of the page (organization name, logo, seal, address header, usually above the date). "top" and "bottom" are where that band starts and ends, as a fraction of the page height from 0 (top edge) to 1 (bottom edge). Make the band cover the whole letterhead including any line under it, but no body text. If there is no letterhead, use { "found": false, "top": 0, "bottom": 0 }.
 - "signerBlock" is the index (starting at 0) of the block holding the printed name of the person who signs, usually right after the closing. Use -1 if there is none.`;
 
-function monthKey(){
-  const d = new Date(Date.now() + 8 * 3600 * 1000);   // Philippine time
-  return d.getUTCFullYear() + '-' + String(d.getUTCMonth() + 1).padStart(2, '0');
-}
 function sig6(secret, text){
   return crypto.createHmac('sha256', secret).update(text).digest('hex').slice(0, 6).toUpperCase();
 }
@@ -58,20 +56,26 @@ function same(a, b){
   return A.length === B.length && crypto.timingSafeEqual(A, B);
 }
 
-// Same rules as verify-code.js. Returns { valid, reason, owner }.
+// Same rules as verify-code.js. Returns { valid, reason, owner, plan }.
 async function checkCode(code, secret){
   const c = String(code || '').trim().toUpperCase();
   let m = c.match(/^SE-([0-9A-F]{10})-([0-9A-F]{8})-([0-9A-F]{6})$/);
   if (m) {
     if (!same(sig6(secret, m[1] + m[2]), m[3])) return { valid: false, reason: 'invalid' };
     if (Date.now() >= parseInt(m[2], 16) * 1000) return { valid: false, reason: 'expired' };
-    return { valid: true, owner: c };
+    return { valid: true, owner: c, plan: 'family' };
+  }
+  m = c.match(/^SC-([0-9A-F]{10})-([0-9A-F]{8})-([0-9A-F]{6})$/);
+  if (m) {
+    if (!same(sig6(secret, 'CLASS' + m[1] + m[2]), m[3])) return { valid: false, reason: 'invalid' };
+    if (Date.now() >= parseInt(m[2], 16) * 1000) return { valid: false, reason: 'expired' };
+    return { valid: true, owner: c, plan: 'class' };
   }
   m = c.match(/^SE-([0-9A-F]{10})-([0-9A-F]{6})$/);
   if (m) {
     if (!same(sig6(secret, m[1]), m[2])) return { valid: false, reason: 'invalid' };
     if (Date.now() >= OLD_FORMAT_CUTOFF_MS) return { valid: false, reason: 'expired' };
-    return { valid: true, owner: c };
+    return { valid: true, owner: c, plan: 'family' };
   }
   m = c.match(/^SF-([0-9A-F]{10})-([0-9A-F]{6})$/);
   if (m) {
@@ -80,7 +84,7 @@ async function checkCode(code, secret){
     if (!rec || rec.revoked === true) return { valid: false, reason: 'invalid' };
     const ownerCheck = await checkCode(rec.ownerCode, secret);   // family codes end with their owner's code
     if (!ownerCheck.valid) return { valid: false, reason: ownerCheck.reason };
-    return { valid: true, owner: rec.ownerCode };
+    return { valid: true, owner: rec.ownerCode, plan: ownerCheck.plan };
   }
   return { valid: false, reason: 'invalid' };
 }
@@ -100,11 +104,12 @@ async function doRetype(body){
       : 'Retype is a Premium feature. Your access code could not be confirmed.' };
   }
 
-  const usageStore = getStore('retype-usage');
-  const usageKey = checked.owner + ':' + monthKey();
+  const limit = PAGE_LIMIT[checked.plan] || 100;
+  const usageStore = getStore('retype-pages');
+  const usageKey = checked.owner;              // one count per payment (per purchase code)
   const used = Number(await usageStore.get(usageKey)) || 0;
-  if (used >= MONTHLY_PAGE_LIMIT) {
-    return { error: "You've used all " + MONTHLY_PAGE_LIMIT + ' Retype pages for this month. They reset on the 1st. Clean paper still works without limits.', pagesLeft: 0 };
+  if (used >= limit) {
+    return { error: "You've used all " + limit + ' Retype pages for this 30-day period. You get ' + limit + ' new pages when you renew. Clean paper still works without limits.', pagesLeft: 0 };
   }
 
   const match = String(image || '').match(/^data:image\/(jpeg|png);base64,(.+)$/);
@@ -153,7 +158,7 @@ async function doRetype(body){
   }
 
   await usageStore.set(usageKey, String(used + 1));   // count only successful pages
-  return { blocks, signerBlock, letterhead, pagesLeft: Math.max(0, MONTHLY_PAGE_LIMIT - used - 1) };
+  return { blocks, signerBlock, letterhead, pagesLeft: Math.max(0, limit - used - 1) };
 }
 
 export default async (req) => {
