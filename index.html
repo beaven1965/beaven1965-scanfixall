@@ -1902,14 +1902,26 @@
         <div id="retypePanel" style="display:none;">
           <div class="tool-hint">Here's your page retyped fresh. <b>Tap any word to fix it.</b> The handwritten signature is left out — use <b>Sign this page</b> to sign it again.</div>
           <label class="tool-hint" id="retypeLetterheadRow" style="display:none; margin-top:10px; gap:8px; align-items:center; cursor:pointer;">
-            <input type="checkbox" id="retypeKeepLetterhead" checked style="width:20px;height:20px;">
-            <span><b>Keep original letterhead / logo</b> (the real picture from your scan, placed at the top)</span>
+            <input type="checkbox" id="retypeKeepLetterhead" style="width:20px;height:20px;">
+            <span><b>Keep original letterhead / logo</b> — only if it is <i>your own</i> or your organization's. A small <i>"Retyped copy"</i> note is added at the bottom of the page.</span>
           </label>
           <div class="retype-sheet">
             <img id="retypeLetterheadImg" alt="Original letterhead" style="display:none;">
             <div class="retype-paper" id="retypePaper" contenteditable="true" spellcheck="false"></div>
+            <div id="retypeCopyNote" style="display:none; text-align:center; font:11px Arial,sans-serif; color:#888; padding:4px 0 8px; background:#fff;">Retyped copy — made with ScanFixAll. Not the original document.</div>
           </div>
           <div class="tool-hint" style="margin-top:6px;">Please only retype and re-sign your own documents.</div>
+          <div class="tool-upload-row" style="margin-top:10px;">
+            <button class="tool-btn" id="retypeGrammarBtn">✏️ Suggest grammar fixes (optional)</button>
+          </div>
+          <div id="retypeGrammarBox" style="display:none; margin-top:10px;">
+            <div class="tool-hint" id="retypeGrammarIntro"></div>
+            <div id="retypeGrammarList"></div>
+            <div class="tool-upload-row" id="retypeGrammarAllRow" style="margin-top:8px; display:none;">
+              <button class="tool-btn" id="retypeGrammarAllBtn">✓ Accept all</button>
+              <button class="tool-btn" id="retypeGrammarCloseBtn">✗ Skip all</button>
+            </div>
+          </div>
           <div class="tool-upload-row" style="margin-top:10px;">
             <button class="tool-btn primary" id="retypeSignBtn">✍️ Sign this page</button>
           </div>
@@ -3004,6 +3016,7 @@
   function refreshLetterheadPreview(){
     const on = !!retypeLetterhead && retypeKeepLetterhead.checked;
     retypeLetterheadImg.style.display = on ? 'block' : 'none';
+    document.getElementById('retypeCopyNote').style.display = on ? 'block' : 'none';
     if(on){
       retypeLetterheadImg.src = retypeLetterhead.toDataURL('image/png');
       retypeLetterheadImg.style.width = Math.min(92, retypeLetterhead._pageFrac * 100) + '%';
@@ -3115,9 +3128,10 @@
           : 'Could not retype right now (' + res.status + '). Please try again.'));
       }
       showRetypedBlocks(data.blocks, data.signerBlock);
+      document.getElementById('retypeGrammarBox').style.display = 'none';
       retypeLetterhead = (data.letterhead && data.letterhead.found) ? cutLetterhead(send, data.letterhead) : null;
       retypeLetterheadRow.style.display = retypeLetterhead ? 'flex' : 'none';
-      retypeKeepLetterhead.checked = !!retypeLetterhead;
+      retypeKeepLetterhead.checked = false;   // off unless the person chooses it
       refreshLetterheadPreview();
       openRetypePanel();
       const unsure = (retypePaper.innerHTML.match(/\[\?\]/g) || []).length;
@@ -3134,6 +3148,103 @@
     }
   });
   retypeBackBtn.addEventListener('click', closeRetypePanel);
+
+  // ---- Optional grammar suggestions: nothing changes unless the person accepts it ----
+  const retypeGrammarBtn = document.getElementById('retypeGrammarBtn');
+  const retypeGrammarBox = document.getElementById('retypeGrammarBox');
+  const retypeGrammarIntro = document.getElementById('retypeGrammarIntro');
+  const retypeGrammarList = document.getElementById('retypeGrammarList');
+  const retypeGrammarAllRow = document.getElementById('retypeGrammarAllRow');
+  let grammarBusy = false;
+
+  function rtBlockEls(){ return Array.from(retypePaper.children).filter(el => el.classList.contains('rt-block')); }
+
+  // Replace the first place `from` appears inside one block, keeping bold text bold.
+  function applyFixInBlock(el, from, to){
+    const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+    let n;
+    while((n = walker.nextNode())){
+      const i = n.textContent.indexOf(from);
+      if(i >= 0){ n.textContent = n.textContent.slice(0, i) + to + n.textContent.slice(i + from.length); return true; }
+    }
+    return false;
+  }
+
+  function grammarDoneCheck(){
+    if(!retypeGrammarList.querySelector('.gfix-open')){
+      retypeGrammarAllRow.style.display = 'none';
+      retypeGrammarIntro.textContent = 'All done ✓ Your page is updated. You can still tap any word to change it.';
+    }
+  }
+
+  function showGrammarFixes(fixes){
+    retypeGrammarList.innerHTML = '';
+    retypeGrammarBox.style.display = 'block';
+    if(!fixes.length){
+      retypeGrammarIntro.textContent = 'No grammar or spelling mistakes found ✓';
+      retypeGrammarAllRow.style.display = 'none';
+      return;
+    }
+    retypeGrammarIntro.innerHTML = '<b>' + fixes.length + ' suggestion' + (fixes.length > 1 ? 's' : '') + '.</b> Nothing is changed until you tap ✓. Names, places, numbers and dates are never touched.';
+    const blocks = rtBlockEls();
+    fixes.forEach(f => {
+      const row = document.createElement('div');
+      row.className = 'gfix-open';
+      row.style.cssText = 'background:#fff; color:#111; border-radius:8px; padding:10px 12px; margin-top:8px; font-size:15px; line-height:1.4;';
+      row.innerHTML = '<div><s style="color:#b3261e;">' + escapeHtml(f.from) + '</s> → <b style="color:#1b7f3b;">' + escapeHtml(f.to) + '</b>'
+        + (f.why ? ' <span style="color:#777; font-size:13px;">(' + escapeHtml(f.why) + ')</span>' : '') + '</div>'
+        + '<div style="margin-top:8px; display:flex; gap:8px;"><button class="tool-btn" data-act="yes" style="flex:1; padding:8px;">✓ Accept</button><button class="tool-btn" data-act="no" style="flex:1; padding:8px;">✗ Skip</button></div>';
+      const settle = (msg) => { row.className = 'gfix-done'; row.style.opacity = '0.6'; row.lastChild.innerHTML = '<span style="font-size:13px;">' + msg + '</span>'; grammarDoneCheck(); };
+      row._accept = () => {
+        const el = blocks[f.block];
+        if(el && applyFixInBlock(el, f.from, f.to)) settle('✓ Changed');
+        else settle('Could not find it — please fix it by hand if needed.');
+      };
+      row.querySelector('[data-act="yes"]').addEventListener('click', row._accept);
+      row.querySelector('[data-act="no"]').addEventListener('click', () => settle('Skipped — kept as original'));
+      retypeGrammarList.appendChild(row);
+    });
+    retypeGrammarAllRow.style.display = 'flex';
+  }
+
+  document.getElementById('retypeGrammarAllBtn').addEventListener('click', () => {
+    retypeGrammarList.querySelectorAll('.gfix-open').forEach(r => r._accept());
+  });
+  document.getElementById('retypeGrammarCloseBtn').addEventListener('click', () => {
+    retypeGrammarList.querySelectorAll('.gfix-open [data-act="no"]').forEach(b => b.click());
+  });
+
+  retypeGrammarBtn.addEventListener('click', async () => {
+    if(grammarBusy) return;
+    const code = localStorage.getItem(PREMIUM_CODE_KEY);
+    if(!isPremiumActive() || !code){
+      retypeGrammarBox.style.display = 'block'; retypeGrammarList.innerHTML = ''; retypeGrammarAllRow.style.display = 'none';
+      retypeGrammarIntro.textContent = 'Grammar suggestions are a Premium feature. Please unlock Premium first.';
+      return;
+    }
+    const texts = rtBlockEls().map(el => el.innerText);
+    if(!texts.some(t => t.trim())) return;
+    grammarBusy = true;
+    const label = retypeGrammarBtn.textContent;
+    retypeGrammarBtn.textContent = '⏳ Checking…'; retypeGrammarBtn.disabled = true;
+    try{
+      const res = await fetch('/.netlify/functions/grammar-check', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code, blocks: texts })
+      });
+      const raw = await res.text().catch(() => '');
+      let data = {}; try{ data = JSON.parse(raw.trim() || '{}'); }catch(e){}
+      if(data.error) throw new Error(data.error);
+      if(!Array.isArray(data.fixes)) throw new Error('Could not check the grammar right now. Please try again.');
+      showGrammarFixes(data.fixes);
+      retypeGrammarBox.scrollIntoView({ behavior:'smooth', block:'start' });
+    }catch(err){
+      retypeGrammarBox.style.display = 'block'; retypeGrammarList.innerHTML = ''; retypeGrammarAllRow.style.display = 'none';
+      retypeGrammarIntro.textContent = err.message || 'Could not check the grammar right now. Please try again.';
+    }finally{
+      grammarBusy = false; retypeGrammarBtn.textContent = label; retypeGrammarBtn.disabled = false;
+    }
+  });
 
   // ---- Read the (possibly edited) page back into lines of bold/normal text ----
   function readRetypeBlocks(){
@@ -3241,6 +3352,11 @@
       const ctx = c.getContext('2d');
       ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, RT_W, RT_H);
       if(pi === 0 && lhDraw) ctx.drawImage(retypeLetterhead, lhDraw.x, lhDraw.y, lhDraw.w, lhDraw.h);
+      if(lhDraw){   // honest note on every page when a real letterhead is reused
+        ctx.save(); ctx.fillStyle = '#8a8a8a'; ctx.font = '400 17px Arial, sans-serif'; ctx.textAlign = 'center';
+        ctx.fillText('Retyped copy \u2014 made with ScanFixAll. Not the original document.', RT_W / 2, RT_H - 55);
+        ctx.restore();
+      }
       const top = pi === 0 ? firstTop : RT_TOP;
       ctx.fillStyle = '#111111'; ctx.textBaseline = 'alphabetic';
       items.forEach(it => {
