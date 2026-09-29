@@ -1721,6 +1721,20 @@
   .retype-paper:focus{ box-shadow:0 0 0 3px var(--gold), 0 2px 12px rgba(0,0,0,.25); }
   .retype-paper .rt-block{ margin:0 0 0.75em; white-space:pre-wrap; }
   .retype-paper .rt-signer{ margin-top:3.2em; }
+  .plan-choices{ display:grid; grid-template-columns:1fr; gap:10px; margin:16px 0 6px; }
+  @media (min-width:560px){ .plan-choices{ grid-template-columns:1fr 1fr; } }
+  .plan-card{ display:flex; gap:10px; align-items:flex-start; border:2px solid #d9dde3; border-radius:12px; padding:14px; cursor:pointer; background:#fff; color:#1c2530; }
+  .plan-card:has(input:checked){ border-color:#C9A227; background:#fffaf0; }
+  .plan-card input{ width:20px; height:20px; margin-top:2px; accent-color:#C9A227; flex:none; }
+  .plan-body{ display:flex; flex-direction:column; gap:4px; }
+  .plan-name{ font-weight:700; font-size:16px; }
+  .plan-price{ font-weight:800; font-size:22px; }
+  .plan-price small{ font-weight:500; font-size:13px; color:#5b6876; }
+  .plan-desc{ font-size:13.5px; line-height:1.4; color:#3a4654; }
+  .terms-agree{ display:flex; gap:10px; align-items:flex-start; margin:14px 0 10px; font-size:14px; line-height:1.4; cursor:pointer; }
+  .terms-agree input{ width:20px; height:20px; flex:none; margin-top:1px; accent-color:#C9A227; }
+  .terms-agree a{ color:inherit; text-decoration:underline; font-weight:600; }
+  .subscribe-btn:disabled{ opacity:.5; cursor:not-allowed; }
   .page-thumbs{
     display:flex;
     gap:8px;
@@ -2026,7 +2040,7 @@
         <div class="error-box" id="redeemError" style="display:none;"></div>
         <div class="hint" id="myCodeHint" style="display:none;"></div>
         <div id="familyCodesSection" style="display:none;">
-          <div class="hint">Create separate access codes for your students or family members — you can turn any of them off later.</div>
+          <div class="hint" id="familyIntro">Create separate access codes for your students or family members — you can turn any of them off later.</div>
           <div class="redeem-row">
             <input type="text" id="familyLabelInput" placeholder="Student or family member's name (e.g. Juan)">
             <button id="createFamilyCodeBtn">Create code</button>
@@ -2056,24 +2070,46 @@
       <div class="founding-banner">🎉 Founding Supporter Offer — be among the first to help build this tool.</div>
 
       <ul class="feature-list">
-        <li><span class="check">✓</span> Unlimited scans and photo shrinks — every day</li>
+        <li><span class="check">✓</span> Unlimited scans, photo shrinks and signing — every day</li>
         <li><span class="check">✓</span> No watermark on your scanned documents</li>
         <li><span class="check">✓</span> Combine unlimited pages into one PDF</li>
-        <li><span class="check">✓</span> Access-code sharing — one purchase, your whole family or class</li>
-        <li><span class="check">✓</span> A founding-supporter badge on your account <span class="soon">coming soon</span></li>
+        <li><span class="check">✓</span> 📝 Retype as a brand-new document — 100 pages for each 30 days you pay</li>
+        <li><span class="check">✓</span> Share codes with family or students — each code works on one phone</li>
       </ul>
 
-      <div class="price-tag">
-        <div class="amount">₱150<span>per month</span></div>
-        <div class="note">No auto-charge, no card stored. Pay once a month here and get a fresh code good for another 30 days.</div>
+      <div class="plan-choices" role="radiogroup" aria-label="Choose a plan">
+        <label class="plan-card" for="planFamily">
+          <input type="radio" name="plan" id="planFamily" value="family" checked>
+          <span class="plan-body">
+            <span class="plan-name">👨‍👩‍👧 Family</span>
+            <span class="plan-price">₱250 <small>/ 30 days</small></span>
+            <span class="plan-desc">You + up to <b>5</b> family members. Everyone shares <b>100 Retype pages</b>.</span>
+          </span>
+        </label>
+        <label class="plan-card" for="planClass">
+          <input type="radio" name="plan" id="planClass" value="class">
+          <span class="plan-body">
+            <span class="plan-name">🏫 Class</span>
+            <span class="plan-price">₱1,500 <small>/ 30 days</small></span>
+            <span class="plan-desc">Teacher + up to <b>50</b> students (one code each). The class shares <b>100 Retype pages</b>.</span>
+          </span>
+        </label>
       </div>
 
-      <button class="subscribe-btn" id="subscribeBtn">Subscribe / Pay Now</button>
+      <div class="price-tag">
+        <div class="note">No auto-charge, no card stored. Pay once and get a code good for 30 days. Unused Retype pages don't carry over — each new payment starts a fresh 100.</div>
+      </div>
+
+      <label class="terms-agree" for="termsAgree">
+        <input type="checkbox" id="termsAgree">
+        <span>I have read and agree to the <a href="/terms.html" target="_blank" rel="noopener">Terms of Use</a>.</span>
+      </label>
+      <button class="subscribe-btn" id="subscribeBtn" disabled>Subscribe / Pay Now</button>
       <div class="error-box" id="paywallError" style="display:none;"></div>
 
            <p class="paywall-fine">Payments are processed securely by PayMongo. You'll be taken to their payment page and brought right back here.</p>
            <p class="paywall-fine">After paying, your access code will show up right here — and you'll always be able to find it again under Settings → Premium status.</p>
-            <p class="paywall-fine">Didn't get your access code after paying? Email <a href="mailto:beavenbermudez@gmail.com" style="color:inherit;">beavenbermudez@gmail.com</a> and we'll sort it out.</p>
+            <p class="paywall-fine">Didn't get your access code after paying? Email <a href="mailto:scanfixall@gmail.com" style="color:inherit;">scanfixall@gmail.com</a> and we'll sort it out.</p>
     </div>
   </main>
 </div>
@@ -2119,6 +2155,7 @@
   const myCodeHint = document.getElementById('myCodeHint');
   const familyCodesSection = document.getElementById('familyCodesSection');
   const familyLabelInput = document.getElementById('familyLabelInput');
+  const familyIntro = document.getElementById('familyIntro');
   const createFamilyCodeBtn = document.getElementById('createFamilyCodeBtn');
   const familyCodeError = document.getElementById('familyCodeError');
   const familyCodesList = document.getElementById('familyCodesList');
@@ -2968,6 +3005,7 @@
     retypePaper.innerHTML = blocks.map((b, i) => {
       const html = escapeHtml(b.text)
         .replace(/\*\*([\s\S]+?)\*\*/g, '<b>$1</b>')
+        .replace(/\[\?\]/g, '<mark style="background:#ffe08a;color:#111;">[?]</mark>')
         .replace(/\n/g, '<br>');
       const align = b.align === 'justify' ? 'justify' : b.align;
       const cls = 'rt-block' + (i === signerBlock ? ' rt-signer' : '');
@@ -3013,26 +3051,48 @@
       scanError.scrollIntoView({ behavior:'smooth', block:'center' });
       return;
     }
-    // Send a reasonably sized, clean copy (upright, as currently rotated).
+    // The AI reads best from the straightened photo BEFORE whitening — on
+    // crumpled paper the whitening can break letters apart. Draw it upright,
+    // turned the same way as on screen. 1568px is the largest size the
+    // reader actually uses; bigger would only be shrunk again.
+    const readSize = 1568;
+    const swappedR = (scanBaseRotation % 180 !== 0);
+    const fw = swappedR ? scanFlatCanvas.height : scanFlatCanvas.width;
+    const fh = swappedR ? scanFlatCanvas.width : scanFlatCanvas.height;
+    const rs = Math.min(1, readSize / Math.max(fw, fh));
+    const readCanvas = document.createElement('canvas');
+    readCanvas.width = Math.round(fw * rs); readCanvas.height = Math.round(fh * rs);
+    const rctx = readCanvas.getContext('2d');
+    rctx.fillStyle = '#ffffff'; rctx.fillRect(0, 0, readCanvas.width, readCanvas.height);
+    rctx.translate(readCanvas.width / 2, readCanvas.height / 2);
+    rctx.rotate((scanBaseRotation + scanFineAngle) * Math.PI / 180);
+    rctx.drawImage(scanFlatCanvas, -scanFlatCanvas.width * rs / 2, -scanFlatCanvas.height * rs / 2, scanFlatCanvas.width * rs, scanFlatCanvas.height * rs);
+    const image = readCanvas.toDataURL('image/jpeg', 0.92);
+
+    // The whitened page (as on screen) is still used to cut out a clean letterhead.
     const s = Math.min(1, 1600 / Math.max(scanCanvas.width, scanCanvas.height));
     const send = document.createElement('canvas');
     send.width = Math.round(scanCanvas.width * s); send.height = Math.round(scanCanvas.height * s);
     send.getContext('2d').drawImage(scanCanvas, 0, 0, send.width, send.height);
-    const image = send.toDataURL('image/jpeg', 0.85);
 
     retypeBusy = true;
     const label = scanRetypeBtn.textContent;
     scanRetypeBtn.textContent = '⏳ Reading your page…';
     scanRetypeBtn.disabled = true;
-    showStatus('Reading your page… this takes about 10 seconds.');
+    showStatus('Reading your page carefully… this takes about 15–20 seconds.');
     try{
-      const res = await fetch('/.netlify/functions/retype', {
+      // Careful reader first (streams its answer so it may take up to a minute);
+      // if it isn't on the server yet, use the original quick reader.
+      let res = await fetch('/.netlify/functions/retype-careful', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ code, image })
       });
-      const data = await res.json().catch(() => ({}));
-      if(!res.ok){
+      const raw = await res.text().catch(() => '');
+      let data = {};
+      try{ data = JSON.parse(raw.trim() || '{}'); }catch(e){ data = {}; }
+      if(data.error) throw new Error(data.error);
+      if(!res.ok || !Array.isArray(data.blocks)){
         throw new Error(data.error || (res.status === 504 || res.status === 502
           ? 'Reading took too long. Please try again.'
           : 'Could not retype right now (' + res.status + '). Please try again.'));
@@ -3043,7 +3103,8 @@
       retypeKeepLetterhead.checked = !!retypeLetterhead;
       refreshLetterheadPreview();
       openRetypePanel();
-      showStatus('Retyped ✓ Tap any word to fix it.', 3000);
+      const unsure = (retypePaper.innerHTML.match(/\[\?\]/g) || []).length;
+      showStatus((unsure ? 'Retyped ✓ ' + unsure + ' word' + (unsure > 1 ? 's' : '') + ' marked [?] could not be read clearly — please type them in.' : 'Retyped ✓ Tap any word to fix it.') + (typeof data.pagesLeft === 'number' ? ' (' + data.pagesLeft + ' Retype pages left for this 30-day period)' : ''), 4000);
     }catch(err){
       sfaToast.style.display = 'none';
       scanError.textContent = err.message || 'Could not retype right now. Please try again.';
@@ -3688,9 +3749,14 @@
       if(savedCode){
         myCodeHint.style.display = 'block';
         const expiryLine = expiresAt ? (' — active until ' + formatExpiryDate(expiresAt)) : '';
-        myCodeHint.textContent = 'Your access code (share with family to unlock their device too): ' + savedCode + expiryLine;
+        const planName = savedCode.startsWith('SC-') ? 'Class Plan' : (savedCode.startsWith('SF-') ? 'Shared code' : 'Family Premium');
+        myCodeHint.textContent = planName + ' · Your access code: ' + savedCode + expiryLine + '. It works on this device' + (savedCode.startsWith('SF-') ? ' only.' : ' and one more (for example your laptop).');
       }
-      if(savedCode && savedCode.startsWith('SE-')){
+      if(savedCode && (savedCode.startsWith('SE-') || savedCode.startsWith('SC-'))){
+        familyIntro.textContent = savedCode.startsWith('SC-')
+          ? 'Create a code for each student (up to 50). Each code works on one phone, and all students share the class\'s 100 Retype pages. You can turn a code off or reset its device anytime.'
+          : 'Create a code for each family member (up to 5). Each code works on one phone, and everyone shares your 100 Retype pages. You can turn a code off or reset its device anytime.';
+        familyLabelInput.placeholder = savedCode.startsWith('SC-') ? "Student's name (e.g. Juan)" : "Family member's name (e.g. Maria)";
         familyCodesSection.style.display = 'block';
         loadFamilyCodes();
       } else {
@@ -3716,7 +3782,7 @@
       });
       const data = await res.json().catch(() => ({}));
       if(!res.ok) throw new Error(data.error || 'Could not load family codes.');
-      renderFamilyCodes(data.codes || []);
+      renderFamilyCodes(data.codes || [], data.max);
     }catch(err){
       familyCodesList.innerHTML = '';
       familyCodeError.textContent = err.message || 'Could not load family codes right now.';
@@ -3724,8 +3790,15 @@
     }
   }
 
-  function renderFamilyCodes(codes){
+  function renderFamilyCodes(codes, max){
     familyCodesList.innerHTML = '';
+    if(max){
+      const active = codes.filter(c => !c.revoked).length;
+      const count = document.createElement('div');
+      count.className = 'hint';
+      count.textContent = active + ' of ' + max + ' codes in use';
+      familyCodesList.appendChild(count);
+    }
     if(codes.length === 0){
       const p = document.createElement('div');
       p.className = 'hint';
@@ -3752,7 +3825,33 @@
 
       const status = document.createElement('span');
       status.className = 'family-code-status ' + (c.revoked ? 'revoked' : 'active');
-      status.textContent = c.revoked ? 'Off' : 'Active';
+      status.textContent = c.revoked ? 'Off' : (c.hasDevice ? 'Active · on a phone' : 'Active · not used yet');
+
+      let resetBtn = null;
+      if(c.hasDevice && !c.revoked){
+        resetBtn = document.createElement('button');
+        resetBtn.className = 'skip-btn';
+        resetBtn.textContent = 'Reset device';
+        resetBtn.title = 'Lets this code be used on a new phone';
+        resetBtn.addEventListener('click', async () => {
+          resetBtn.disabled = true;
+          try{
+            const res = await fetch('/.netlify/functions/reset-device', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ ownerCode: localStorage.getItem(PREMIUM_CODE_KEY), code: c.code })
+            });
+            const data = await res.json().catch(() => ({}));
+            if(!res.ok || !data.ok) throw new Error(data.error || 'Could not reset that device.');
+            showStatus('Device reset ✓ ' + c.label + ' can now enter the code on their new phone.', 4000);
+            loadFamilyCodes();
+          }catch(err){
+            familyCodeError.textContent = err.message || 'Could not reset that device right now.';
+            familyCodeError.style.display = 'block';
+            resetBtn.disabled = false;
+          }
+        });
+      }
 
       const toggleBtn = document.createElement('button');
       toggleBtn.className = 'skip-btn';
@@ -3777,6 +3876,7 @@
       });
 
       right.appendChild(status);
+      if(resetBtn) right.appendChild(resetBtn);
       right.appendChild(toggleBtn);
       item.appendChild(info);
       item.appendChild(right);
@@ -3815,6 +3915,29 @@
     }
   });
 
+  // A random ID for this browser, so a code can be locked to the device it's used on.
+  // (Websites can't read a phone's number or serial number — this is the private way.)
+  const DEVICE_ID_KEY = 'sf_device_id';
+  function getDeviceId(){
+    let id = null;
+    try{ id = localStorage.getItem(DEVICE_ID_KEY); }catch(e){}
+    if(!id || !/^[0-9a-f]{16,64}$/i.test(id)){
+      const bytes = new Uint8Array(16);
+      crypto.getRandomValues(bytes);
+      id = Array.from(bytes, b => b.toString(16).padStart(2, '0')).join('');
+      try{ localStorage.setItem(DEVICE_ID_KEY, id); }catch(e){}
+    }
+    return id;
+  }
+  // Registers this device for a code (used right after paying).
+  function claimThisDevice(code){
+    return fetch('/.netlify/functions/verify-code', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code, deviceId: getDeviceId() })
+    }).catch(() => {});
+  }
+
   function unlockPremium(code, expiresAt){
     localStorage.setItem(PREMIUM_FLAG_KEY, 'true');
     if(code) localStorage.setItem(PREMIUM_CODE_KEY, code);
@@ -3837,7 +3960,7 @@
       const res = await fetch('/.netlify/functions/verify-code', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code: typed })
+        body: JSON.stringify({ code: typed, deviceId: getDeviceId() })
       });
       const data = await res.json().catch(() => ({}));
       if(!res.ok){
@@ -3850,6 +3973,14 @@
         redeemCodeInput.value = '';
       } else if(data.reason === 'expired'){
         redeemError.textContent = 'This code has expired. Please renew to keep using Premium features.';
+        redeemError.style.display = 'block';
+      } else if(data.reason === 'device'){
+        redeemError.textContent = data.role === 'member'
+          ? 'This code is already being used on another device. Each family or student code works on one device only. If this is your code and you changed phones, ask the person who gave it to you to tap "Reset device" in their Settings.'
+          : 'This code is already being used on 2 devices (the limit). If you changed phones, email scanfixall@gmail.com with your code and we will reset it.';
+        redeemError.style.display = 'block';
+      } else if(data.reason === 'refresh'){
+        redeemError.textContent = 'Please refresh this page (pull down, or press Ctrl + Shift + R on a computer) and try again.';
         redeemError.style.display = 'block';
       } else {
         redeemError.textContent = "That code doesn't look right — please check for typos and try again.";
@@ -3866,12 +3997,25 @@
 
   refreshPremiumUI();
 
+  // Pay only works after the Terms box is ticked.
+  const termsAgree = document.getElementById('termsAgree');
+  termsAgree.addEventListener('change', () => { subscribeBtn.disabled = !termsAgree.checked; });
   subscribeBtn.addEventListener('click', async () => {
     paywallError.style.display = 'none';
+    if(!termsAgree.checked){
+      paywallError.textContent = 'Please tick "I agree to the Terms of Use" first.';
+      paywallError.style.display = 'block';
+      return;
+    }
     subscribeBtn.disabled = true;
     subscribeBtn.textContent = 'Redirecting to payment…';
     try {
-      const res = await fetch('/.netlify/functions/create-checkout', { method: 'POST' });
+      const chosenPlan = (document.querySelector('input[name="plan"]:checked') || {}).value === 'class' ? 'class' : 'family';
+      const res = await fetch('/.netlify/functions/create-checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ plan: chosenPlan })
+      });
       if(!res.ok){
         const errData = await res.json().catch(() => ({}));
         throw new Error(errData.error || ('Could not start checkout. (' + res.status + ')'));
@@ -3885,7 +4029,7 @@
     } catch (err) {
       paywallError.textContent = err.message;
       paywallError.style.display = 'block';
-      subscribeBtn.disabled = false;
+      subscribeBtn.disabled = !termsAgree.checked;
       subscribeBtn.textContent = 'Subscribe / Pay Now';
     }
   });
@@ -3917,6 +4061,7 @@
           .then(res => res.json().then(data => ({ ok: res.ok, data })))
           .then(({ ok, data }) => {
             if(ok && data.code){
+              claimThisDevice(data.code);
               unlockPremium(data.code, data.expiresAt);
               const expiryLine = data.expiresAt ? ('<div style="font-size:12px; color:var(--text-muted); margin-top:8px;">Active for 30 days, until ' + formatExpiryDate(data.expiresAt) + '</div>') : '';
               showBanner(
@@ -3931,7 +4076,7 @@
                 navigator.clipboard.writeText(data.code).then(() => { copyBtn.textContent = 'Copied ✓'; });
               });
             } else {
-              showBanner('<span>🎉 Thank you for your support! We couldn\'t automatically confirm the payment on this device. If you completed payment, please try reopening the app in the same browser you paid in, or email beavenbermudez@gmail.com with your PayMongo receipt or reference number and we\'ll send your code.</span>');
+              showBanner('<span>🎉 Thank you for your support! We couldn\'t automatically confirm the payment on this device. If you completed payment, please try reopening the app in the same browser you paid in, or email scanfixall@gmail.com with your PayMongo receipt or reference number and we\'ll send your code.</span>');
             }
           })
           .catch(() => {
@@ -3939,7 +4084,7 @@
           })
           .finally(() => sessionStorage.removeItem(CHECKOUT_SESSION_KEY));
       } else {
-        showBanner('<span>🎉 Thank you for your support! We couldn\'t find this payment session on this device (perhaps a different tab was used). If you completed payment, please email beavenbermudez@gmail.com with your PayMongo receipt or reference number and we\'ll send your code.</span>');
+        showBanner('<span>🎉 Thank you for your support! We couldn\'t find this payment session on this device (perhaps a different tab was used). If you completed payment, please email scanfixall@gmail.com with your PayMongo receipt or reference number and we\'ll send your code.</span>');
       }
     } else if(paid === 'cancelled'){
       showBanner('<span>Payment was cancelled — no charge was made. You can try again anytime.</span>');
