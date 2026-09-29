@@ -1884,7 +1884,7 @@
           <div class="tool-hint" style="margin-top:8px;">
             <b>Which should I use?</b><br>
             <b>✨ Clean paper</b> (free): keeps the <i>original</i> page — letterhead, logo and handwritten signature stay — but faint creases or stains may still show.<br>
-            <b>📝 Retype</b> (Premium): reads the text and prints it on a <i>brand-new</i> white page. Perfectly clean. You can keep the original letterhead/logo as a picture, and you sign it again.
+            <b>📝 Retype</b> (<span id="retypePlanWord">Premium</span>): reads the text and prints it on a <i>brand-new</i> white page. Perfectly clean. You can keep the original letterhead/logo as a picture, and you sign it again.
           </div>
           <div class="tool-hint" style="margin-top:10px;">Got more pages? Add them below before saving — they'll all go into one PDF.</div>
           <div class="page-thumbs" id="scanPageThumbs" style="margin-top:10px;"></div>
@@ -2030,7 +2030,7 @@
       </div>
       <div class="settings-list">
         <div class="settings-item">
-          <span>⭐ Premium status</span>
+          <span id="premiumStatusLabel">⭐ Premium status</span>
           <span class="premium-badge locked" id="premiumBadge">Not unlocked</span>
         </div>
         <div class="redeem-row">
@@ -2049,7 +2049,7 @@
           <div id="familyCodesList"></div>
         </div>
       </div>
-      <div class="hint">Got an access code from a payment or from someone who shared it? Enter it above to unlock Premium on this device.</div>
+      <div class="hint" id="redeemHint">Got an access code from a payment or from someone who shared it? Enter it above to unlock Premium on this device.</div>
     </div>
 
     <!-- PREMIUM / PAYWALL -->
@@ -2203,7 +2203,17 @@
   const FREE_DAILY_LIMIT = 3;
   const USAGE_KEY = 'sf_daily_usage';
 
+  // ================= FREE MONTH =================
+  // Until this moment (Philippine time) ScanFixAll is completely free for
+  // everyone: no prices shown, no daily limit, no watermark, multi-page PDFs.
+  // Retype (which costs real AI money per page) still needs a free access code.
+  // On November 1 the app goes back to normal automatically — no upload needed.
+  // To end or extend the free month, change only this date.
+  const FREE_UNTIL = new Date('2026-11-01T00:00:00+08:00').getTime();
+  function isFreeMonth(){ return Date.now() < FREE_UNTIL; }
+
   function isPremiumActive(){
+    if(isFreeMonth()) return true;
     return localStorage.getItem('sf_premium_unlocked') === 'true';
   }
 
@@ -2228,6 +2238,10 @@
   }
 
   function updateFreeCountHint(){
+    if(isFreeMonth()){
+      freeCountHint.textContent = '🎉 ScanFixAll is free to use during October 2026 — no limits, no watermark.';
+      return;
+    }
     if(isPremiumActive()){
       freeCountHint.textContent = '⭐ Premium — unlimited scans and shrinks, no watermark.';
       return;
@@ -3039,7 +3053,9 @@
     }
     const code = localStorage.getItem(PREMIUM_CODE_KEY);
     if(!code){
-      scanError.textContent = 'Please re-enter your access code in ⭐ Premium, then try Retype again.';
+      scanError.textContent = isFreeMonth()
+        ? 'Retype needs a free access code from your teacher. Tap ⚙ Settings above, enter the code, then try Retype again.'
+        : 'Please re-enter your access code in ⭐ Premium, then try Retype again.';
       scanError.style.display = 'block';
       return;
     }
@@ -3702,6 +3718,7 @@
   let screenBeforePaywall = 'home';
 
   function openPaywall(){
+    if(isFreeMonth()) return;   // no prices or payments during the free month
     screenBeforePaywall = currentView === 'paywall' ? screenBeforePaywall : currentView;
     showView('paywall');
   }
@@ -3749,7 +3766,7 @@
       if(savedCode){
         myCodeHint.style.display = 'block';
         const expiryLine = expiresAt ? (' — active until ' + formatExpiryDate(expiresAt)) : '';
-        const planName = savedCode.startsWith('SC-') ? 'Class Plan' : (savedCode.startsWith('SF-') ? 'Shared code' : 'Family Premium');
+        const planName = isFreeMonth() ? 'Free access code' : (savedCode.startsWith('SC-') ? 'Class Plan' : (savedCode.startsWith('SF-') ? 'Shared code' : 'Family Premium'));
         myCodeHint.textContent = planName + ' · Your access code: ' + savedCode + expiryLine + '. It works on this device' + (savedCode.startsWith('SF-') ? ' only.' : ' and one more (for example your laptop).');
       }
       if(savedCode && (savedCode.startsWith('SE-') || savedCode.startsWith('SC-'))){
@@ -3763,7 +3780,7 @@
         familyCodesSection.style.display = 'none';
       }
     } else {
-      premiumBadge.textContent = 'Not unlocked';
+      premiumBadge.textContent = isFreeMonth() ? 'No code yet' : 'Not unlocked';
       premiumBadge.className = 'premium-badge locked';
       myCodeHint.style.display = 'none';
       familyCodesSection.style.display = 'none';
@@ -3995,6 +4012,20 @@
     }
   });
 
+  // Free-month wording: hide the Premium tab and prices, explain the free code.
+  (function applyFreeMonth(){
+    if(!isFreeMonth()) return;
+    const pw = document.getElementById('paywallBtn');
+    if(pw && pw.parentElement) pw.parentElement.style.display = 'none';   // hides the star AND its "Premium" label
+    const lbl = document.getElementById('premiumStatusLabel');
+    if(lbl) lbl.textContent = '🔑 Access code (for Retype)';
+    const rh = document.getElementById('redeemHint');
+    if(rh) rh.textContent = 'Everything in ScanFixAll is free during October 2026. Retype needs a free access code from your teacher — enter it above.';
+    const rb = document.getElementById('scanRetypeBtn');
+    if(rb) rb.textContent = '📝 Retype as new document (free access code)';
+    const rw = document.getElementById('retypePlanWord');
+    if(rw) rw.textContent = 'free with an access code';
+  })();
   refreshPremiumUI();
 
   // Pay only works after the Terms box is ticked.
