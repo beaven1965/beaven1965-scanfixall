@@ -3107,6 +3107,7 @@
       const raw = await res.text().catch(() => '');
       let data = {};
       try{ data = JSON.parse(raw.trim() || '{}'); }catch(e){ data = {}; }
+      if(res.ok && !raw.trim()) throw new Error('Reading took too long and was cut off. If the page has a lot of writing, drag the gold corner dots to include only the part you need, then tap Retype again.');
       if(data.error) throw new Error(data.error);
       if(!res.ok || !Array.isArray(data.blocks)){
         throw new Error(data.error || (res.status === 504 || res.status === 502
