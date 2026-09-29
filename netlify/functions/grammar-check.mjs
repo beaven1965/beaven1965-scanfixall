@@ -13,7 +13,10 @@ const OLD_FORMAT_CUTOFF_MS = new Date('2026-09-30T00:00:00+08:00').getTime();
 
 const INSTRUCTIONS = `You are proofreading a retyped letter or document. The text is given as numbered blocks.
 
-Suggest fixes ONLY for clear mistakes in spelling, grammar, capitalization or punctuation. Be conservative: if the original is acceptable, leave it alone. Do not rewrite for style, do not make it more formal, and do not change the meaning.
+Suggest fixes ONLY for clear mistakes in spelling, grammar, capitalization or punctuation inside full sentences. Be very conservative: if the original is acceptable, leave it alone. Do not rewrite for style, do not make it more formal, and do not change the meaning.
+
+- NEVER remove a word, and never guess what the writer "meant". If a sentence is unclear, leave it.
+- Leave alone: headings, lists, schedules, addresses, phone numbers, contact details, clinic hours, signatures, and short notes or shorthand (like "pls.", "tx", "w/", "Rx").
 
 NEVER change: names of people, places, schools, hospitals or organizations; numbers, dates, amounts, times, phone or ID numbers; anything marked [?]; titles and abbreviations like "CESO V", "MD", "DepEd", "Sta.", "pls."; words in Filipino or other languages.
 
@@ -67,6 +70,12 @@ async function checkCode(code, secret){
 }
 
 
+// A fix may correct spelling or add small words/punctuation, but must not drop words.
+function keepsAllWords(from, to){
+  const words = t => t.toLowerCase().split(/[^a-z0-9\u00C0-\u024F]+/).filter(Boolean);
+  return words(to).length >= words(from).length;
+}
+
 async function doCheck(body, deadline){
   const apiKey = process.env.ANTHROPIC_API_KEY;
   const secret = process.env.ACCESS_CODE_SECRET;
@@ -114,7 +123,8 @@ async function doCheck(body, deadline){
   // Keep only suggestions that really point at text on the page and change something.
   const fixes = parsed.fixes.filter(f => f && Number.isInteger(f.block) && f.block >= 0 && f.block < texts.length
       && typeof f.from === 'string' && typeof f.to === 'string' && f.from && f.from !== f.to
-      && texts[f.block].includes(f.from) && !f.from.includes('[?]'))
+      && texts[f.block].includes(f.from) && !f.from.includes('[?]')
+      && keepsAllWords(f.from, f.to))
     .slice(0, 40)
     .map(f => ({ block: f.block, from: f.from, to: f.to, why: String(f.why || '').slice(0, 40) }));
   return { fixes };
