@@ -1721,10 +1721,6 @@
   .retype-paper:focus{ box-shadow:0 0 0 3px var(--gold), 0 2px 12px rgba(0,0,0,.25); }
   .retype-paper .rt-block{ margin:0 0 0.75em; white-space:pre-wrap; }
   .retype-paper .rt-signer{ margin-top:3.2em; }
-  .terms-agree{ display:flex; gap:10px; align-items:flex-start; margin:14px 0 10px; font-size:14px; line-height:1.4; cursor:pointer; }
-  .terms-agree input{ width:20px; height:20px; flex:none; margin-top:1px; accent-color:#C9A227; }
-  .terms-agree a{ color:inherit; text-decoration:underline; font-weight:600; }
-  .subscribe-btn:disabled{ opacity:.5; cursor:not-allowed; }
   .page-thumbs{
     display:flex;
     gap:8px;
@@ -2060,24 +2056,19 @@
       <div class="founding-banner">🎉 Founding Supporter Offer — be among the first to help build this tool.</div>
 
       <ul class="feature-list">
-        <li><span class="check">✓</span> Unlimited scans, photo shrinks and signing — every day</li>
+        <li><span class="check">✓</span> Unlimited scans and photo shrinks — every day</li>
         <li><span class="check">✓</span> No watermark on your scanned documents</li>
         <li><span class="check">✓</span> Combine unlimited pages into one PDF</li>
-        <li><span class="check">✓</span> 📝 Retype as a brand-new document — up to 100 pages a month</li>
-        <li><span class="check">✓</span> Share with up to 3 family members or students (they share the 100 Retype pages)</li>
+        <li><span class="check">✓</span> Access-code sharing — one purchase, your whole family or class</li>
         <li><span class="check">✓</span> A founding-supporter badge on your account <span class="soon">coming soon</span></li>
       </ul>
 
       <div class="price-tag">
-        <div class="amount">₱250<span>per month</span></div>
+        <div class="amount">₱150<span>per month</span></div>
         <div class="note">No auto-charge, no card stored. Pay once a month here and get a fresh code good for another 30 days.</div>
       </div>
 
-      <label class="terms-agree" for="termsAgree">
-        <input type="checkbox" id="termsAgree">
-        <span>I have read and agree to the <a href="/terms.html" target="_blank" rel="noopener">Terms of Use</a>.</span>
-      </label>
-      <button class="subscribe-btn" id="subscribeBtn" disabled>Subscribe / Pay Now</button>
+      <button class="subscribe-btn" id="subscribeBtn">Subscribe / Pay Now</button>
       <div class="error-box" id="paywallError" style="display:none;"></div>
 
            <p class="paywall-fine">Payments are processed securely by PayMongo. You'll be taken to their payment page and brought right back here.</p>
@@ -2977,7 +2968,6 @@
     retypePaper.innerHTML = blocks.map((b, i) => {
       const html = escapeHtml(b.text)
         .replace(/\*\*([\s\S]+?)\*\*/g, '<b>$1</b>')
-        .replace(/\[\?\]/g, '<mark style="background:#ffe08a;color:#111;">[?]</mark>')
         .replace(/\n/g, '<br>');
       const align = b.align === 'justify' ? 'justify' : b.align;
       const cls = 'rt-block' + (i === signerBlock ? ' rt-signer' : '');
@@ -3023,55 +3013,26 @@
       scanError.scrollIntoView({ behavior:'smooth', block:'center' });
       return;
     }
-    // The AI reads best from the straightened photo BEFORE whitening — on
-    // crumpled paper the whitening can break letters apart. Draw it upright,
-    // turned the same way as on screen. 1568px is the largest size the
-    // reader actually uses; bigger would only be shrunk again.
-    const readSize = 1568;
-    const swappedR = (scanBaseRotation % 180 !== 0);
-    const fw = swappedR ? scanFlatCanvas.height : scanFlatCanvas.width;
-    const fh = swappedR ? scanFlatCanvas.width : scanFlatCanvas.height;
-    const rs = Math.min(1, readSize / Math.max(fw, fh));
-    const readCanvas = document.createElement('canvas');
-    readCanvas.width = Math.round(fw * rs); readCanvas.height = Math.round(fh * rs);
-    const rctx = readCanvas.getContext('2d');
-    rctx.fillStyle = '#ffffff'; rctx.fillRect(0, 0, readCanvas.width, readCanvas.height);
-    rctx.translate(readCanvas.width / 2, readCanvas.height / 2);
-    rctx.rotate((scanBaseRotation + scanFineAngle) * Math.PI / 180);
-    rctx.drawImage(scanFlatCanvas, -scanFlatCanvas.width * rs / 2, -scanFlatCanvas.height * rs / 2, scanFlatCanvas.width * rs, scanFlatCanvas.height * rs);
-    const image = readCanvas.toDataURL('image/jpeg', 0.92);
-
-    // The whitened page (as on screen) is still used to cut out a clean letterhead.
+    // Send a reasonably sized, clean copy (upright, as currently rotated).
     const s = Math.min(1, 1600 / Math.max(scanCanvas.width, scanCanvas.height));
     const send = document.createElement('canvas');
     send.width = Math.round(scanCanvas.width * s); send.height = Math.round(scanCanvas.height * s);
     send.getContext('2d').drawImage(scanCanvas, 0, 0, send.width, send.height);
+    const image = send.toDataURL('image/jpeg', 0.85);
 
     retypeBusy = true;
     const label = scanRetypeBtn.textContent;
     scanRetypeBtn.textContent = '⏳ Reading your page…';
     scanRetypeBtn.disabled = true;
-    showStatus('Reading your page carefully… this takes about 15–20 seconds.');
+    showStatus('Reading your page… this takes about 10 seconds.');
     try{
-      // Careful reader first (streams its answer so it may take up to a minute);
-      // if it isn't on the server yet, use the original quick reader.
-      let res = await fetch('/.netlify/functions/retype-careful', {
+      const res = await fetch('/.netlify/functions/retype', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ code, image })
       });
-      if(res.status === 404){
-        res = await fetch('/.netlify/functions/retype', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ code, image })
-        });
-      }
-      const raw = await res.text().catch(() => '');
-      let data = {};
-      try{ data = JSON.parse(raw.trim() || '{}'); }catch(e){ data = {}; }
-      if(data.error) throw new Error(data.error);
-      if(!res.ok || !Array.isArray(data.blocks)){
+      const data = await res.json().catch(() => ({}));
+      if(!res.ok){
         throw new Error(data.error || (res.status === 504 || res.status === 502
           ? 'Reading took too long. Please try again.'
           : 'Could not retype right now (' + res.status + '). Please try again.'));
@@ -3082,8 +3043,7 @@
       retypeKeepLetterhead.checked = !!retypeLetterhead;
       refreshLetterheadPreview();
       openRetypePanel();
-      const unsure = (retypePaper.innerHTML.match(/\[\?\]/g) || []).length;
-      showStatus((unsure ? 'Retyped ✓ ' + unsure + ' word' + (unsure > 1 ? 's' : '') + ' marked [?] could not be read clearly — please type them in.' : 'Retyped ✓ Tap any word to fix it.') + (typeof data.pagesLeft === 'number' ? ' (' + data.pagesLeft + ' Retype pages left this month)' : ''), 4000);
+      showStatus('Retyped ✓ Tap any word to fix it.', 3000);
     }catch(err){
       sfaToast.style.display = 'none';
       scanError.textContent = err.message || 'Could not retype right now. Please try again.';
@@ -3906,16 +3866,8 @@
 
   refreshPremiumUI();
 
-  // Pay only works after the Terms box is ticked.
-  const termsAgree = document.getElementById('termsAgree');
-  termsAgree.addEventListener('change', () => { subscribeBtn.disabled = !termsAgree.checked; });
   subscribeBtn.addEventListener('click', async () => {
     paywallError.style.display = 'none';
-    if(!termsAgree.checked){
-      paywallError.textContent = 'Please tick "I agree to the Terms of Use" first.';
-      paywallError.style.display = 'block';
-      return;
-    }
     subscribeBtn.disabled = true;
     subscribeBtn.textContent = 'Redirecting to payment…';
     try {
@@ -3933,7 +3885,7 @@
     } catch (err) {
       paywallError.textContent = err.message;
       paywallError.style.display = 'block';
-      subscribeBtn.disabled = !termsAgree.checked;
+      subscribeBtn.disabled = false;
       subscribeBtn.textContent = 'Subscribe / Pay Now';
     }
   });
