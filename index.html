@@ -1878,7 +1878,12 @@
             <button id="scanEnhanceBtn" class="active">✨ Clean paper</button>
             <button id="scanBwBtn">⬛ Black &amp; White mode</button>
           </div>
-          <div class="tool-upload-row" style="margin-top:10px;">
+          <div class="tool-hint" style="margin-top:12px; display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+            <b>This page is:</b>
+            <label style="display:flex; align-items:center; gap:4px; cursor:pointer;"><input type="radio" name="retypeKind" value="letter" checked style="width:18px;height:18px;"> 📄 Letter / document</label>
+            <label style="display:flex; align-items:center; gap:4px; cursor:pointer;"><input type="radio" name="retypeKind" value="notes" style="width:18px;height:18px;"> 📓 Class notes</label>
+          </div>
+          <div class="tool-upload-row" style="margin-top:6px;">
             <button class="tool-btn" id="scanRetypeBtn">📝 Retype as new document ⭐ Premium</button>
           </div>
           <div class="tool-hint" style="margin-top:8px;">
@@ -1921,6 +1926,32 @@
               <button class="tool-btn" id="retypeGrammarAllBtn">✓ Accept all</button>
               <button class="tool-btn" id="retypeGrammarCloseBtn">✗ Skip all</button>
             </div>
+          </div>
+          <div class="tool-upload-row" style="margin-top:10px; align-items:stretch;">
+            <select id="retypeLang" class="tool-btn" style="flex:1; min-width:0;">
+              <option value="en">English</option>
+              <option value="fil">Filipino (Tagalog)</option>
+              <option value="ceb">Cebuano (Bisaya)</option>
+              <option value="ilo">Ilocano</option>
+              <option value="hil">Hiligaynon (Ilonggo)</option>
+              <option value="bik">Bikol</option>
+              <option value="war">Waray</option>
+              <option value="pam">Kapampangan</option>
+              <option value="pag">Pangasinan</option>
+              <option value="es">Spanish</option>
+              <option value="fr">French</option>
+              <option value="de">German</option>
+              <option value="it">Italian</option>
+              <option value="pt">Portuguese</option>
+              <option value="id">Indonesian</option>
+              <option value="ms">Malay</option>
+              <option value="vi">Vietnamese</option>
+            </select>
+            <button class="tool-btn" id="retypeTranslateBtn" style="flex:1;">🌐 Translate</button>
+          </div>
+          <div class="tool-hint" id="retypeTranslateNote" style="margin-top:6px;">Translating uses 1 Retype page. You can switch back to the original any time.</div>
+          <div class="tool-upload-row" id="retypeOriginalRow" style="margin-top:6px; display:none;">
+            <button class="tool-btn" id="retypeOriginalBtn">↩ Show original</button>
           </div>
           <div class="tool-upload-row" style="margin-top:10px;">
             <button class="tool-btn primary" id="retypeSignBtn">✍️ Sign this page</button>
@@ -3120,7 +3151,8 @@
         return { r, d, raw };
       };
       let data = null;
-      const t = await post('/.netlify/functions/retype-job', { action: 'start', code, image });
+      const mode = (document.querySelector('input[name="retypeKind"]:checked') || {}).value === 'notes' ? 'notes' : 'letter';
+      const t = await post('/.netlify/functions/retype-job', { action: 'start', code, image, mode });
       if(t.r.ok && t.d.jobId){
         await fetch('/.netlify/functions/retype-work-background', {
           method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ jobId: t.d.jobId })
@@ -3139,7 +3171,7 @@
         throw new Error(t.d.error);
       } else {
         // Ticket desk not on the server yet: use the one-minute reader.
-        const q = await post('/.netlify/functions/retype-careful', { code, image });
+        const q = await post('/.netlify/functions/retype-careful', { code, image, mode });
         if(q.r.ok && !q.raw.trim()) throw new Error('Reading took too long and was cut off. If the page has a lot of writing, drag the gold corner dots to include only the part you need, then tap Retype again.');
         data = q.d;
         if(!data.error && (!q.r.ok || !Array.isArray(data.blocks))){
@@ -3150,6 +3182,8 @@
       if(!Array.isArray(data.blocks)) throw new Error('Could not retype right now. Please try again.');
       showRetypedBlocks(data.blocks, data.signerBlock);
       document.getElementById('retypeGrammarBox').style.display = 'none';
+      retypeOriginalHtml = null; retypeOriginalRow.style.display = 'none';
+      retypeTranslateNote.textContent = 'Translating uses 1 Retype page. You can switch back to the original any time.';
       retypeLetterhead = (data.letterhead && data.letterhead.found) ? cutLetterhead(send, data.letterhead) : null;
       retypeLetterheadRow.style.display = retypeLetterhead ? 'flex' : 'none';
       retypeKeepLetterhead.checked = false;   // off unless the person chooses it
@@ -3169,6 +3203,75 @@
     }
   });
   retypeBackBtn.addEventListener('click', closeRetypePanel);
+
+  // ---- Translate: keeps the original so the person can switch back ----
+  const retypeTranslateBtn = document.getElementById('retypeTranslateBtn');
+  const retypeLang = document.getElementById('retypeLang');
+  const retypeTranslateNote = document.getElementById('retypeTranslateNote');
+  const retypeOriginalRow = document.getElementById('retypeOriginalRow');
+  let retypeOriginalHtml = null;     // the page before translating
+  let translateBusy = false;
+
+  // One block of the page as text, with **bold** and line breaks kept.
+  function blockToMarked(el){
+    let out = '';
+    const walk = (n, bold) => {
+      if(n.nodeType === 3){ out += n.textContent; return; }
+      if(n.nodeType !== 1) return;
+      if(n.tagName === 'BR'){ out += '\n'; return; }
+      const b = !bold && (n.tagName === 'B' || n.tagName === 'STRONG');
+      if(/^(DIV|P)$/.test(n.tagName) && n !== el && out && !out.endsWith('\n')) out += '\n';
+      if(b) out += '**';
+      n.childNodes.forEach(c => walk(c, bold || b));
+      if(b) out += '**';
+    };
+    walk(el, false);
+    return out.replace(/\*\*\*\*/g, '').replace(/\n+$/, '');
+  }
+
+  retypeTranslateBtn.addEventListener('click', async () => {
+    if(translateBusy) return;
+    const code = localStorage.getItem(PREMIUM_CODE_KEY);
+    if(!isPremiumActive() || !code){ retypeTranslateNote.textContent = 'Translate is a Premium feature. Please unlock Premium first.'; return; }
+    const els = rtBlockEls();
+    if(!els.length) return;
+    const texts = els.map(blockToMarked);
+    if(!texts.some(t => t.trim())) return;
+    translateBusy = true;
+    const label = retypeTranslateBtn.textContent;
+    retypeTranslateBtn.textContent = '⏳ Translating…'; retypeTranslateBtn.disabled = true;
+    retypeTranslateNote.textContent = 'Translating… this takes about 10–40 seconds.';
+    try{
+      const res = await fetch('/.netlify/functions/translate-page', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code, blocks: texts, lang: retypeLang.value })
+      });
+      const raw = await res.text().catch(() => '');
+      let data = {}; try{ data = JSON.parse(raw.trim() || '{}'); }catch(e){}
+      if(res.ok && !raw.trim()) throw new Error('Translating took too long. Please try a shorter page.');
+      if(data.error) throw new Error(data.error);
+      if(!Array.isArray(data.blocks) || data.blocks.length !== els.length) throw new Error('Could not translate right now. Please try again.');
+      if(retypeOriginalHtml === null) retypeOriginalHtml = retypePaper.innerHTML;
+      const signerIdx = els.findIndex(el => el.classList.contains('rt-signer'));
+      showRetypedBlocks(els.map((el, i) => ({ type: el.dataset.type || 'paragraph', align: el.dataset.align || 'left', text: data.blocks[i] })), signerIdx);
+      retypeOriginalRow.style.display = 'flex';
+      document.getElementById('retypeGrammarBox').style.display = 'none';
+      retypeTranslateNote.textContent = 'Translated to ' + (data.language || 'the chosen language') + ' ✓ Tap any word to fix it.' + (typeof data.pagesLeft === 'number' ? ' (' + data.pagesLeft + ' pages left for this 30-day period)' : '');
+    }catch(err){
+      retypeTranslateNote.textContent = err.message || 'Could not translate right now. Please try again.';
+    }finally{
+      translateBusy = false; retypeTranslateBtn.textContent = label; retypeTranslateBtn.disabled = false;
+    }
+  });
+
+  document.getElementById('retypeOriginalBtn').addEventListener('click', () => {
+    if(retypeOriginalHtml === null) return;
+    retypePaper.innerHTML = retypeOriginalHtml;
+    retypeOriginalHtml = null;
+    retypeOriginalRow.style.display = 'none';
+    document.getElementById('retypeGrammarBox').style.display = 'none';
+    retypeTranslateNote.textContent = 'Back to the original ✓ Translating again uses 1 Retype page.';
+  });
 
   // ---- Optional grammar suggestions: nothing changes unless the person accepts it ----
   const retypeGrammarBtn = document.getElementById('retypeGrammarBtn');
