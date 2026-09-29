@@ -3108,25 +3108,46 @@
     const label = scanRetypeBtn.textContent;
     scanRetypeBtn.textContent = '⏳ Reading your page…';
     scanRetypeBtn.disabled = true;
-    showStatus('Reading your page carefully… this takes about 15–20 seconds.');
+    showStatus('Reading your page carefully… this usually takes 20–60 seconds.');
     try{
-      // Careful reader first (streams its answer so it may take up to a minute);
-      // if it isn't on the server yet, use the original quick reader.
-      let res = await fetch('/.netlify/functions/retype-careful', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code, image })
-      });
-      const raw = await res.text().catch(() => '');
-      let data = {};
-      try{ data = JSON.parse(raw.trim() || '{}'); }catch(e){ data = {}; }
-      if(res.ok && !raw.trim()) throw new Error('Reading took too long and was cut off. If the page has a lot of writing, drag the gold corner dots to include only the part you need, then tap Retype again.');
-      if(data.error) throw new Error(data.error);
-      if(!res.ok || !Array.isArray(data.blocks)){
-        throw new Error(data.error || (res.status === 504 || res.status === 502
-          ? 'Reading took too long. Please try again.'
-          : 'Could not retype right now (' + res.status + '). Please try again.'));
+      // Long pages are read in the background (up to 15 minutes on the server):
+      // 1) hand in the photo and get a ticket, 2) start the reading,
+      // 3) ask every few seconds whether the ticket is ready.
+      const post = async (url, obj) => {
+        const r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(obj) });
+        const raw = await r.text().catch(() => '');
+        let d = {}; try{ d = JSON.parse(raw.trim() || '{}'); }catch(e){}
+        return { r, d, raw };
+      };
+      let data = null;
+      const t = await post('/.netlify/functions/retype-job', { action: 'start', code, image });
+      if(t.r.ok && t.d.jobId){
+        await fetch('/.netlify/functions/retype-work-background', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ jobId: t.d.jobId })
+        });
+        const giveUpAt = Date.now() + 5 * 60 * 1000;
+        let tick = 0;
+        while(Date.now() < giveUpAt){
+          await new Promise(res => setTimeout(res, 3000));
+          tick++;
+          if(tick === 10) showStatus('Still reading… crowded pages take longer. Please keep this page open.');
+          const st = await post('/.netlify/functions/retype-job', { action: 'status', jobId: t.d.jobId }).catch(() => null);
+          if(st && st.d && !st.d.pending && (st.d.error || st.d.blocks)){ data = st.d; break; }
+        }
+        if(!data) throw new Error('Reading is taking much longer than usual. Please try again in a few minutes.');
+      } else if(t.d.error){
+        throw new Error(t.d.error);
+      } else {
+        // Ticket desk not on the server yet: use the one-minute reader.
+        const q = await post('/.netlify/functions/retype-careful', { code, image });
+        if(q.r.ok && !q.raw.trim()) throw new Error('Reading took too long and was cut off. If the page has a lot of writing, drag the gold corner dots to include only the part you need, then tap Retype again.');
+        data = q.d;
+        if(!data.error && (!q.r.ok || !Array.isArray(data.blocks))){
+          throw new Error(q.r.status === 504 || q.r.status === 502 ? 'Reading took too long. Please try again.' : 'Could not retype right now (' + q.r.status + '). Please try again.');
+        }
       }
+      if(data.error) throw new Error(data.error);
+      if(!Array.isArray(data.blocks)) throw new Error('Could not retype right now. Please try again.');
       showRetypedBlocks(data.blocks, data.signerBlock);
       document.getElementById('retypeGrammarBox').style.display = 'none';
       retypeLetterhead = (data.letterhead && data.letterhead.found) ? cutLetterhead(send, data.letterhead) : null;
