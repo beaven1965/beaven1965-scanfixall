@@ -18,6 +18,7 @@ import { getStore } from '@netlify/blobs';
 
 const MODEL = 'claude-sonnet-5';
 const PAGE_LIMIT = { family: 100, class: 100 };   // pages per 30-day payment
+const TOO_LONG_MSG = 'This page has too much writing to read in one go. Drag the gold corner dots to include only the part you need (for example, just the handwritten part), then tap Retype again. You were not charged for this page.';
 const OLD_FORMAT_CUTOFF_MS = new Date('2026-09-30T00:00:00+08:00').getTime();
 
 const INSTRUCTIONS = `You are retyping a photographed paper document so it can be printed fresh. Accuracy matters more than anything: this may be an official letter, and a wrong name, place or word could embarrass the sender.
@@ -89,7 +90,7 @@ async function checkCode(code, secret){
   return { valid: false, reason: 'invalid' };
 }
 
-async function doRetype(body){
+async function doRetype(body, deadline){
   const apiKey = process.env.ANTHROPIC_API_KEY;
   const secret = process.env.ACCESS_CODE_SECRET;
   if (!apiKey) return { error: 'Retype is not set up yet: the server is missing ANTHROPIC_API_KEY as a Netlify environment variable.' };
@@ -115,22 +116,56 @@ async function doRetype(body){
   const match = String(image || '').match(/^data:image\/(jpeg|png);base64,(.+)$/);
   if (!match) return { error: 'No page picture was received. Please try again.' };
 
-  const res = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
-    body: JSON.stringify({
-      model: MODEL,
-      max_tokens: 4000,
-      messages: [{ role: 'user', content: [
-        { type: 'image', source: { type: 'base64', media_type: 'image/' + match[1], data: match[2] } },
-        { type: 'text', text: INSTRUCTIONS }
-      ] }]
-    })
-  });
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok) return { error: 'The reading service had a problem (' + res.status + '). Please try again in a moment.' };
+  // Ask Claude with streaming, so we can stop cleanly before Netlify's
+  // 60-second limit instead of being cut off with no answer at all.
+  const abort = new AbortController();
+  const msLeft = Math.max(5000, deadline - Date.now());
+  const timer = setTimeout(() => abort.abort(), msLeft);
+  let text = '', stopReason = '';
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      signal: abort.signal,
+      headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
+      body: JSON.stringify({
+        model: MODEL,
+        max_tokens: 6000,
+        stream: true,
+        messages: [{ role: 'user', content: [
+          { type: 'image', source: { type: 'base64', media_type: 'image/' + match[1], data: match[2] } },
+          { type: 'text', text: INSTRUCTIONS }
+        ] }]
+      })
+    });
+    if (!res.ok) {
+      clearTimeout(timer);
+      return { error: 'The reading service had a problem (' + res.status + '). Please try again in a moment.' };
+    }
+    const reader = res.body.getReader();
+    const dec = new TextDecoder();
+    let buf = '';
+    for (;;) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      buf += dec.decode(value, { stream: true });
+      let nl;
+      while ((nl = buf.indexOf('\n')) >= 0) {
+        const line = buf.slice(0, nl).trim(); buf = buf.slice(nl + 1);
+        if (!line.startsWith('data:')) continue;
+        let ev; try { ev = JSON.parse(line.slice(5)); } catch (e) { continue; }
+        if (ev.type === 'content_block_delta' && ev.delta && ev.delta.type === 'text_delta') text += ev.delta.text;
+        else if (ev.type === 'message_delta' && ev.delta && ev.delta.stop_reason) stopReason = ev.delta.stop_reason;
+        else if (ev.type === 'error') { clearTimeout(timer); return { error: 'The reading service had a problem. Please try again in a moment.' }; }
+      }
+    }
+  } catch (err) {
+    clearTimeout(timer);
+    if (abort.signal.aborted) return { error: TOO_LONG_MSG, tooLong: true };
+    throw err;
+  }
+  clearTimeout(timer);
+  if (stopReason === 'max_tokens') return { error: TOO_LONG_MSG, tooLong: true };
 
-  const text = (data.content || []).filter(p => p.type === 'text').map(p => p.text).join('');
   let parsed = null;
   try { parsed = JSON.parse(text.slice(text.indexOf('{'), text.lastIndexOf('}') + 1)); } catch (e) {}
   if (!parsed || !Array.isArray(parsed.blocks) || parsed.blocks.length === 0) {
@@ -167,10 +202,11 @@ export default async (req) => {
   const enc = new TextEncoder();
   const stream = new ReadableStream({
     async start(controller){
+      const started = Date.now();
       controller.enqueue(enc.encode(' '));                                  // start the stream right away
       const keepAlive = setInterval(() => controller.enqueue(enc.encode(' ')), 3000);
       let result;
-      try { result = await doRetype(body); }
+      try { result = await doRetype(body, started + 52000); }
       catch (err) { result = { error: err.message || 'Something went wrong while retyping.' }; }
       clearInterval(keepAlive);
       controller.enqueue(enc.encode(JSON.stringify(result)));
