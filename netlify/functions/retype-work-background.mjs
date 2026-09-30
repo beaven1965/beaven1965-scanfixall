@@ -48,6 +48,9 @@ Accuracy rules — the most important part:
 - NEVER guess, and NEVER replace a word with a similar or "more sensible" word. Names of people, streets, places, events and organizations are often unusual — copy them exactly as the letters appear.
 - If you cannot read a word with confidence (crease, stain, blur, fold), write [?] in its place instead of guessing. If part of a word is readable, still write [?] for the whole word. It is much better to write [?] than a wrong word.
 - NUMBERS NEED EXTRA CARE: dates, years, amounts, money, phone numbers, ID/license numbers, room numbers and times. If you are not completely sure of EVERY digit, write [?] in place of the WHOLE number (for example "Sept. 18, [?]" or "Room [?]"). Never pick the most likely-looking digit. Handwritten digits like 1/7, 4/9, 5/6, 0/6 and 1/2 are easy to confuse — when in doubt, [?].
+- NAMES NEED EXTRA CARE: people's names, titles and initials, and names of schools, places and events. Handwritten names cannot be checked against a dictionary, so only copy a name if you can clearly see EVERY letter. If any letter of a name is unclear, write [?] for that WHOLE name part (for example "[?] D. Miranda" or "Heriberto [?] D. Miranda"). Never swap in a common name that looks similar.
+- NEVER ADD words that are not on the page — not titles like "Hon.", "Mr.", "Dr." or "Engr.", not missing words, not punctuation that isn't there.
+- Final check before answering: look again at every name, title, date and number you wrote. If you would not bet on each letter and digit being exactly right, change it to [?].
 - Do not fix grammar or spelling. Do not add, remove or reorder anything.
 
 Layout rules:
@@ -78,6 +81,9 @@ Accuracy rules — the most important part:
 - Copy every word EXACTLY as written, letter by letter, including cursive. Keep the student's own spelling, abbreviations (w/, b/c, =, →) and wording. Do not fix grammar or spelling, and do not add, remove or reorder anything.
 - NEVER guess. If you cannot read a word with confidence, write [?] in its place. It is much better to write [?] than a wrong word.
 - NUMBERS NEED EXTRA CARE: dates, years, formulas, measurements, amounts and page numbers. If you are not completely sure of EVERY digit or symbol, write [?] for the whole number or formula part.
+- NAMES NEED EXTRA CARE: people's names, titles and initials, and names of schools, places and events. Handwritten names cannot be checked against a dictionary, so only copy a name if you can clearly see EVERY letter. If any letter of a name is unclear, write [?] for that WHOLE name part (for example "[?] D. Miranda" or "Heriberto [?] D. Miranda"). Never swap in a common name that looks similar.
+- NEVER ADD words that are not on the page — not titles like "Hon.", "Mr.", "Dr." or "Engr.", not missing words, not punctuation that isn't there.
+- Final check before answering: look again at every name, title, date and number you wrote. If you would not bet on each letter and digit being exactly right, change it to [?].
 - Keep words in Filipino or other languages exactly as written; do not translate.
 
 Layout rules for notes:
