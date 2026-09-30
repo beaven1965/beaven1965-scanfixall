@@ -1991,6 +1991,12 @@
               <option value="id">Indonesian</option>
               <option value="ms">Malay</option>
               <option value="vi">Vietnamese</option>
+              <option value="ja">Japanese</option>
+              <option value="zh">Chinese (Simplified)</option>
+              <option value="zh-TW">Chinese (Traditional)</option>
+              <option value="ko">Korean</option>
+              <option value="ar">Arabic</option>
+              <option value="hi">Hindi</option>
             </select>
             <button class="tool-btn" id="retypeTranslateBtn" style="flex:1;">🌐 Translate</button>
           </div>
@@ -3130,7 +3136,7 @@
         .replace(/\n/g, '<br>');
       const align = b.align === 'justify' ? 'justify' : b.align;
       const cls = 'rt-block' + (i === signerBlock ? ' rt-signer' : '');
-      return '<div class="' + cls + '" data-type="' + b.type + '" data-align="' + b.align + '" style="text-align:' + align + '">' + html + '</div>';
+      return '<div class="' + cls + '" dir="auto" data-type="' + b.type + '" data-align="' + b.align + '" style="text-align:' + (align === 'left' ? 'start' : align) + '">' + html + '</div>';
     }).join('');
   }
 
@@ -3478,7 +3484,12 @@
 
   // ---- Draw the retyped document onto clean A4 pages (150 dpi) ----
   const RT_W = 1240, RT_H = 1754, RT_MX = 150, RT_TOP = 150, RT_BOTTOM = 130;
-  const RT_FONT = "'Tinos','Times New Roman',Times,serif";
+  const RT_FONT = "'Tinos','Times New Roman',Times,'Noto Serif CJK JP','Noto Serif JP','Noto Sans CJK JP','Hiragino Mincho ProN','Yu Mincho','Noto Naskh Arabic','Noto Sans Arabic','Noto Sans Devanagari',serif";
+  // Chinese / Japanese characters (and full-width punctuation) — these can wrap between any two letters.
+  const RT_WIDE = /[\u2E80-\u2FFF\u3000-\u30FF\u3400-\u4DBF\u4E00-\u9FFF\uF900-\uFAFF\uFF00-\uFFEF]/;
+  const RT_WIDE_SPLIT = /[\u2E80-\u2FFF\u3000-\u30FF\u3400-\u4DBF\u4E00-\u9FFF\uF900-\uFAFF\uFF00-\uFFEF]|[^\u2E80-\u2FFF\u3000-\u30FF\u3400-\u4DBF\u4E00-\u9FFF\uF900-\uFAFF\uFF00-\uFFEF]+/g;
+  // Arabic / Hebrew letters (written right to left).
+  const RT_RTL_G = /[\u0590-\u08FF\uFB1D-\uFDFF\uFE70-\uFEFF]/g;
   function rtFont(size, bold){ return (bold ? '700 ' : '400 ') + size + 'px ' + RT_FONT; }
 
   function layoutRetype(size, firstTop){
@@ -3486,16 +3497,23 @@
     const lh = Math.round(size * 1.38), maxW = RT_W - RT_MX * 2;
     const items = [];       // {kind:'line', words, align, justify} | {kind:'gap', h} | {kind:'signerMark'}
     readRetypeBlocks().forEach(block => {
+      const allText = block.lines.map(l => l.map(r => r.t).join('')).join(' ');
+      block.rtl = (allText.match(RT_RTL_G) || []).length > (allText.match(/[A-Za-z]/g) || []).length;
       if(block.signer) items.push({ kind:'gap', h: Math.round(lh * 2.6) }, { kind:'signerMark' });
       block.lines.forEach(runs => {
         // Split into words that remember bold, keeping pieces that touch (e.g. "services" + ",") together.
-        const words = []; let cur = null, prevSpace = true;
+        // Chinese/Japanese have no spaces: each of those characters is its own "word" that can
+        // wrap anywhere, with no space added around it (sp = a space goes before this word).
+        const words = []; let cur = null, prevSpace = true, prevWide = false;
         runs.forEach(r => r.t.split(/(\s+)/).forEach(piece => {
           if(!piece) return;
           if(/^\s+$/.test(piece)){ prevSpace = true; return; }
-          if(!prevSpace && cur) cur.parts.push({ w: piece, b: r.b });
-          else { cur = { parts: [{ w: piece, b: r.b }] }; words.push(cur); }
-          prevSpace = false;
+          (piece.match(RT_WIDE_SPLIT) || []).forEach(seg => {
+            const wide = RT_WIDE.test(seg);
+            if(!prevSpace && cur && !wide && !prevWide) cur.parts.push({ w: seg, b: r.b });
+            else { cur = { parts: [{ w: seg, b: r.b }], sp: prevSpace && words.length > 0 }; words.push(cur); }
+            prevSpace = false; prevWide = wide;
+          });
         }));
         words.forEach(wd => { wd.width = wd.parts.reduce((a, p) => { meas.font = rtFont(size, p.b); p.width = meas.measureText(p.w).width; return a + p.width; }, 0); });
         meas.font = rtFont(size, false);
@@ -3503,12 +3521,13 @@
         if(words.length === 0){ items.push({ kind:'gap', h: lh }); return; }
         let line = [], lineW = 0;
         const flush = (last) => {
-          items.push({ kind:'line', words: line, align: block.align, justify: block.type === 'paragraph' && block.align === 'justify' && !last, lh });
+          items.push({ kind:'line', words: line, align: block.align, rtl: block.rtl, justify: block.type === 'paragraph' && block.align === 'justify' && !last, lh });
           line = []; lineW = 0;
         };
         words.forEach(wd => {
-          if(line.length && lineW + space + wd.width > maxW) flush(false);
-          lineW += (line.length ? space : 0) + wd.width; line.push(wd);
+          const gap = (line.length && wd.sp) ? space : 0;
+          if(line.length && lineW + gap + wd.width > maxW) flush(false);
+          lineW += (line.length && wd.sp) ? space + wd.width : wd.width; line.push(wd);
         });
         if(line.length) flush(true);
       });
@@ -3559,17 +3578,32 @@
         if(it.kind === 'signerMark'){ if(pi === 0 && signerFrac === null) signerFrac = (top + it.y) / RT_H; return; }
         if(it.kind !== 'line') return;
         const total = it.words.reduce((a, w) => a + w.width, 0);
-        const gaps = it.words.length - 1;
+        const gaps = it.words.filter((w, i) => i > 0 && w.sp).length;
         let space = lay.space;
         if(it.justify && gaps > 0) space = (maxW - total) / gaps;
         const lineW = total + space * gaps;
+        let align = it.align;
+        if(it.rtl) align = align === 'right' ? 'left' : (align === 'center' ? 'center' : 'right');
+        if(it.rtl && it.justify) align = 'justify';
         let x = RT_MX;
-        if(it.align === 'center') x = RT_MX + (maxW - lineW) / 2;
-        if(it.align === 'right') x = RT_MX + maxW - lineW;
+        if(align === 'center') x = RT_MX + (maxW - lineW) / 2;
+        if(align === 'right') x = RT_MX + maxW - lineW;
         const baseY = top + it.y + lay.size;
+        const startX = x;
         it.words.forEach((w, i) => {
-          w.parts.forEach(p => { ctx.font = rtFont(lay.size, p.b); ctx.fillText(p.w, x, baseY); x += p.width; });
-          if(i < gaps) x += space;
+          if(i > 0 && w.sp) x += space;
+          // Right-to-left languages: place each word mirrored, so the first word sits on the right.
+          if(it.rtl){
+            // Mirror the word's place, and let the browser order letters/commas right-to-left inside it.
+            let right = 2 * startX + lineW - x;
+            ctx.save(); ctx.direction = 'rtl'; ctx.textAlign = 'right';
+            w.parts.forEach(p => { ctx.font = rtFont(lay.size, p.b); ctx.fillText(p.w, right, baseY); right -= p.width; });
+            ctx.restore();
+          } else {
+            let px = x;
+            w.parts.forEach(p => { ctx.font = rtFont(lay.size, p.b); ctx.fillText(p.w, px, baseY); px += p.width; });
+          }
+          x += w.width;
         });
       });
       return c;
