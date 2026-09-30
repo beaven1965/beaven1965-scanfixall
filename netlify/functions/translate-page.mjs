@@ -27,13 +27,13 @@ function limitReachedMsg(limit, paid){
 }
 const OLD_FORMAT_CUTOFF_MS = new Date('2026-09-30T00:00:00+08:00').getTime();
 
-// Only languages written left-to-right with spaces between words,
-// so the saved page lays out correctly.
+// The app's page builder handles Chinese/Japanese (no spaces) and Arabic (right to left) too.
 const LANGUAGES = {
   en: 'English', fil: 'Filipino (Tagalog)', ceb: 'Cebuano (Bisaya)', ilo: 'Ilocano',
   hil: 'Hiligaynon (Ilonggo)', bik: 'Bikol', war: 'Waray', pam: 'Kapampangan', pag: 'Pangasinan',
   es: 'Spanish', fr: 'French', de: 'German', it: 'Italian', pt: 'Portuguese', id: 'Indonesian',
-  ms: 'Malay', vi: 'Vietnamese'
+  ms: 'Malay', vi: 'Vietnamese',
+  ja: 'Japanese', zh: 'Chinese (Simplified)', 'zh-TW': 'Chinese (Traditional)', ko: 'Korean', ar: 'Arabic', hi: 'Hindi'
 };
 
 function sig6(secret, text){
