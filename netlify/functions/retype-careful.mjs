@@ -17,8 +17,8 @@ import crypto from 'node:crypto';
 import { getStore } from '@netlify/blobs';
 
 const MODEL = 'claude-sonnet-5';
-const PAGE_LIMIT = { family: 100, class: 100 };   // pages per 30-day PAID code
-const FREE_PAGE_LIMIT = 10;                         // free (promo) codes: 10 pages in total
+const PAGE_LIMIT = { family: 60, class: 100 };    // AI pages per 30-day PAID code (Family ₱250 / Class ₱1,500)
+const FREE_PAGE_LIMIT = 3;                          // free (trial) codes: 3 AI pages in total
 
 // Paid codes are marked in the 'paid-codes' store by verify-payment when PayMongo
 // confirms the payment. Any other code is a free promo code. The owner can also
@@ -27,12 +27,12 @@ async function pageLimitFor(checked){
   const owner = checked.owner;
   const extra = String(process.env.PAID_CODES || '').toUpperCase().split(',').map(t => t.trim()).filter(Boolean);
   const paid = extra.includes(owner) || !!(await getStore('paid-codes').get(owner));
-  return { paid, limit: paid ? (PAGE_LIMIT[checked.plan] || 100) : FREE_PAGE_LIMIT };
+  return { paid, limit: paid ? (PAGE_LIMIT[checked.plan] || 60) : FREE_PAGE_LIMIT };
 }
 function limitReachedMsg(limit, paid){
   return paid
-    ? limitReachedMsg(limit, paid)
-    : "You've used your " + limit + ' free Retype/Translate pages. Get Premium (₱250 a month) for 100 pages every month. Scanning, Clean paper, Shrink and Sign stay free.';
+    ? "You've used all " + limit + ' AI pages (Retype, Translate, Listen) for this 30-day period. You get ' + limit + ' new pages when you renew. Scanning, Clean paper, Shrink, Sign, Share and Print stay free.'
+    : "You've used your " + limit + ' free AI pages (Retype, Translate, Listen). Get Premium (₱250 a month) for 60 AI pages every month. Scanning, Clean paper, Shrink, Sign, Share and Print stay free.';
 }
 const TOO_LONG_MSG = 'This page has too much writing to read in one go. Drag the gold corner dots to include only the part you need (for example, just the handwritten part), then tap Retype again. You were not charged for this page.';
 const OLD_FORMAT_CUTOFF_MS = new Date('2026-09-30T00:00:00+08:00').getTime();

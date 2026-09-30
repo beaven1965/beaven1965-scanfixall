@@ -99,7 +99,7 @@ exports.handler = async (event) => {
     const paidCentavos = Number(attrs && attrs.amount) || 0;
     const { code, expiresAt, plan } = issueAccessCode(accessSecret, paidCentavos >= CLASS_MIN_CENTAVOS ? 'class' : 'family');
     await store.setJSON(cleanedId, { code, expiresAt, plan, recoveredAt: new Date().toISOString() });
-    await getStore('paid-codes').set(code, JSON.stringify({ plan, paidAt: new Date().toISOString() }));   // counts as a paid code (100 Retype pages)
+    await getStore('paid-codes').set(code, JSON.stringify({ plan, paidAt: new Date().toISOString() }));   // counts as a paid code (60 AI pages Family / 100 Class)
 
     return {
       statusCode: 200,

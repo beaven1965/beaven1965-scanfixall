@@ -1,9 +1,10 @@
 // This runs on Netlify's servers, not in the visitor's browser.
 //
-// Ticket desk for "Retype" on long pages:
-//  { action: "start", code, image }  -> checks Premium, saves the photo, returns { jobId }
-//  { action: "status", jobId }       -> { pending: true } while reading, then the result
-// The actual reading happens in retype-work-background.mjs.
+// "🔊 Listen" (Premium) — reads the retyped (or translated) page aloud with
+// OpenAI's AI voice, which sounds clear in Tagalog and other languages on any
+// phone or laptop. Uses 1 AI page from the same monthly allowance as Retype
+// and Translate (counted only once the first part of the voice is ready).
+// Needs OPENAI_API_KEY as a Netlify environment variable.
 
 import crypto from 'node:crypto';
 import { getStore } from '@netlify/blobs';
@@ -27,6 +28,7 @@ function limitReachedMsg(limit, paid){
 }
 const OLD_FORMAT_CUTOFF_MS = new Date('2026-09-30T00:00:00+08:00').getTime();
 
+// The app's page builder handles Chinese/Japanese (no spaces) and Arabic (right to left) too.
 function sig6(secret, text){
   return crypto.createHmac('sha256', secret).update(text).digest('hex').slice(0, 6).toUpperCase();
 }
@@ -69,41 +71,65 @@ async function checkCode(code, secret){
 }
 
 
+
+
+const MAX_CHARS = 8000;          // about one full, crowded page
+const PIECE = 3800;              // the voice service takes up to 4096 characters at a time
+
+function pieces(text){
+  const out = []; let cur = '';
+  (text.match(/[^.!?。！？\n]+[.!?。！？\n]*\s*/g) || [text]).forEach(s => {
+    if((cur + s).length > PIECE && cur){ out.push(cur); cur = ''; }
+    while(s.length > PIECE){ out.push(s.slice(0, PIECE)); s = s.slice(PIECE); }
+    cur += s;
+  });
+  if(cur.trim()) out.push(cur);
+  return out;
+}
 const json = (obj) => new Response(JSON.stringify(obj), { status: 200, headers: { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' } });
 
 export default async (req) => {
   if (req.method !== 'POST') return new Response(JSON.stringify({ error: 'Method not allowed' }), { status: 405 });
+  const openaiKey = process.env.OPENAI_API_KEY;
+  const secret = process.env.ACCESS_CODE_SECRET;
+  if (!openaiKey) return json({ error: 'Listen is not set up yet: the server is missing OPENAI_API_KEY as a Netlify environment variable.' });
+  if (!secret) return json({ error: 'Server is missing ACCESS_CODE_SECRET as a Netlify environment variable.' });
+
   const body = await req.json().catch(() => null) || {};
-  const jobs = getStore({ name: 'retype-jobs', consistency: 'strong' });
-  const results = getStore({ name: 'retype-results', consistency: 'strong' });
-
-  if (body.action === 'status') {
-    const jobId = String(body.jobId || '');
-    if (!/^[0-9a-f-]{36}$/.test(jobId)) return json({ error: 'Unknown ticket.' });
-    const r = await results.get(jobId, { type: 'json' });
-    if (r) { await results.delete(jobId); return json(r); }
-    return json({ pending: true });
+  const checked = await checkCode(body.code, secret);
+  if (!checked.valid) {
+    return json({ error: checked.reason === 'expired'
+      ? 'Your Premium code has expired. Please renew to use Listen.'
+      : 'Listen is a Premium feature. Your access code could not be confirmed.' });
   }
+  const text = String(body.text || '').replace(/\[\?\]/g, ' ').replace(/[ \t]+/g, ' ').trim().slice(0, MAX_CHARS);
+  if (!text) return json({ error: 'There is no text on the page to read.' });
 
-  if (body.action === 'start') {
-    const secret = process.env.ACCESS_CODE_SECRET;
-    if (!process.env.ANTHROPIC_API_KEY) return json({ error: 'Retype is not set up yet: the server is missing ANTHROPIC_API_KEY as a Netlify environment variable.' });
-    if (!secret) return json({ error: 'Server is missing ACCESS_CODE_SECRET as a Netlify environment variable.' });
-    if (!body.code) return json({ error: 'Retype is a Premium feature. Please unlock Premium first.' });
-    const checked = await checkCode(body.code, secret);
-    if (!checked.valid) {
-      return json({ error: checked.reason === 'expired'
-        ? 'Your Premium code has expired. Please renew to use Retype.'
-        : 'Retype is a Premium feature. Your access code could not be confirmed.' });
+  const { limit, paid } = await pageLimitFor(checked);
+  const usageStore = getStore('retype-pages');
+  const used = Number(await usageStore.get(checked.owner)) || 0;
+  if (used >= limit) return json({ error: limitReachedMsg(limit, paid), pagesLeft: 0 });
+
+  const parts = pieces(text);
+  const stream = new ReadableStream({
+    async start(controller){
+      let counted = false;
+      for (const part of parts) {
+        let res;
+        try {
+          res = await fetch('https://api.openai.com/v1/audio/speech', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + openaiKey },
+            body: JSON.stringify({ model: 'tts-1', voice: 'nova', input: part, response_format: 'mp3' })
+          });
+        } catch (e) { break; }
+        if (!res.ok) { console.log('listen: voice service error', res.status); break; }
+        const buf = new Uint8Array(await res.arrayBuffer());
+        if (!counted) { counted = true; await usageStore.set(checked.owner, String(used + 1)); }
+        controller.enqueue(buf);
+      }
+      controller.close();
     }
-    const { limit, paid } = await pageLimitFor(checked);
-    const used = Number(await getStore('retype-pages').get(checked.owner)) || 0;
-    if (used >= limit) return json({ error: limitReachedMsg(limit, paid), pagesLeft: 0 });
-    if (!/^data:image\/(jpeg|png);base64,/.test(String(body.image || ''))) return json({ error: 'No page picture was received. Please try again.' });
-    const jobId = crypto.randomUUID();
-    await jobs.setJSON(jobId, { code: body.code, image: body.image, mode: body.mode === 'notes' ? 'notes' : 'letter', at: Date.now() });
-    return json({ jobId });
-  }
-
-  return json({ error: 'Unknown request.' });
+  });
+  return new Response(stream, { status: 200, headers: { 'Content-Type': 'audio/mpeg', 'Cache-Control': 'no-store', 'X-Pages-Left': String(Math.max(0, limit - used - 1)) } });
 };
