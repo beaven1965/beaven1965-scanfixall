@@ -1964,7 +1964,7 @@
           </div>
           <div class="tool-hint" style="margin-top:6px;">Please only retype and re-sign your own documents.</div>
           <details class="fold" id="foldExtras">
-            <summary>🌐 Translate · ✏️ Grammar check<small>17 languages · optional grammar suggestions</small></summary>
+            <summary>🌐 Translate · 🔊 Listen · ✏️ Grammar<small>23 languages · hear it read aloud · grammar suggestions</small></summary>
             <div class="fold-body">
           <div class="tool-upload-row" style="margin-top:0;">
             <button class="tool-btn" id="retypeGrammarBtn">✏️ Suggest grammar fixes (optional)</button>
@@ -2009,6 +2009,11 @@
           <div class="tool-upload-row" id="retypeOriginalRow" style="margin-top:6px; display:none;">
             <button class="tool-btn" id="retypeOriginalBtn">↩ Show original</button>
           </div>
+          <div class="tool-upload-row" style="margin-top:12px;">
+            <button class="tool-btn" id="retypeListenBtn">🔊 Listen — AI voice</button>
+          </div>
+          <audio id="retypeAudio" controls style="display:none; width:100%; margin-top:8px;"></audio>
+          <div class="tool-hint" id="retypeListenNote" style="margin-top:6px;">Reads the page aloud — the original or the translation, whichever is showing. Uses 1 AI page. Playing it again is free.</div>
             </div>
           </details>
           <div class="tool-upload-row" style="margin-top:10px;">
@@ -2190,7 +2195,7 @@
         <li><span class="check">✓</span> Unlimited scans, photo shrinks and signing — every day</li>
         <li><span class="check">✓</span> No watermark on your scanned documents</li>
         <li><span class="check">✓</span> Combine unlimited pages into one PDF</li>
-        <li><span class="check">✓</span> 📝 Retype as a brand-new document — 100 pages for each 30 days you pay</li>
+        <li><span class="check">✓</span> 📝 Retype, 🌐 Translate &amp; 🔊 Listen — 60 AI pages for each 30 days you pay</li>
         <li><span class="check">✓</span> Share codes with family or students — each code works on one phone</li>
       </ul>
 
@@ -2200,7 +2205,7 @@
           <span class="plan-body">
             <span class="plan-name">👨‍👩‍👧 Family</span>
             <span class="plan-price">₱250 <small>/ 30 days</small></span>
-            <span class="plan-desc">You + up to <b>5</b> family members. Everyone shares <b>100 Retype pages</b>.</span>
+            <span class="plan-desc">You + up to <b>5</b> family members. Everyone shares <b>60 AI pages</b>.</span>
           </span>
         </label>
         <label class="plan-card" for="planClass">
@@ -2208,13 +2213,13 @@
           <span class="plan-body">
             <span class="plan-name">🏫 Class</span>
             <span class="plan-price">₱1,500 <small>/ 30 days</small></span>
-            <span class="plan-desc">Teacher + up to <b>50</b> students (one code each). The class shares <b>100 Retype pages</b>.</span>
+            <span class="plan-desc">Teacher + up to <b>50</b> students (one code each). The class shares <b>100 AI pages</b>.</span>
           </span>
         </label>
       </div>
 
       <div class="price-tag">
-        <div class="note">No auto-charge, no card stored. Pay once and get a code good for 30 days. Unused Retype pages don't carry over — each new payment starts a fresh 100.</div>
+        <div class="note">No auto-charge, no card stored. Pay once and get a code good for 30 days. Unused AI pages don't carry over — each new payment starts fresh.</div>
       </div>
 
       <label class="terms-agree" for="termsAgree">
@@ -3256,7 +3261,7 @@
       if(!Array.isArray(data.blocks)) throw new Error('Could not retype right now. Please try again.');
       showRetypedBlocks(data.blocks, data.signerBlock);
       document.getElementById('retypeGrammarBox').style.display = 'none';
-      retypeOriginalHtml = null; retypeOriginalRow.style.display = 'none';
+      retypeOriginalHtml = null; retypeOriginalRow.style.display = 'none'; resetListen();
       retypeTranslateNote.textContent = 'Translating uses 1 Retype page. You can switch back to the original any time.';
       retypeLetterhead = (data.letterhead && data.letterhead.found) ? cutLetterhead(send, data.letterhead) : null;
       retypeLetterheadRow.style.display = retypeLetterhead ? 'flex' : 'none';
@@ -3288,6 +3293,55 @@
       setTimeout(() => { const r = d.getBoundingClientRect(); if(r.top < 0 || r.top > window.innerHeight * 0.6) d.scrollIntoView({ behavior:'smooth', block:'start' }); }, 30);
     });
   });
+
+  // ---- 🔊 Listen: the AI voice reads the page that is showing ----
+  const retypeListenBtn = document.getElementById('retypeListenBtn');
+  const retypeAudio = document.getElementById('retypeAudio');
+  const retypeListenNote = document.getElementById('retypeListenNote');
+  let listenCache = { text: null, url: null };   // same text again = replay, no extra page
+  let listenBusy = false;
+  retypeListenBtn.addEventListener('click', async () => {
+    if(listenBusy) return;
+    const code = localStorage.getItem(PREMIUM_CODE_KEY);
+    if(!isPremiumActive() || !code){ retypeListenNote.textContent = 'Listen is a Premium feature. Please unlock Premium (or enter your free access code) first.'; return; }
+    const text = rtBlockEls().map(el => el.innerText.trim()).filter(Boolean).join('\n\n');
+    if(!text){ retypeListenNote.textContent = 'There is no text on the page to read.'; return; }
+    if(listenCache.text === text && listenCache.url){
+      retypeAudio.style.display = 'block'; retypeAudio.currentTime = 0; retypeAudio.play().catch(() => {});
+      retypeListenNote.textContent = 'Playing again — no extra page used.';
+      return;
+    }
+    listenBusy = true;
+    const label = retypeListenBtn.textContent;
+    retypeListenBtn.textContent = '⏳ Preparing the voice…'; retypeListenBtn.disabled = true;
+    retypeListenNote.textContent = 'Preparing the AI voice… about 5–20 seconds.';
+    try{
+      const res = await fetch('/.netlify/functions/listen-page', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code, text })
+      });
+      const type = res.headers.get('Content-Type') || '';
+      if(type.indexOf('application/json') >= 0){
+        const d = await res.json().catch(() => ({}));
+        throw new Error(d.error || 'Could not read the page aloud right now.');
+      }
+      if(!res.ok) throw new Error('Could not read the page aloud right now (' + res.status + '). Please try again.');
+      const blob = await res.blob();
+      if(!blob.size) throw new Error('The voice service did not answer. Please try again in a moment. (No page was used.)');
+      if(listenCache.url) URL.revokeObjectURL(listenCache.url);
+      listenCache = { text, url: URL.createObjectURL(blob) };
+      retypeAudio.src = listenCache.url;
+      retypeAudio.style.display = 'block';
+      retypeAudio.play().catch(() => {});
+      const left = res.headers.get('X-Pages-Left');
+      retypeListenNote.textContent = '🔊 Playing. Use the player to pause or replay — replaying is free.' + (left !== null ? ' (' + left + ' AI pages left)' : '');
+    }catch(err){
+      retypeListenNote.textContent = err.message || 'Could not read the page aloud right now.';
+    }finally{
+      listenBusy = false; retypeListenBtn.textContent = label; retypeListenBtn.disabled = false;
+    }
+  });
+  function resetListen(){ try{ retypeAudio.pause(); }catch(e){} retypeAudio.style.display = 'none'; }
 
   // ---- Translate: keeps the original so the person can switch back ----
   const retypeTranslateBtn = document.getElementById('retypeTranslateBtn');
@@ -4250,8 +4304,8 @@
       }
       if(savedCode && (savedCode.startsWith('SE-') || savedCode.startsWith('SC-'))){
         familyIntro.textContent = savedCode.startsWith('SC-')
-          ? 'Create a code for each student (up to 50). Each code works on one phone, and all students share the class\'s 100 Retype pages. You can turn a code off or reset its device anytime.'
-          : 'Create a code for each family member (up to 5). Each code works on one phone, and everyone shares your 100 Retype pages. You can turn a code off or reset its device anytime.';
+          ? 'Create a code for each student (up to 50). Each code works on one phone, and all students share the class\'s 100 AI pages. You can turn a code off or reset its device anytime.'
+          : 'Create a code for each family member (up to 5). Each code works on one phone, and everyone shares your 60 AI pages. You can turn a code off or reset its device anytime.';
         familyLabelInput.placeholder = savedCode.startsWith('SC-') ? "Student's name (e.g. Juan)" : "Family member's name (e.g. Maria)";
         familyCodesSection.style.display = 'block';
         loadFamilyCodes();
@@ -4499,11 +4553,11 @@
     const lbl = document.getElementById('premiumStatusLabel');
     if(lbl) lbl.textContent = '🔑 Access code (for Retype)';
     const rh = document.getElementById('redeemHint');
-    if(rh) rh.textContent = 'October promo: scanning, Clean paper, Shrink and Sign are free. Each free access code also includes 10 free Retype/Translate pages — enter your code above.';
+    if(rh) rh.textContent = 'October promo: scanning, Clean paper, Shrink and Sign are free. Each free access code also includes 3 free AI pages (Retype, Translate, Listen) to try — enter your code above.';
     const rb = document.getElementById('scanRetypeBtn');
     if(rb) rb.textContent = '📝 Retype as new document (free access code)';
     const rw = document.getElementById('retypePlanWord');
-    if(rw) rw.textContent = '10 free pages with an access code';
+    if(rw) rw.textContent = '3 free pages with an access code';
   })();
   refreshPremiumUI();
 
