@@ -1,0 +1,4673 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ScanFixAll — Scan, Clean &amp; Shrink</title>
+<meta name="description" content="Turn messy document photos into clean, shareable scans, and shrink any photo down to a size you can actually send.">
+<meta name="theme-color" content="#151B26">
+<link rel="manifest" href="/manifest.json">
+<link rel="icon" type="image/png" sizes="32x32" href="/icon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/icon-16.png">
+<link rel="apple-touch-icon" sizes="180x180" href="/icon-180.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,500&family=Inter:wght@400;500;600;700&family=Tinos:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#1C2331;
+    --ink-deep:#151B26;
+    --surface:#262F40;
+    --surface-line:#3A4457;
+    --paper:#F3ECDD;
+    --paper-line:#DCD0B4;
+    --gold:#C9A227;
+    --gold-bright:#E0BB3D;
+    --ember:#B24C3B;
+    --ember-bright:#C85F4D;
+    --text:#EDE6D6;
+    --text-muted:#9AA3B5;
+    --ink-on-paper:#2A2013;
+    --ink-on-paper-muted:#6B5E45;
+    --link-warm:#D9BE83;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--ink);
+    color:var(--text);
+    font-family:'Inter',sans-serif;
+    min-height:100vh;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+  }
+  .shell{
+    width:100%;
+    max-width:520px;
+    min-height:100vh;
+    display:flex;
+    flex-direction:column;
+    padding:24px 20px 60px;
+  }
+  header{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    padding:8px 4px 32px;
+  }
+  .brand{
+    font-family:'Source Serif 4',serif;
+    font-size:20px;
+    font-weight:600;
+    letter-spacing:0.01em;
+    color:var(--text);
+    line-height:1.2;
+  }
+  .brand-tagline{
+    font-family:'Inter',sans-serif;
+    font-size:11px;
+    font-weight:500;
+    letter-spacing:0.03em;
+    text-transform:uppercase;
+    color:var(--text-muted);
+    margin-top:2px;
+  }
+  .gear-btn{
+    background:none;
+    border:none;
+    color:var(--text-muted);
+    cursor:pointer;
+    padding:8px;
+    border-radius:8px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    transition:background 0.15s, color 0.15s;
+  }
+  .gear-btn:hover{ background:var(--surface); color:var(--text); }
+  .gear-btn:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visible{
+    outline:2px solid var(--gold);
+    outline-offset:2px;
+  }
+  .header-actions{
+    display:flex;
+    align-items:flex-start;
+    gap:6px;
+  }
+  .icon-with-label{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:2px;
+  }
+  .icon-label{
+    font-size:10px;
+    font-weight:500;
+    letter-spacing:0.02em;
+    color:var(--text-muted);
+  }
+
+  main{
+    flex:1;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+  }
+
+  /* ---- Record stage ---- */
+  .record-stage{
+    flex:1;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    gap:28px;
+    width:100%;
+    padding:20px 0 40px;
+  }
+  .record-btn{
+    width:148px;
+    height:148px;
+    border-radius:50%;
+    border:none;
+    background:radial-gradient(circle at 35% 30%, var(--gold-bright), var(--gold));
+    box-shadow:0 0 0 8px rgba(201,162,39,0.12);
+    cursor:pointer;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    transition:transform 0.15s ease, box-shadow 0.3s ease;
+    position:relative;
+  }
+  .record-btn:hover{ transform:scale(1.03); }
+  .record-btn:active{ transform:scale(0.97); }
+  .record-btn.recording{
+    background:radial-gradient(circle at 35% 30%, var(--ember-bright), var(--ember));
+    animation:breathe 2.6s ease-in-out infinite;
+  }
+  @keyframes breathe{
+    0%,100%{ box-shadow:0 0 0 8px rgba(178,76,59,0.16); }
+    50%{ box-shadow:0 0 0 18px rgba(178,76,59,0.06); }
+  }
+  @media (prefers-reduced-motion: reduce){
+    .record-btn.recording{ animation:none; }
+  }
+  .record-icon{
+    width:40px;
+    height:40px;
+    border-radius:8px;
+    background:var(--ink-deep);
+  }
+  .record-btn.recording .record-icon{
+    border-radius:50%;
+    width:36px;
+    height:36px;
+    background:var(--ink-deep);
+  }
+  .record-btn.needs-attention{
+    animation:nudge-glow 1.8s ease-in-out infinite;
+  }
+  @keyframes nudge-glow{
+    0%,100%{ box-shadow:0 0 0 8px rgba(201,162,39,0.12); }
+    50%{ box-shadow:0 0 0 20px rgba(201,162,39,0.30); }
+  }
+  @media (prefers-reduced-motion: reduce){
+    .record-btn.needs-attention{ animation:none; }
+  }
+  .record-again-btn{
+    background:radial-gradient(circle at 35% 30%, var(--gold-bright), var(--gold));
+    color:var(--ink-deep);
+    border:none;
+    font-family:'Inter',sans-serif;
+    font-weight:700;
+    font-size:15px;
+    padding:14px 18px;
+    border-radius:12px;
+    cursor:pointer;
+    margin-top:4px;
+    transition:transform 0.15s ease;
+  }
+  .record-again-btn:hover{ transform:scale(1.02); }
+  .record-again-btn:active{ transform:scale(0.97); }
+  .record-label{
+    font-size:15px;
+    color:var(--text-muted);
+    letter-spacing:0.02em;
+  }
+  .timer{
+    font-family:'Source Serif 4',serif;
+    font-size:34px;
+    font-variant-numeric:tabular-nums;
+    color:var(--text);
+    min-height:44px;
+  }
+  .hint{
+    font-size:13px;
+    color:var(--text-muted);
+    text-align:center;
+    max-width:280px;
+    line-height:1.5;
+  }
+
+  /* ---- Home page ---- */
+  .home-view{
+    flex:1;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    gap:48px;
+    width:100%;
+    padding:20px 0 40px;
+  }
+  .home-logo{ width:120px; height:120px; }
+  .home-buttons{
+    display:flex;
+    gap:36px;
+  }
+  .home-icon-btn{
+    background:none;
+    border:none;
+    color:var(--text);
+    cursor:pointer;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:10px;
+    padding:4px;
+  }
+  .home-icon-circle{
+    width:84px;
+    height:84px;
+    border-radius:50%;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background:radial-gradient(circle at 35% 30%, var(--gold-bright), var(--gold));
+    box-shadow:0 0 0 8px rgba(201,162,39,0.12);
+    transition:transform 0.15s ease;
+  }
+  .home-icon-btn:hover .home-icon-circle{ transform:scale(1.05); }
+  .home-icon-btn:active .home-icon-circle{ transform:scale(0.96); }
+  .home-icon-btn:disabled{ cursor:default; opacity:0.4; }
+  .home-icon-btn:disabled .home-icon-circle{
+    background:var(--surface);
+    box-shadow:none;
+  }
+  .home-icon-btn:disabled:hover .home-icon-circle{ transform:none; }
+  .home-icon-label{
+    font-size:13px;
+    font-weight:600;
+    letter-spacing:0.03em;
+    text-transform:uppercase;
+    color:var(--text-muted);
+  }
+  .home-icon-circle.home-record-only{
+    width:160px;
+    height:160px;
+   background:linear-gradient(135deg, #2FDB74, #0FAE55);
+    box-shadow:0 0 0 10px rgba(15,174,85,0.18);
+  }
+  .home-icon-btn .home-icon-label{
+    margin-top:4px;
+  }
+
+  .home-triangle{
+    position:relative;
+    width:300px;
+    height:340px;
+    margin:0 auto;
+  }
+  .home-mic-wrap{
+    position:absolute;
+    top:0;
+    left:50%;
+    transform:translateX(-50%);
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:8px;
+  }
+  .home-mic-circle{
+    width:92px;
+    height:92px;
+    border-radius:50%;
+    background:radial-gradient(circle at 35% 30%, #7CC24A, #4F8A2E);
+    box-shadow:0 0 0 8px rgba(95,161,59,0.14);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
+  .home-mic-label{
+    font-size:13px;
+    font-weight:600;
+    letter-spacing:0.03em;
+    text-transform:uppercase;
+    color:var(--text-muted);
+  }
+  .home-roof-wrap{
+    position:absolute;
+    top:132px;
+    left:50%;
+    transform:translateX(-50%);
+  }
+  .home-roof{
+    animation:roof-glow 2.6s ease-in-out infinite;
+  }
+  @keyframes roof-glow{
+    0%,100%{ filter:drop-shadow(0 0 4px rgba(243,236,221,0.3)); opacity:0.88; }
+    50%{ filter:drop-shadow(0 0 16px rgba(243,236,221,0.75)); opacity:1; }
+  }
+  @media (prefers-reduced-motion: reduce){
+    .home-roof{ animation:none; }
+  }
+  .home-corner-left{
+    position:absolute;
+    bottom:0;
+    left:6px;
+  }
+  .home-corner-right{
+    position:absolute;
+    bottom:0;
+    right:6px;
+  }
+  .home-icon-circle.stop-variant{
+    position:relative;
+    overflow:hidden;
+    background:radial-gradient(circle at 32% 28%, rgba(255,140,124,0.97) 0%, rgba(230,57,70,0.94) 55%, rgba(150,26,38,0.96) 100%);
+    box-shadow:0 0 0 5px var(--paper), 0 0 0 13px rgba(230,57,70,0.28);
+  }
+  .home-icon-circle.stop-variant::after{
+    content:'';
+    position:absolute;
+    top:10%;
+    left:16%;
+    width:42%;
+    height:26%;
+    background:radial-gradient(ellipse at center, rgba(255,255,255,0.65), rgba(255,255,255,0) 72%);
+    border-radius:50%;
+    pointer-events:none;
+  }
+  .home-icon-btn:disabled .home-icon-circle.stop-variant{
+    background:radial-gradient(circle at 32% 28%, rgba(255,140,124,0.75) 0%, rgba(230,57,70,0.7) 55%, rgba(150,26,38,0.75) 100%);
+    box-shadow:0 0 0 5px rgba(243,236,221,0.55);
+    opacity:0.75;
+  }
+
+  /* ---- Idle "waiting to record" blink (Recording page) ---- */
+  .record-btn.idle-blink{
+    animation:idle-pulse 2.2s ease-in-out infinite;
+  }
+  @keyframes idle-pulse{
+    0%,100%{ box-shadow:0 0 0 8px rgba(201,162,39,0.10); opacity:1; }
+    50%{ box-shadow:0 0 0 22px rgba(201,162,39,0.24); opacity:0.85; }
+  }
+  @media (prefers-reduced-motion: reduce){
+    .record-btn.idle-blink{ animation:none; }
+  }
+
+  /* ---- Live equalizer while recording ---- */
+  .equalizer{
+    display:flex;
+    align-items:flex-end;
+    justify-content:center;
+    gap:6px;
+    height:40px;
+  }
+  .equalizer span{
+    display:block;
+    width:6px;
+    height:8px;
+    border-radius:3px;
+    background:var(--gold-bright);
+    transition:height 0.08s linear;
+  }
+  .equalizer.paused span{ background:var(--text-muted); }
+
+  .stop-btn{
+    background:none;
+    border:1px solid var(--surface-line);
+    color:var(--ember-bright);
+    font-family:'Inter',sans-serif;
+    font-size:13px;
+    padding:7px 18px;
+    border-radius:20px;
+    cursor:pointer;
+    transition:border-color 0.15s, color 0.15s;
+  }
+  .stop-btn:hover{ border-color:var(--ember); }
+
+  /* ---- Save toast ---- */
+  .save-toast{
+    position:fixed;
+    left:50%;
+    bottom:28px;
+    transform:translateX(-50%) translateY(0);
+    background:var(--surface);
+    border:1px solid var(--gold);
+    color:var(--text);
+    padding:12px 20px;
+    border-radius:20px;
+    font-size:14px;
+    box-shadow:0 6px 20px rgba(0,0,0,0.3);
+    z-index:50;
+    opacity:0;
+    pointer-events:none;
+    transition:opacity 0.25s ease;
+  }
+  .save-toast.show{ opacity:1; }
+
+  /* ---- Settings ---- */
+  .settings-list{
+    display:flex;
+    flex-direction:column;
+    gap:2px;
+  }
+  .settings-item{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    padding:16px 4px;
+    border-bottom:1px solid var(--surface-line);
+    font-size:15px;
+  }
+  .settings-item:last-child{ border-bottom:none; }
+
+  /* ---- Status / processing ---- */
+  .status-row{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    color:var(--text-muted);
+    font-size:14px;
+  }
+  .spinner{
+    width:16px;
+    height:16px;
+    border-radius:50%;
+    border:2px solid var(--surface-line);
+    border-top-color:var(--gold);
+    animation:spin 0.8s linear infinite;
+  }
+  @keyframes spin{ to{ transform:rotate(360deg); } }
+
+  .error-box{
+    background:rgba(178,76,59,0.14);
+    border:1px solid rgba(178,76,59,0.4);
+    color:#E8B9AF;
+    padding:14px 16px;
+    border-radius:10px;
+    font-size:14px;
+    line-height:1.5;
+    width:100%;
+  }
+
+  /* ---- Results ---- */
+  .results{
+    width:100%;
+    display:flex;
+    flex-direction:column;
+    gap:18px;
+    padding-top:8px;
+  }
+  .result-meta{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+  }
+  .result-meta .date{
+    font-size:13px;
+    color:var(--text-muted);
+  }
+  .new-recording-btn{
+    background:none;
+    border:1px solid var(--surface-line);
+    color:var(--text-muted);
+    font-family:'Inter',sans-serif;
+    font-size:13px;
+    padding:7px 14px;
+    border-radius:20px;
+    cursor:pointer;
+    transition:border-color 0.15s, color 0.15s;
+  }
+  .new-recording-btn:hover{ border-color:var(--gold); color:var(--gold-bright); }
+
+  .pause-btn{
+    background:none;
+    border:1px solid var(--surface-line);
+    color:var(--text-muted);
+    font-family:'Inter',sans-serif;
+    font-size:13px;
+    padding:7px 18px;
+    border-radius:20px;
+    cursor:pointer;
+    transition:border-color 0.15s, color 0.15s;
+  }
+  .pause-btn:hover{ border-color:var(--gold); color:var(--gold-bright); }
+  .pause-btn.is-paused{ border-color:var(--ember); color:var(--ember-bright); }
+  .pause-stop-row{
+    display:flex;
+    gap:12px;
+    margin-top:-8px;
+  }
+
+  .player-row{
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
+  .player-row audio{ flex:1; min-width:0; }
+  .player-row.wrap{ flex-wrap:wrap; row-gap:8px; }
+  .seek-bar{
+    flex:1;
+    min-width:60px;
+    accent-color:var(--gold);
+    cursor:pointer;
+  }
+  .skip-btn{
+    background:var(--surface);
+    border:1px solid var(--surface-line);
+    color:var(--text);
+    font-family:'Inter',sans-serif;
+    font-size:12px;
+    font-weight:600;
+    padding:8px 10px;
+    border-radius:10px;
+    cursor:pointer;
+    white-space:nowrap;
+    transition:border-color 0.15s, color 0.15s;
+  }
+  .skip-btn:hover{ border-color:var(--gold); color:var(--gold-bright); }
+
+  .upload-btn{
+    background:none;
+    border:none;
+    color:var(--text-muted);
+    font-family:'Inter',sans-serif;
+    font-size:13px;
+    text-decoration:underline;
+    cursor:pointer;
+    margin-top:4px;
+  }
+  .upload-btn:hover{ color:var(--gold-bright); }
+
+  .header-actions{
+    display:flex;
+    gap:4px;
+  }
+
+  .library{
+    display:flex;
+    flex-direction:column;
+    gap:16px;
+  }
+  .library-item{
+    background:var(--surface);
+    border:1px solid var(--surface-line);
+    border-radius:12px;
+    padding:16px;
+    cursor:pointer;
+    transition:border-color 0.15s;
+  }
+  .library-item:hover{ border-color:var(--gold); }
+  .library-item .lib-date{
+    font-size:12px;
+    color:var(--text-muted);
+    margin-bottom:6px;
+  }
+  .library-item .lib-takeaway{
+    font-size:14px;
+    line-height:1.5;
+    color:var(--text);
+    display:-webkit-box;
+    -webkit-line-clamp:2;
+    -webkit-box-orient:vertical;
+    overflow:hidden;
+  }
+  .library-item .lib-delete{
+    float:right;
+    background:none;
+    border:none;
+    color:var(--text-muted);
+    font-size:12px;
+    cursor:pointer;
+    text-decoration:underline;
+  }
+  .library-item .lib-delete:hover{ color:var(--ember-bright); }
+  .lib-actions{
+    float:right;
+    display:flex;
+    gap:12px;
+    margin-left:12px;
+  }
+  .lib-actions button{
+    background:none;
+    border:none;
+    color:var(--text-muted);
+    font-size:12px;
+    cursor:pointer;
+    text-decoration:underline;
+    padding:0;
+    font-family:'Inter',sans-serif;
+  }
+  .lib-actions button:hover{ color:var(--gold-bright); }
+  .lib-actions button.danger:hover{ color:var(--ember-bright); }
+  .lib-menu-wrap{
+    float:right;
+    position:relative;
+    margin-left:12px;
+  }
+  .lib-menu-toggle{
+    background:none;
+    border:1px solid var(--surface-line);
+    color:var(--text-muted);
+    border-radius:8px;
+    width:30px;
+    height:28px;
+    font-size:16px;
+    line-height:1;
+    cursor:pointer;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    transition:border-color 0.15s, color 0.15s;
+  }
+  .lib-menu-toggle:hover{ border-color:var(--gold); color:var(--gold-bright); }
+  .lib-menu-panel{
+    position:absolute;
+    top:34px;
+    right:0;
+    background:var(--surface);
+    border:1px solid var(--surface-line);
+    border-radius:10px;
+    box-shadow:0 8px 24px rgba(0,0,0,0.4);
+    min-width:150px;
+    z-index:8;
+    display:none;
+    flex-direction:column;
+    overflow:hidden;
+  }
+  .lib-menu-panel.open{ display:flex; }
+  .lib-menu-panel button{
+    background:none;
+    border:none;
+    color:var(--text);
+    font-family:'Inter',sans-serif;
+    font-size:13px;
+    text-align:left;
+    padding:10px 14px;
+    cursor:pointer;
+    display:flex;
+    align-items:center;
+    gap:8px;
+    white-space:nowrap;
+  }
+  .lib-menu-panel button:hover{ background:var(--ink-deep); color:var(--gold-bright); }
+  .lib-menu-panel button.danger:hover{ color:var(--ember-bright); }
+  .lib-title{
+    font-weight:600;
+    color:var(--text);
+  }
+  .comic-picker{
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+  }
+  .comic-story-btn{
+    background:var(--surface);
+    border:1px solid var(--surface-line);
+    color:var(--text);
+    font-family:'Inter',sans-serif;
+    font-size:15px;
+    text-align:left;
+    padding:14px 16px;
+    border-radius:12px;
+    cursor:pointer;
+    display:flex;
+    align-items:center;
+    gap:10px;
+    transition:border-color 0.15s;
+  }
+  .comic-story-btn:hover{ border-color:var(--gold); }
+  .comic-panel-stage{
+    display:flex;
+    flex-direction:column;
+    gap:16px;
+    align-items:center;
+  }
+  .comic-panel-img{
+    width:100%;
+    max-width:420px;
+    aspect-ratio:1/1;
+    object-fit:cover;
+    border-radius:12px;
+    border:1px solid var(--surface-line);
+    background:var(--surface);
+    opacity:0;
+    transition:opacity 0.4s ease;
+  }
+  .comic-panel-img.loaded{ opacity:1; }
+  .comic-caption{
+    width:100%;
+    box-sizing:border-box;
+    opacity:0;
+    transform:translateY(6px);
+    transition:opacity 0.4s ease, transform 0.4s ease;
+  }
+  .comic-caption.loaded{ opacity:1; transform:translateY(0); }
+  .comic-nav{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    width:100%;
+    max-width:420px;
+    margin:14px auto 0;
+  }
+  .comic-nav .hint{ max-width:none; }
+
+  .library-search{
+    width:100%;
+    box-sizing:border-box;
+    background:var(--surface);
+    border:1px solid var(--surface-line);
+    border-radius:12px;
+    padding:12px 14px;
+    color:var(--text);
+    font-family:'Inter',sans-serif;
+    font-size:15px;
+    margin-bottom:16px;
+  }
+  .library-search::placeholder{ color:var(--text-muted); }
+  .library-search:focus{ outline:none; border-color:var(--gold); }
+
+  .paper-card{
+    background:var(--paper);
+    color:var(--ink-on-paper);
+    border-radius:6px;
+    padding:28px 26px;
+    box-shadow:0 12px 30px rgba(0,0,0,0.28);
+  }
+  .paper-card .eyebrow{
+    font-size:12px;
+    color:var(--ink-on-paper-muted);
+    margin-bottom:10px;
+    font-weight:600;
+  }
+  .takeaway-text{
+    font-family:'Source Serif 4',serif;
+    font-size:19px;
+    line-height:1.55;
+    font-style:italic;
+  }
+  .divider{
+    height:1px;
+    background:var(--paper-line);
+    margin:22px 0;
+  }
+  .bullets{
+    list-style:none;
+    margin:0;
+    padding:0;
+    display:flex;
+    flex-direction:column;
+    gap:12px;
+  }
+  .bullets li{
+    display:flex;
+    gap:10px;
+    font-size:15px;
+    line-height:1.5;
+  }
+  .bullets li::before{
+    content:'—';
+    color:var(--ink-on-paper-muted);
+    flex-shrink:0;
+  }
+
+  .transcript-toggle{
+    background:none;
+    border:none;
+    color:var(--text-muted);
+    font-family:'Inter',sans-serif;
+    font-size:14px;
+    cursor:pointer;
+    padding:10px 2px;
+    text-align:left;
+    text-decoration:underline;
+    text-underline-offset:3px;
+  }
+  .transcript-toggle:hover{ color:var(--text); }
+  .translate-row{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    flex-wrap:wrap;
+    margin:0 0 14px;
+  }
+  .translate-btn{
+    background:none;
+    border:1px solid var(--gold);
+    color:var(--gold-bright);
+    border-radius:10px;
+    padding:6px 14px;
+    font-size:13px;
+    font-family:'Inter',sans-serif;
+    cursor:pointer;
+  }
+  .translate-btn:disabled{ opacity:0.6; cursor:default; }
+  .translate-note{
+    font-size:12px;
+    color:var(--text-muted);
+  }
+  .lang-select{
+    background:var(--surface);
+    border:1px solid var(--surface-line);
+    border-radius:10px;
+    padding:6px 10px;
+    color:var(--text);
+    font-size:13px;
+    font-family:'Inter',sans-serif;
+  }
+  .premium-note{
+    background:rgba(201,162,39,0.12);
+    border:1px solid var(--gold);
+    color:var(--text);
+    padding:12px 14px;
+    border-radius:10px;
+    font-size:13px;
+    line-height:1.5;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:12px;
+    flex-wrap:wrap;
+    margin:-4px 0 14px;
+  }
+  .premium-note .unlock-btn{
+    background:none;
+    border:1px solid var(--gold);
+    color:var(--gold-bright);
+    border-radius:8px;
+    padding:6px 12px;
+    font-size:12px;
+    font-weight:600;
+    font-family:'Inter',sans-serif;
+    cursor:pointer;
+    white-space:nowrap;
+  }
+  .premium-note .unlock-btn:hover{ background:rgba(201,162,39,0.18); }
+  .settings-item.clickable{ cursor:pointer; }
+  .settings-item.clickable:hover{ background:rgba(255,255,255,0.03); }
+  .settings-item .chevron{ color:var(--gold-bright); }
+  .settings-item.feature-row{
+    border-bottom:none;
+    border-left:3px solid var(--accent, var(--gold));
+    background:var(--surface);
+    border-radius:8px;
+    padding:12px 14px;
+    margin-bottom:8px;
+    color:var(--text);
+  }
+  .concordance-intro{
+    font-size:13px;
+    color:var(--text-muted);
+    margin:0 0 14px;
+    line-height:1.6;
+  }
+  .concordance-result{
+    display:flex;
+    gap:12px;
+    padding:0 0 14px;
+    margin-bottom:14px;
+    border-bottom:1px solid var(--surface-line);
+  }
+  .concordance-result:last-child{ border-bottom:none; margin-bottom:0; }
+  .concordance-result .num{
+    font-family:'Source Serif 4',serif;
+    font-weight:600;
+    color:var(--gold-bright);
+    font-size:14px;
+    min-width:20px;
+    flex-shrink:0;
+  }
+  .concordance-result .body{ flex:1; min-width:0; }
+  .concordance-result .ref{
+    font-family:'Source Serif 4',serif;
+    font-weight:600;
+    color:var(--gold-bright);
+    font-size:14px;
+    margin-bottom:4px;
+  }
+  .concordance-result .note{
+    font-size:13px;
+    color:var(--text);
+    line-height:1.5;
+  }
+  .linked-term{
+    color:var(--link-warm);
+    text-decoration:underline;
+    text-underline-offset:2px;
+    cursor:pointer;
+  }
+  .linked-term:hover{ color:var(--gold-bright); }
+  .related-topics{
+    margin-top:6px;
+    padding-top:14px;
+    border-top:1px solid var(--surface-line);
+  }
+  .related-topics-top{
+    margin:0 0 18px;
+    padding:12px 14px;
+    border:1px solid var(--paper-line);
+    border-radius:12px;
+    background:rgba(220,208,180,0.06);
+  }
+  .related-topics .label{
+    font-size:11px;
+    text-transform:uppercase;
+    letter-spacing:0.05em;
+    color:var(--text-muted);
+    margin-bottom:8px;
+  }
+  .related-topics .chips{
+    display:flex;
+    flex-wrap:wrap;
+    gap:8px;
+  }
+  .related-topics .chip{
+    background:var(--surface);
+    border:1px solid var(--paper-line);
+    color:var(--link-warm);
+    font-size:13px;
+    padding:6px 12px;
+    border-radius:16px;
+    cursor:pointer;
+  }
+  .related-topics .chip:hover{ border-color:var(--gold); color:var(--gold-bright); background:rgba(201,162,39,0.12); }
+  .quiz-question{
+    border:1px solid var(--surface-line);
+    border-radius:12px;
+    padding:14px 16px;
+    margin-bottom:12px;
+  }
+  .quiz-question .q-num{
+    font-family:'Source Serif 4',serif;
+    font-weight:600;
+    color:var(--gold-bright);
+    font-size:14px;
+    margin-bottom:6px;
+  }
+  .quiz-question .q-text{
+    font-size:14px;
+    color:var(--text);
+    line-height:1.5;
+    margin-bottom:8px;
+  }
+  .quiz-question .q-options{
+    list-style:none;
+    margin:0 0 8px;
+    padding:0;
+    display:flex;
+    flex-direction:column;
+    gap:4px;
+  }
+  .quiz-question .q-options li{
+    font-size:13px;
+    color:var(--text-muted);
+  }
+  .quiz-question .q-answer{
+    font-size:13px;
+    color:#3fbf72;
+    font-weight:600;
+  }
+  .transcript-box{
+    background:var(--surface);
+    border:1px solid var(--surface-line);
+    border-radius:10px;
+    padding:18px;
+    font-size:14px;
+    line-height:1.6;
+    color:var(--text-muted);
+    max-height:320px;
+    overflow-y:auto;
+    white-space:pre-wrap;
+  }
+  audio{ width:100%; }
+
+  /* ---- Settings modal ---- */
+  .modal-backdrop{
+    position:fixed;
+    inset:0;
+    background:rgba(10,13,20,0.6);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:20px;
+    z-index:10;
+  }
+  .modal{
+    background:var(--surface);
+    border:1px solid var(--surface-line);
+    border-radius:14px;
+    padding:28px;
+    width:100%;
+    max-width:420px;
+    max-height:88vh;
+    overflow-y:auto;
+  }
+  .modal h2{
+    font-family:'Source Serif 4',serif;
+    font-size:22px;
+    margin:0 0 6px;
+    font-weight:600;
+  }
+  .modal p.sub{
+    color:var(--text-muted);
+    font-size:13px;
+    margin:0 0 22px;
+    line-height:1.5;
+  }
+  .field{
+    margin-bottom:18px;
+  }
+  .field label{
+    display:block;
+    font-size:13px;
+    color:var(--text-muted);
+    margin-bottom:6px;
+  }
+  .field input{
+    width:100%;
+    background:var(--ink-deep);
+    border:1px solid var(--surface-line);
+    color:var(--text);
+    padding:11px 12px;
+    border-radius:8px;
+    font-family:'Inter',sans-serif;
+    font-size:14px;
+  }
+  .modal-actions{
+    display:flex;
+    gap:10px;
+    margin-top:8px;
+  }
+  .btn-primary{
+    flex:1;
+    background:var(--gold);
+    color:var(--ink-deep);
+    border:none;
+    padding:12px;
+    border-radius:8px;
+    font-family:'Inter',sans-serif;
+    font-weight:600;
+    font-size:14px;
+    cursor:pointer;
+  }
+  .btn-primary:hover{ background:var(--gold-bright); }
+  .btn-secondary{
+    background:none;
+    border:1px solid var(--surface-line);
+    color:var(--text-muted);
+    padding:12px 16px;
+    border-radius:8px;
+    font-family:'Inter',sans-serif;
+    font-size:14px;
+    cursor:pointer;
+  }
+  .btn-secondary:hover{ color:var(--text); border-color:var(--text-muted); }
+
+  .keys-note{
+    font-size:12px;
+    color:var(--text-muted);
+    line-height:1.5;
+    background:var(--ink-deep);
+    border-radius:8px;
+    padding:12px 14px;
+    margin-top:4px;
+  }
+  .keys-note a{ color:var(--gold-bright); }
+
+  .visually-hidden{
+    position:absolute;
+    width:1px;height:1px;
+    overflow:hidden;
+    clip:rect(0,0,0,0);
+  }
+
+  /* ---- Paywall ---- */
+  .paywall{
+    display:flex;
+    flex-direction:column;
+    gap:20px;
+  }
+  .paywall-hero{
+    text-align:center;
+    padding:8px 4px 4px;
+  }
+  .paywall-badge{
+    font-size:28px;
+    margin-bottom:6px;
+  }
+  .paywall-title{
+    font-family:'Source Serif 4',serif;
+    font-size:24px;
+    font-weight:600;
+    color:var(--gold-bright);
+    margin:0 0 6px;
+  }
+  .paywall-sub{
+    font-size:14px;
+    color:var(--text-muted);
+    line-height:1.5;
+    margin:0;
+  }
+  .founding-banner{
+    background:rgba(201,162,39,0.12);
+    border:1px solid var(--gold);
+    color:var(--gold-bright);
+    text-align:center;
+    padding:10px 14px;
+    border-radius:12px;
+    font-size:13px;
+    font-weight:600;
+    line-height:1.4;
+  }
+  .feature-list{
+    list-style:none;
+    margin:0;
+    padding:0;
+    display:flex;
+    flex-direction:column;
+    gap:14px;
+  }
+  .feature-list li{
+    display:flex;
+    align-items:flex-start;
+    gap:12px;
+    font-size:15px;
+    line-height:1.4;
+  }
+  .feature-list .check{
+    color:var(--gold-bright);
+    font-size:16px;
+    flex-shrink:0;
+    margin-top:1px;
+  }
+  .feature-list .soon, .settings-item .soon{
+    display:inline-block;
+    font-size:11px;
+    color:var(--text-muted);
+    border:1px solid var(--surface-line);
+    border-radius:10px;
+    padding:1px 8px;
+    margin-left:8px;
+  }
+  .price-tag{
+    text-align:center;
+    padding:6px 0 2px;
+  }
+  .price-tag .amount{
+    font-family:'Source Serif 4',serif;
+    font-size:36px;
+    font-weight:600;
+    color:var(--text);
+  }
+  .price-tag .amount span{
+    font-size:15px;
+    color:var(--text-muted);
+    font-weight:400;
+    margin-left:4px;
+  }
+  .price-tag .note{
+    font-size:12px;
+    color:var(--text-muted);
+    margin-top:4px;
+  }
+  .subscribe-btn{
+    background:radial-gradient(circle at 35% 30%, var(--gold-bright), var(--gold));
+    color:var(--ink-deep);
+    border:none;
+    font-family:'Inter',sans-serif;
+    font-weight:700;
+    font-size:16px;
+    padding:16px 20px;
+    border-radius:14px;
+    cursor:pointer;
+    transition:transform 0.15s ease;
+  }
+  .subscribe-btn:hover{ transform:scale(1.01); }
+  .subscribe-btn:active{ transform:scale(0.98); }
+  .subscribe-btn:disabled{ opacity:0.6; cursor:default; transform:none; }
+  .paywall-fine{
+    text-align:center;
+    font-size:12px;
+    color:var(--text-muted);
+    line-height:1.5;
+  }
+  .paid-banner{
+    background:var(--surface);
+    border:1px solid var(--gold);
+    border-radius:12px;
+    padding:14px 16px;
+    font-size:14px;
+    line-height:1.5;
+    margin-bottom:20px;
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-start;
+    gap:12px;
+  }
+  .paid-banner button{
+    background:none;
+    border:none;
+    color:var(--text-muted);
+    cursor:pointer;
+    font-size:16px;
+    line-height:1;
+  }
+  .code-box{
+    background:var(--surface);
+    border:1px dashed var(--gold);
+    border-radius:12px;
+    padding:14px 16px;
+    text-align:center;
+    margin-top:10px;
+  }
+  .code-box .code-label{
+    font-size:12px;
+    color:var(--text-muted);
+    margin-bottom:6px;
+  }
+  .code-box .code-value{
+    font-family:'Source Serif 4',serif;
+    font-size:19px;
+    font-weight:600;
+    letter-spacing:0.5px;
+    color:var(--gold-bright);
+    word-break:break-all;
+  }
+  .code-box .copy-code-btn{
+    display:block;
+    margin:10px auto 0;
+    background:none;
+    border:1px solid var(--gold);
+    color:var(--gold-bright);
+    border-radius:10px;
+    padding:6px 16px;
+    font-size:13px;
+    cursor:pointer;
+  }
+  .redeem-row{
+    display:flex;
+    gap:8px;
+    padding:14px 4px;
+    border-bottom:1px solid var(--surface-line);
+  }
+  .redeem-row input{
+    flex:1;
+    min-width:0;
+    background:var(--surface);
+    border:1px solid var(--surface-line);
+    border-radius:10px;
+    padding:10px 12px;
+    color:var(--text);
+    font-size:14px;
+    font-family:'Inter',sans-serif;
+  }
+  .redeem-row input::placeholder{ color:var(--text-muted); }
+  .redeem-row button{
+    background:var(--gold);
+    color:var(--ink-deep);
+    border:none;
+    border-radius:10px;
+    padding:0 16px;
+    font-weight:700;
+    font-family:'Inter',sans-serif;
+    cursor:pointer;
+    flex-shrink:0;
+  }
+  .redeem-row button:disabled{ opacity:0.6; cursor:default; }
+  .premium-badge{
+    font-size:12px;
+    padding:2px 10px;
+    border-radius:10px;
+  }
+  .premium-badge.unlocked{ color:#3fbf72; border:1px solid #3fbf72; }
+  .premium-badge.locked{ color:var(--text-muted); border:1px solid var(--surface-line); }
+  .family-code-item{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    padding:10px 0;
+    border-bottom:1px solid var(--surface-line);
+    flex-wrap:wrap;
+  }
+  .family-code-item:last-child{ border-bottom:none; }
+  .family-code-name{ font-weight:600; color:var(--text); }
+  .family-code-value{ font-family:monospace; font-size:12px; color:var(--text-muted); margin-top:2px; }
+  .family-code-right{ display:flex; align-items:center; gap:10px; }
+  .family-code-status{ font-size:12px; padding:2px 8px; border-radius:8px; white-space:nowrap; }
+  .family-code-status.active{ color:#3fbf72; border:1px solid #3fbf72; }
+  .family-code-status.revoked{ color:var(--text-muted); border:1px solid var(--surface-line); }
+  .promo-link{
+    background:none;
+    border:none;
+    color:var(--gold-bright);
+    font-family:'Inter',sans-serif;
+    font-size:13px;
+    text-decoration:underline;
+    cursor:pointer;
+    margin-top:10px;
+  }
+
+  /* ---- White-background pages: Library, Premium, Bible Concordance & Commentary ---- */
+  .page-white{
+    background:#FFFFFF;
+    color:#1C2331;
+    border-radius:16px;
+    padding:18px 16px 22px;
+    box-shadow:0 12px 30px rgba(0,0,0,0.16);
+  }
+  .page-white .result-meta .date{ color:#1C2331; }
+  .page-white .new-recording-btn{
+    border-color:#DADCE0;
+    color:#5B6472;
+  }
+  .page-white .new-recording-btn:hover{ border-color:#1a73e8; color:#1a73e8; }
+  .page-white .hint{ color:#5B6472; }
+  .page-white .library-search{
+    background:#F5F6F7;
+    border-color:#DADCE0;
+    color:#1C2331;
+  }
+  .page-white .library-search::placeholder{ color:#8A8F98; }
+  .page-white .library-search:focus{ border-color:#1a73e8; }
+  .page-white .error-box{
+    background:rgba(178,76,59,0.08);
+    border-color:rgba(178,76,59,0.35);
+    color:#8A3527;
+  }
+  .page-white .code-box{
+    background:#F5F6F7;
+    border-color:#1a73e8;
+  }
+  .page-white .code-box .code-label{ color:#5B6472; }
+  .page-white .code-box .code-value{ color:#1C2331; }
+  .page-white .code-box .copy-code-btn{
+    border-color:#1a73e8;
+    color:#1a73e8;
+  }
+
+  /* Library (past sermons) list items on white */
+  .page-white .library-item{
+    background:#F8F9FA;
+    border-color:#E3E5E8;
+  }
+  .page-white .library-item:hover{ border-color:#1a73e8; }
+  .page-white .library-item .lib-date{ color:#6B7280; }
+  .page-white .library-item .lib-takeaway{ color:#1C2331; }
+  .page-white .library-item .lib-delete{ color:#6B7280; }
+  .page-white .library-item .lib-delete:hover{ color:#B24C3B; }
+  .page-white .lib-actions button{ color:#6B7280; }
+  .page-white .lib-actions button:hover{ color:#1a73e8; }
+  .page-white .lib-actions button.danger:hover{ color:#B24C3B; }
+  .page-white .lib-menu-toggle{ border-color:#DADCE0; color:#6B7280; }
+  .page-white .lib-menu-toggle:hover{ border-color:#1a73e8; color:#1a73e8; }
+  .page-white .lib-menu-panel{
+    background:#FFFFFF;
+    border-color:#E3E5E8;
+    box-shadow:0 8px 24px rgba(0,0,0,0.12);
+  }
+  .page-white .lib-menu-panel button{ color:#1C2331; }
+  .page-white .lib-menu-panel button:hover{ background:#F5F6F7; color:#1a73e8; }
+  .page-white .lib-title{ color:#1C2331; }
+
+  /* Premium (paywall) page on white */
+  .paywall.page-white .paywall-title{ color:#1C2331; }
+  .paywall.page-white .paywall-sub{ color:#5B6472; }
+  .paywall.page-white .founding-banner{
+    background:rgba(26,115,232,0.08);
+    border-color:#1a73e8;
+    color:#1a4fa0;
+  }
+  .paywall.page-white .feature-list .check{ color:#1a73e8; }
+  .paywall.page-white .feature-list .soon{
+    color:#6B7280;
+    border-color:#DADCE0;
+  }
+  .paywall.page-white .price-tag .amount{ color:#1C2331; }
+  .paywall.page-white .price-tag .amount span{ color:#6B7280; }
+  .paywall.page-white .price-tag .note{ color:#6B7280; }
+  .paywall.page-white .paywall-fine{ color:#6B7280; }
+  .paywall.page-white .paid-banner{
+    background:#F5F6F7;
+    border-color:#1a73e8;
+    color:#1C2331;
+  }
+  .paywall.page-white .paid-banner button{ color:#6B7280; }
+
+  /* Bible Concordance & Bible Commentary research pages: white card + Google-style blue links */
+  .research-panel .concordance-intro{ color:#4B5563; }
+  .research-panel .concordance-result{ border-bottom-color:#E3E5E8; }
+  .research-panel .concordance-result .num{ color:#1C2331; }
+  .research-panel .concordance-result .ref{ color:#1C2331; }
+  .research-panel .concordance-result .note{ color:#374151; }
+  .research-panel .linked-term{
+    color:#1a73e8;
+    text-decoration:underline;
+    text-underline-offset:2px;
+  }
+  .research-panel .linked-term:hover{ color:#174EA6; }
+  .research-panel .related-topics{ border-top-color:#E3E5E8; }
+  .research-panel .related-topics-top{
+    border-color:#E3E5E8;
+    background:#F8F9FA;
+  }
+  .research-panel .related-topics .label{ color:#6B7280; }
+  .research-panel .related-topics .chip{
+    background:#F5F6F7;
+    border-color:#DADCE0;
+    color:#1a73e8;
+  }
+  .research-panel .related-topics .chip:hover{
+    border-color:#1a73e8;
+    color:#174EA6;
+    background:#EAF1FE;
+  }
+
+  /* LESSON PLAN GENERATOR */
+  .lesson-plan-form{ display:flex; flex-direction:column; gap:12px; margin-bottom:18px; }
+  .lesson-plan-field label{
+    display:block;
+    font-size:12px;
+    font-weight:600;
+    color:var(--text-muted);
+    margin-bottom:5px;
+  }
+  .lesson-plan-field input[type="text"],
+  .lesson-plan-field select{
+    width:100%;
+    background:var(--surface);
+    border:1px solid var(--surface-line);
+    border-radius:10px;
+    padding:10px 12px;
+    color:var(--text);
+    font-size:14px;
+    font-family:'Inter',sans-serif;
+  }
+  .lesson-plan-row2{ display:flex; gap:12px; }
+  .lesson-plan-row2 .lesson-plan-field{ flex:1; min-width:0; }
+  .lesson-plan-generate-btn{
+    background:var(--gold);
+    color:var(--ink-deep);
+    border:none;
+    border-radius:10px;
+    padding:12px 16px;
+    font-weight:700;
+    font-family:'Inter',sans-serif;
+    font-size:14px;
+    cursor:pointer;
+  }
+  .lesson-plan-generate-btn:disabled{ opacity:0.6; cursor:default; }
+  .lesson-plan-section{
+    padding:0 0 14px;
+    margin-bottom:14px;
+    border-bottom:1px solid var(--surface-line);
+  }
+  .lesson-plan-section:last-child{ border-bottom:none; margin-bottom:0; }
+  .lesson-plan-section .lp-title{
+    font-family:'Source Serif 4',serif;
+    font-weight:600;
+    color:var(--gold-bright);
+    font-size:14px;
+    margin-bottom:5px;
+  }
+  .lesson-plan-section .lp-body{
+    font-size:13px;
+    color:var(--text);
+    line-height:1.6;
+    white-space:pre-line;
+  }
+  .lesson-plan-section .lp-body ul{ margin:4px 0 4px 18px; padding:0; }
+  .lesson-plan-print-btn{
+    display:block;
+    margin:6px auto 0;
+    background:none;
+    border:1px solid var(--gold);
+    color:var(--gold-bright);
+    border-radius:10px;
+    padding:8px 18px;
+    font-size:13px;
+    cursor:pointer;
+  }
+  .page-white .lesson-plan-field input[type="text"],
+  .page-white .lesson-plan-field select{
+    background:#fff;
+    border:1px solid #DADCE0;
+    color:#1C2331;
+  }
+  .page-white .lesson-plan-section{ border-bottom-color:#E3E5E8; }
+  .page-white .lesson-plan-section .lp-title{ color:#1C2331; }
+  .page-white .lesson-plan-section .lp-body{ color:#374151; }
+  .page-white .lesson-plan-print-btn{
+    border-color:#1a73e8;
+    color:#1a73e8;
+  }
+
+  /* ---- ScanFixAll: home mode cards ---- */
+  .mode-cards{
+    display:flex;
+    flex-direction:column;
+    gap:16px;
+    margin-top:12px;
+  }
+  .mode-card{
+    display:flex;
+    align-items:center;
+    gap:16px;
+    background:var(--surface);
+    border:1px solid var(--surface-line);
+    border-radius:16px;
+    padding:22px 20px;
+    cursor:pointer;
+    text-align:left;
+    color:var(--text);
+    font-family:inherit;
+  }
+  .mode-card:active{ background:var(--surface-line); }
+  .mode-card.soon{ border:1.5px dashed var(--gold); background:transparent; }
+  .mode-card.soon .mode-icon{ opacity:.85; }
+  .soon-badge{ display:inline-block; margin-left:6px; padding:2px 8px; border-radius:999px; background:var(--gold); color:var(--ink-deep); font-family:'Inter',sans-serif; font-size:11px; font-weight:700; vertical-align:middle; letter-spacing:.3px; }
+  .mode-card .mode-icon{
+    font-size:34px;
+    line-height:1;
+    flex-shrink:0;
+    width:56px;
+    height:56px;
+    border-radius:14px;
+    background:var(--ink-deep);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
+  .mode-card .mode-title{
+    font-family:'Source Serif 4',serif;
+    font-size:18px;
+    font-weight:600;
+    margin-bottom:4px;
+  }
+  .mode-card .mode-sub{
+    font-size:13px;
+    color:var(--text-muted);
+    line-height:1.4;
+  }
+  .free-count-hint{
+    margin-top:18px;
+    font-size:12.5px;
+    color:var(--text-muted);
+    text-align:center;
+  }
+
+  /* ---- ScanFixAll: tool screens (Scan / Shrink) ---- */
+  .tool-stage{
+    display:flex;
+    flex-direction:column;
+    gap:14px;
+  }
+  .tool-upload-row{
+    display:flex;
+    gap:10px;
+    flex-wrap:wrap;
+  }
+  .tool-btn{
+    flex:1;
+    min-width:140px;
+    background:var(--surface);
+    border:1px solid var(--surface-line);
+    color:var(--text);
+    padding:14px 12px;
+    border-radius:10px;
+    font-size:14px;
+    font-weight:600;
+    cursor:pointer;
+    text-align:center;
+  }
+  .tool-btn.primary{
+    background:var(--gold);
+    color:var(--ink-deep);
+    border:none;
+  }
+  .tool-btn:disabled{ opacity:0.55; cursor:default; }
+  /* Fold-open sections on the scan page */
+  .fold{ margin-top:12px; border:1px solid #d9dde5; border-radius:12px; background:#f7f8fa; }
+  .fold > summary{ list-style:none; cursor:pointer; padding:14px 44px 14px 14px; position:relative; color:#1f2633; font-weight:700; font-size:15px; }
+  .fold > summary::-webkit-details-marker{ display:none; }
+  .fold > summary::after{ content:'▾'; position:absolute; right:16px; top:50%; transform:translateY(-50%) rotate(-90deg); transition:transform .15s; color:#8a93a3; font-size:16px; }
+  .fold[open] > summary::after{ transform:translateY(-50%) rotate(0deg); }
+  .fold > summary small{ display:block; font-weight:400; color:#6b7384; font-size:12.5px; margin-top:2px; }
+  .fold > .fold-body{ padding:0 12px 14px; }
+  .mini-help > summary{ list-style:none; }
+  .mini-help > summary::-webkit-details-marker{ display:none; }
+  .canvas-wrap{
+    background:var(--ink-deep);
+    border:1px solid var(--surface-line);
+    border-radius:14px;
+    padding:10px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    overflow:hidden;
+    min-height:220px;
+  }
+  .canvas-wrap canvas{
+    max-width:100%;
+    max-height:60vh;
+    border-radius:8px;
+  }
+  .adjust-row{
+    display:flex;
+    align-items:center;
+    gap:10px;
+  }
+  .adjust-row label{
+    font-size:13px;
+    color:var(--text-muted);
+    min-width:70px;
+  }
+  .adjust-row input[type="range"]{
+    flex:1;
+  }
+  .rotate-row{
+    display:flex;
+    gap:10px;
+  }
+  .rotate-row button{
+    flex:1;
+    background:var(--surface);
+    border:1px solid var(--surface-line);
+    color:var(--text);
+    padding:10px;
+    border-radius:10px;
+    font-size:18px;
+    cursor:pointer;
+  }
+  .enhance-toggle-row{
+    display:flex;
+    gap:10px;
+  }
+  .enhance-toggle-row button{
+    flex:1;
+    background:var(--surface);
+    border:1px solid var(--surface-line);
+    color:var(--text);
+    padding:10px;
+    border-radius:10px;
+    font-size:13px;
+    font-weight:600;
+    cursor:pointer;
+  }
+  .enhance-toggle-row button.active{
+    background:var(--gold);
+    color:var(--ink-deep);
+    border-color:var(--gold);
+  }
+  .size-preset-row{
+    display:flex;
+    gap:10px;
+  }
+  .size-preset-row button{
+    flex:1;
+    background:var(--surface);
+    border:1px solid var(--surface-line);
+    color:var(--text);
+    padding:14px 8px;
+    border-radius:10px;
+    font-size:13px;
+    font-weight:600;
+    cursor:pointer;
+    text-align:center;
+  }
+  .size-preset-row button .preset-sub{
+    display:block;
+    font-size:11px;
+    font-weight:400;
+    color:var(--text-muted);
+    margin-top:2px;
+  }
+  .size-preset-row button.active{
+    background:var(--gold);
+    color:var(--ink-deep);
+    border-color:var(--gold);
+  }
+  .size-preset-row button.active .preset-sub{ color:var(--ink-deep); opacity:0.75; }
+  .size-compare{
+    display:flex;
+    justify-content:space-between;
+    background:var(--surface);
+    color:var(--text);
+    border-radius:10px;
+    padding:12px 16px;
+    font-size:13px;
+  }
+  .size-compare .big{ font-size:16px; font-weight:700; }
+  .size-compare .arrow{ color:var(--text-muted); align-self:center; }
+  .retype-sheet{ background:#ffffff; border-radius:6px; box-shadow:0 2px 12px rgba(0,0,0,.25); margin-top:10px; overflow:hidden; }
+  .retype-sheet img{ display:block; width:calc(100% - 8%); margin:3% 4% 0; }
+  .retype-sheet .retype-paper{ box-shadow:none; margin-top:0; border-radius:0; }
+  .retype-paper{
+    background:#ffffff;
+    color:#111111;
+    font-family:'Tinos','Times New Roman',Times,serif;
+    font-size:13px;
+    line-height:1.4;
+    padding:9% 10%;
+    border-radius:6px;
+    box-shadow:0 2px 12px rgba(0,0,0,.25);
+    margin-top:10px;
+    aspect-ratio:1240/1754;
+    overflow:auto;
+    max-width:100%;
+    outline:none;
+  }
+  .retype-paper:focus{ box-shadow:0 0 0 3px var(--gold), 0 2px 12px rgba(0,0,0,.25); }
+  .retype-paper .rt-block{ margin:0 0 0.75em; white-space:pre-wrap; }
+  .retype-paper .rt-signer{ margin-top:3.2em; }
+  .plan-choices{ display:grid; grid-template-columns:1fr; gap:10px; margin:16px 0 6px; }
+  @media (min-width:560px){ .plan-choices{ grid-template-columns:1fr 1fr; } }
+  .plan-card{ display:flex; gap:10px; align-items:flex-start; border:2px solid #d9dde3; border-radius:12px; padding:14px; cursor:pointer; background:#fff; color:#1c2530; }
+  .plan-card:has(input:checked){ border-color:#C9A227; background:#fffaf0; }
+  .plan-card input{ width:20px; height:20px; margin-top:2px; accent-color:#C9A227; flex:none; }
+  .plan-body{ display:flex; flex-direction:column; gap:4px; }
+  .plan-name{ font-weight:700; font-size:16px; }
+  .plan-price{ font-weight:800; font-size:22px; }
+  .plan-price small{ font-weight:500; font-size:13px; color:#5b6876; }
+  .plan-desc{ font-size:13.5px; line-height:1.4; color:#3a4654; }
+  .terms-agree{ display:flex; gap:10px; align-items:flex-start; margin:14px 0 10px; font-size:14px; line-height:1.4; cursor:pointer; }
+  .terms-agree input{ width:20px; height:20px; flex:none; margin-top:1px; accent-color:#C9A227; }
+  .terms-agree a{ color:inherit; text-decoration:underline; font-weight:600; }
+  .subscribe-btn:disabled{ opacity:.5; cursor:not-allowed; }
+  .page-thumbs{
+    display:flex;
+    gap:8px;
+    flex-wrap:wrap;
+  }
+  .page-thumb{
+    position:relative;
+    width:64px;
+    height:64px;
+    border-radius:8px;
+    overflow:hidden;
+    border:1px solid var(--surface-line);
+  }
+  .page-thumb img{ width:100%; height:100%; object-fit:cover; display:block; }
+  .page-thumb .remove-thumb{
+    position:absolute;
+    top:2px; right:2px;
+    background:rgba(21,27,38,0.85);
+    color:#fff;
+    border:none;
+    border-radius:50%;
+    width:20px; height:20px;
+    font-size:12px;
+    line-height:1;
+    cursor:pointer;
+  }
+  .tool-hint{
+    font-size:12.5px;
+    color:var(--text-muted);
+    line-height:1.5;
+  }
+</style>
+</head>
+<body>
+<div class="shell">
+  <header>
+    <div class="brand">
+      ScanFixAll
+      <div class="brand-tagline">Scan, Clean &amp; Shrink</div>
+    </div>
+    <div class="header-actions">
+      <div class="icon-with-label">
+        <button class="gear-btn" id="homeBtn" aria-label="Home">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <path d="M3 11.5 12 4l9 7.5" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M5.5 10v9.5a1 1 0 0 0 1 1H17.5a1 1 0 0 0 1-1V10" stroke-linejoin="round"/>
+          </svg>
+        </button>
+        <span class="icon-label">Home</span>
+      </div>
+      <div class="icon-with-label">
+        <button class="gear-btn" id="paywallBtn" aria-label="Go Premium">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <path d="M12 2l2.6 6.2L21 9l-5 4.4L17.3 21 12 17.3 6.7 21 8 13.4 3 9l6.4-0.8z" stroke-linejoin="round"/>
+          </svg>
+        </button>
+        <span class="icon-label">Premium</span>
+      </div>
+      <div class="icon-with-label">
+        <button class="gear-btn" id="settingsBtn" aria-label="Settings">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <circle cx="12" cy="12" r="3"/>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15 1.65 1.65 0 0 0 3.17 14H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68 1.65 1.65 0 0 0 10 3.17V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.32 9c.14.31.22.65.22 1v.09c.66.12 1.19.64 1.31 1.3H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
+        <span class="icon-label">Settings</span>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <!-- HOME -->
+    <div class="home-view" id="homeView" style="display:flex; flex-direction:column; align-items:stretch; justify-content:flex-start; padding-top:20px;">
+      <div class="mode-cards">
+        <button class="mode-card" id="goScanBtn">
+          <span class="mode-icon">📄</span>
+          <span>
+            <span class="mode-title" style="display:block;">Scan a Document</span>
+            <span class="mode-sub">Straighten a crumpled or tilted photo, brighten it, and turn it into a clean page or PDF.</span>
+          </span>
+        </button>
+        <button class="mode-card" id="goShrinkBtn">
+          <span class="mode-icon">🤳</span>
+          <span>
+            <span class="mode-title" style="display:block;">Shrink a Photo</span>
+            <span class="mode-sub">Make any photo — a selfie, a picture, anything — small enough to send or post, instantly.</span>
+          </span>
+        </button>
+        <button class="mode-card" id="goSignBtn">
+          <span class="mode-icon">✍️</span>
+          <span>
+            <span class="mode-title" style="display:block;">Sign a Document</span>
+            <span class="mode-sub">Draw your signature and place it on a document photo — no printer needed.</span>
+          </span>
+        </button>
+        <button class="mode-card soon" id="goConvertBtn" aria-describedby="convertSoonNote">
+          <span class="mode-icon">📂</span>
+          <span>
+            <span class="mode-title" style="display:block;">Convert a File <span class="soon-badge">🔒 COMING SOON</span></span>
+            <span class="mode-sub">Turn a Word, PowerPoint or PDF file into a clean document — then retype, translate or summarize it. Premium.</span>
+          </span>
+        </button>
+        <div class="tool-hint" id="convertSoonNote" style="display:none; margin-top:-4px; padding:12px 14px; border-radius:12px; background:var(--surface); color:var(--text); line-height:1.5;"></div>
+      </div>
+      <div class="free-count-hint" id="freeCountHint"></div>
+    </div>
+
+    <!-- SCAN A DOCUMENT -->
+    <div class="library page-white" id="scanView" style="display:none;">
+      <div class="result-meta">
+        <span class="date">Scan a Document</span>
+        <button class="new-recording-btn" id="closeScanBtn">Close</button>
+      </div>
+
+      <div class="tool-stage">
+        <div class="tool-upload-row" id="scanUploadRow">
+          <button class="tool-btn primary" id="scanTakePhotoBtn">📷 Take Photo</button>
+          <button class="tool-btn" id="scanUploadBtn">⬆ Upload Photo</button>
+          <input type="file" id="scanFileInput" accept="image/*" capture="environment" class="visually-hidden">
+        </div>
+
+        <div class="error-box" id="scanError" style="display:none;"></div>
+
+        <div class="canvas-wrap" id="scanCanvasWrap" style="display:none;">
+          <canvas id="scanCanvas" style="touch-action:none;"></canvas>
+        </div>
+
+        <div id="scanCornerControls" style="display:none;">
+          <div class="tool-hint">Drag the 4 gold dots onto the 4 corners of the paper. Then tap <b>Flatten &amp; clean</b>.</div>
+          <div class="tool-upload-row" style="margin-top:10px;">
+            <button class="tool-btn primary" id="scanFlattenBtn">✅ Flatten &amp; clean</button>
+            <button class="tool-btn" id="scanWholePhotoBtn">Use whole photo</button>
+          </div>
+        </div>
+
+        <div id="scanEditControls" style="display:none;">
+          <details class="fold" id="foldFix">
+            <summary>🔧 Fix the photo<small>Clean paper · Black &amp; White · rotate · straighten · corners</small></summary>
+            <div class="fold-body">
+          <div class="tool-upload-row">
+            <button class="tool-btn" id="scanAdjustCornersBtn">↩ Adjust corners</button>
+          </div>
+          <div class="rotate-row" style="margin-top:10px;">
+            <button id="scanRotateLeftBtn">⟲ Rotate</button>
+            <button id="scanRotateRightBtn">⟳ Rotate</button>
+          </div>
+          <div class="adjust-row" style="margin-top:10px;">
+            <label>Straighten</label>
+            <input type="range" id="scanStraightenSlider" min="-15" max="15" step="0.5" value="0">
+          </div>
+          <div class="enhance-toggle-row" style="margin-top:10px;">
+            <button id="scanEnhanceBtn" class="active">✨ Clean paper</button>
+            <button id="scanBwBtn">⬛ Black &amp; White mode</button>
+          </div>
+            </div>
+          </details>
+          <details class="fold" id="foldRetype" open>
+            <summary>📝 Retype as a new typed page<small>Letters, class notes and charts — then translate or check grammar</small></summary>
+            <div class="fold-body">
+          <div class="tool-hint" style="margin-top:0; display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+            <b>This page is:</b>
+            <label style="display:flex; align-items:center; gap:4px; cursor:pointer;"><input type="radio" name="retypeKind" value="letter" checked style="width:18px;height:18px;"> 📄 Letter / document</label>
+            <label style="display:flex; align-items:center; gap:4px; cursor:pointer;"><input type="radio" name="retypeKind" value="notes" style="width:18px;height:18px;"> 📓 Class notes</label>
+          </div>
+          <div class="tool-upload-row" style="margin-top:6px;">
+            <button class="tool-btn" id="scanRetypeBtn">📝 Retype as new document ⭐ Premium</button>
+          </div>
+          <details class="tool-hint mini-help" style="margin-top:8px;">
+            <summary style="cursor:pointer; text-decoration:underline;">Which should I use — Clean or Retype?</summary>
+            <div style="margin-top:6px;">
+            <b>✨ Clean paper</b> (free): keeps the <i>original</i> page — letterhead, logo and handwritten signature stay — but faint creases or stains may still show.<br>
+            <b>📝 Retype</b> (<span id="retypePlanWord">Premium</span>): reads the text and prints it on a <i>brand-new</i> white page. Perfectly clean. You can keep the original letterhead/logo as a picture, and you sign it again.
+            </div>
+          </details>
+            </div>
+          </details>
+          <details class="fold" id="foldSave">
+            <summary>💾 Save · Share · Print<small>Image or PDF · add more pages · send · print</small></summary>
+            <div class="fold-body">
+          <div class="tool-hint" style="margin-top:0;">Got more pages? Add them before saving — they'll all go into one PDF.</div>
+          <div class="page-thumbs" id="scanPageThumbs" style="margin-top:10px;"></div>
+          <div class="tool-upload-row" style="margin-top:10px;">
+            <button class="tool-btn" id="scanAddPageBtn">➕ Add another page</button>
+          </div>
+          <div class="size-compare" style="margin-top:14px;">
+            <span>Estimated file size: <span class="big" id="scanSizeEstimate">—</span></span>
+          </div>
+          <div class="tool-upload-row" style="margin-top:10px;">
+            <button class="tool-btn primary" id="scanSaveImageBtn">⬇ Save as Image</button>
+            <button class="tool-btn primary" id="scanSavePdfBtn">⬇ Save as PDF</button>
+          </div>
+          <div class="tool-upload-row" style="margin-top:10px;">
+            <button class="tool-btn" id="scanShareBtn">📤 Share</button>
+            <button class="tool-btn" id="scanPrintBtn">🖨 Print</button>
+          </div>
+            </div>
+          </details>
+        </div>
+        <div id="retypePanel" style="display:none;">
+          <div class="tool-hint">Here's your page retyped fresh. <b>Tap any word to fix it.</b> The handwritten signature is left out — use <b>Sign this page</b> to sign it again.</div>
+          <div id="retypeUnsureBox" style="display:none; margin-top:10px; padding:12px 14px; border-radius:12px; background:#FFF4CC; color:#3A2E00; border:1.5px solid #E0BB3D; font-size:14.5px; line-height:1.5;">
+            <b>✏️ <span id="retypeUnsureCount"></span> the AI could not read clearly.</b><br>
+            They are marked <span style="background:#ffe08a; padding:0 4px; border-radius:3px;">[?]</span> in yellow. <b>Tap each yellow [?]</b>, delete it, and <b>type the correct word</b>.<br>
+            <span style="font-size:13px;">Please also check names, dates and numbers. The yellow color shows only on screen — it will <b>not</b> appear when you save, share or print.</span>
+          </div>
+          <label class="tool-hint" id="retypeLetterheadRow" style="display:none; margin-top:10px; gap:8px; align-items:center; cursor:pointer;">
+            <input type="checkbox" id="retypeKeepLetterhead" style="width:20px;height:20px;">
+            <span><b>Keep original letterhead / logo</b> — only if it is <i>your own</i> or your organization's. A small <i>"Retyped copy"</i> note is added at the bottom of the page.</span>
+          </label>
+          <div class="retype-sheet">
+            <img id="retypeLetterheadImg" alt="Original letterhead" style="display:none;">
+            <div class="retype-paper" id="retypePaper" contenteditable="true" spellcheck="false"></div>
+            <div id="retypeCopyNote" style="display:none; text-align:center; font:11px Arial,sans-serif; color:#888; padding:4px 0 8px; background:#fff;">Retyped copy — made with ScanFixAll. Not the original document.</div>
+          </div>
+          <div class="tool-hint" style="margin-top:6px;">Please only retype and re-sign your own documents.</div>
+          <details class="fold" id="foldExtras">
+            <summary>🌐 Translate · 🔊 Listen · ✏️ Grammar<small>23 languages · hear it read aloud · grammar suggestions</small></summary>
+            <div class="fold-body">
+          <div class="tool-upload-row" style="margin-top:0;">
+            <button class="tool-btn" id="retypeGrammarBtn">✏️ Suggest grammar fixes (optional)</button>
+          </div>
+          <div id="retypeGrammarBox" style="display:none; margin-top:10px;">
+            <div class="tool-hint" id="retypeGrammarIntro"></div>
+            <div id="retypeGrammarList"></div>
+            <div class="tool-upload-row" id="retypeGrammarAllRow" style="margin-top:8px; display:none;">
+              <button class="tool-btn" id="retypeGrammarAllBtn">✓ Accept all</button>
+              <button class="tool-btn" id="retypeGrammarCloseBtn">✗ Skip all</button>
+            </div>
+          </div>
+          <div class="tool-upload-row" style="margin-top:10px; align-items:stretch;">
+            <select id="retypeLang" class="tool-btn" style="flex:1; min-width:0;">
+              <option value="en">English</option>
+              <option value="fil">Filipino (Tagalog)</option>
+              <option value="ceb">Cebuano (Bisaya)</option>
+              <option value="ilo">Ilocano</option>
+              <option value="hil">Hiligaynon (Ilonggo)</option>
+              <option value="bik">Bikol</option>
+              <option value="war">Waray</option>
+              <option value="pam">Kapampangan</option>
+              <option value="pag">Pangasinan</option>
+              <option value="es">Spanish</option>
+              <option value="fr">French</option>
+              <option value="de">German</option>
+              <option value="it">Italian</option>
+              <option value="pt">Portuguese</option>
+              <option value="id">Indonesian</option>
+              <option value="ms">Malay</option>
+              <option value="vi">Vietnamese</option>
+              <option value="ja">Japanese</option>
+              <option value="zh">Chinese (Simplified)</option>
+              <option value="zh-TW">Chinese (Traditional)</option>
+              <option value="ko">Korean</option>
+              <option value="ar">Arabic</option>
+              <option value="hi">Hindi</option>
+            </select>
+            <button class="tool-btn" id="retypeTranslateBtn" style="flex:1;">🌐 Translate</button>
+          </div>
+          <div class="tool-hint" id="retypeTranslateNote" style="margin-top:6px;">Translating uses 1 Retype page. You can switch back to the original any time.</div>
+          <div class="tool-upload-row" id="retypeOriginalRow" style="margin-top:6px; display:none;">
+            <button class="tool-btn" id="retypeOriginalBtn">↩ Show original</button>
+          </div>
+          <div class="tool-upload-row" style="margin-top:12px;">
+            <button class="tool-btn" id="retypeListenBtn">🔊 Listen — AI voice</button>
+          </div>
+          <audio id="retypeAudio" controls style="display:none; width:100%; margin-top:8px;"></audio>
+          <div class="tool-hint" id="retypeListenNote" style="margin-top:6px;">Reads the page aloud — the original or the translation, whichever is showing. Uses 1 AI page. Playing it again is free.</div>
+            </div>
+          </details>
+          <div class="tool-upload-row" style="margin-top:10px;">
+            <button class="tool-btn primary" id="retypeSignBtn">✍️ Sign this page</button>
+          </div>
+          <details class="fold" id="foldRetypeSave" open>
+            <summary>💾 Save · Share · Print<small>Image or PDF · send · print</small></summary>
+            <div class="fold-body">
+          <div class="tool-upload-row" style="margin-top:0;">
+            <button class="tool-btn primary" id="retypeSaveImageBtn">⬇ Save as Image</button>
+            <button class="tool-btn primary" id="retypeSavePdfBtn">⬇ Save as PDF</button>
+          </div>
+          <div class="tool-upload-row" style="margin-top:10px;">
+            <button class="tool-btn" id="retypeShareBtn">📤 Share</button>
+            <button class="tool-btn" id="retypePrintBtn">🖨 Print</button>
+          </div>
+            </div>
+          </details>
+          <div class="tool-upload-row" style="margin-top:10px;">
+            <button class="tool-btn" id="retypeBackBtn">↩ Back to the scanned page</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SHRINK A PHOTO -->
+    <div class="library page-white" id="shrinkView" style="display:none;">
+      <div class="result-meta">
+        <span class="date">Shrink a Photo</span>
+        <button class="new-recording-btn" id="closeShrinkBtn">Close</button>
+      </div>
+
+      <div class="tool-stage">
+        <div class="tool-upload-row" id="shrinkUploadRow">
+          <button class="tool-btn primary" id="shrinkTakePhotoBtn">📷 Take Photo</button>
+          <button class="tool-btn" id="shrinkUploadBtn">⬆ Upload Photo</button>
+          <input type="file" id="shrinkFileInput" accept="image/*" capture="environment" class="visually-hidden">
+        </div>
+
+        <div class="error-box" id="shrinkError" style="display:none;"></div>
+
+        <div class="canvas-wrap" id="shrinkCanvasWrap" style="display:none;">
+          <canvas id="shrinkCanvas"></canvas>
+        </div>
+
+        <div id="shrinkEditControls" style="display:none;">
+          <div class="size-preset-row">
+            <button class="size-preset-btn" data-preset="small">Small<span class="preset-sub">Messenger/Chat</span></button>
+            <button class="size-preset-btn active" data-preset="medium">Medium<span class="preset-sub">Email/Social</span></button>
+            <button class="size-preset-btn" data-preset="large">Large<span class="preset-sub">Printing</span></button>
+          </div>
+          <div class="size-compare" style="margin-top:12px;">
+            <span>Original: <span class="big" id="shrinkOriginalSize">—</span></span>
+            <span class="arrow">→</span>
+            <span>New: <span class="big" id="shrinkNewSize">—</span></span>
+          </div>
+          <div class="tool-upload-row" style="margin-top:10px;">
+            <button class="tool-btn primary" id="shrinkSaveBtn">⬇ Download Shrunk Photo</button>
+          </div>
+          <div class="tool-upload-row" style="margin-top:10px;">
+            <button class="tool-btn" id="shrinkShareBtn">📤 Share</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SIGN A DOCUMENT -->
+    <div class="library page-white" id="signView" style="display:none;">
+      <div class="result-meta">
+        <span class="date">Sign a Document</span>
+        <button class="new-recording-btn" id="closeSignBtn">Close</button>
+      </div>
+
+      <div class="tool-stage">
+        <div class="tool-upload-row" id="signUploadRow">
+          <button class="tool-btn primary" id="signTakePhotoBtn">📷 Take Photo</button>
+          <button class="tool-btn" id="signUploadBtn">⬆ Upload Photo</button>
+          <input type="file" id="signFileInput" accept="image/*" capture="environment" class="visually-hidden">
+        </div>
+
+        <div class="error-box" id="signError" style="display:none;"></div>
+
+        <div class="canvas-wrap" id="signCanvasWrap" style="display:none;">
+          <div id="signStack" style="position:relative; display:inline-block; line-height:0;">
+            <canvas id="signCanvas"></canvas>
+            <canvas id="signOverlayCanvas" style="position:absolute; top:0; left:0; width:100%; height:100%; touch-action:none; cursor:grab;"></canvas>
+          </div>
+        </div>
+
+        <div id="signEditControls" style="display:none;">
+          <div class="tool-upload-row">
+            <button class="tool-btn primary" id="signOpenPadBtn">✍️ Add Signature</button>
+          </div>
+          <div id="signPlacementControls" style="display:none; margin-top:10px;">
+            <div class="adjust-row">
+              <label>Size</label>
+              <input type="range" id="signSizeSlider" min="10" max="60" step="1" value="32">
+            </div>
+            <div class="tool-hint">Drag the signature to where it should go, then tap "Place on Document."</div>
+            <div class="tool-upload-row" style="margin-top:10px;">
+              <button class="tool-btn" id="signRedoBtn">↺ Redraw Signature</button>
+              <button class="tool-btn primary" id="signPlaceBtn">✅ Place on Document</button>
+            </div>
+          </div>
+          <div class="tool-hint" id="signPlacedHint" style="margin-top:10px; display:none;"></div>
+          <div class="tool-upload-row" style="margin-top:14px;">
+            <button class="tool-btn primary" id="signSaveImageBtn">⬇ Save as Image</button>
+            <button class="tool-btn primary" id="signSavePdfBtn">⬇ Save as PDF</button>
+          </div>
+          <div class="tool-upload-row" style="margin-top:10px;">
+            <button class="tool-btn" id="signShareBtn">📤 Share</button>
+            <button class="tool-btn" id="signPrintBtn">🖨 Print</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SIGNATURE PAD (overlay modal) -->
+    <div id="sigPadModal" style="display:none; position:fixed; inset:0; background:rgba(21,27,38,0.92); z-index:50; align-items:center; justify-content:center; flex-direction:column; padding:20px;">
+      <div style="background:#fff; border-radius:14px; padding:14px; max-width:480px; width:100%;">
+        <div class="tool-hint" style="color:#2A2013; margin-bottom:8px;">Draw your signature below with your finger or mouse.</div>
+        <canvas id="sigPadCanvas" style="width:100%; touch-action:none; border:1px dashed #999; border-radius:8px; background:#fff;"></canvas>
+        <div class="tool-upload-row" style="margin-top:12px;">
+          <button class="tool-btn" id="sigPadClearBtn">Clear</button>
+          <button class="tool-btn" id="sigPadCancelBtn">Cancel</button>
+          <button class="tool-btn primary" id="sigPadUseBtn">Use This Signature</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- SETTINGS -->
+    <div class="library" id="settingsView" style="display:none;">
+      <div class="result-meta">
+        <span class="date">Settings</span>
+        <button class="new-recording-btn" id="closeSettingsBtn">Close</button>
+      </div>
+      <div class="settings-list">
+        <div class="settings-item">
+          <span id="premiumStatusLabel">⭐ Premium status</span>
+          <span class="premium-badge locked" id="premiumBadge">Not unlocked</span>
+        </div>
+        <div class="redeem-row">
+          <input type="text" id="redeemCodeInput" placeholder="Enter access code (e.g. SE-...)">
+          <button id="redeemCodeBtn">Unlock</button>
+        </div>
+        <div class="error-box" id="redeemError" style="display:none;"></div>
+        <div class="hint" id="myCodeHint" style="display:none;"></div>
+        <div id="familyCodesSection" style="display:none;">
+          <div class="hint" id="familyIntro">Create separate access codes for your students or family members — you can turn any of them off later.</div>
+          <div class="redeem-row">
+            <input type="text" id="familyLabelInput" placeholder="Student or family member's name (e.g. Juan)">
+            <button id="createFamilyCodeBtn">Create code</button>
+          </div>
+          <div class="error-box" id="familyCodeError" style="display:none;"></div>
+          <div id="familyCodesList"></div>
+        </div>
+      </div>
+      <div class="hint" id="redeemHint">Got an access code from a payment or from someone who shared it? Enter it above to unlock Premium on this device.</div>
+    </div>
+
+    <!-- PREMIUM / PAYWALL -->
+    <div class="paywall page-white" id="paywallView" style="display:none;">
+      <div class="result-meta">
+        <span class="date">ScanFixAll Premium</span>
+        <button class="new-recording-btn" id="closePaywallBtn">Close</button>
+      </div>
+
+      <div id="paidBanner" style="display:none;"></div>
+
+      <div class="paywall-hero">
+        <div class="paywall-badge">⭐</div>
+        <h2 class="paywall-title">Support ScanFixAll</h2>
+        <p class="paywall-sub">Help keep this tool running and growing.</p>
+      </div>
+
+      <div class="founding-banner">🎉 Founding Supporter Offer — be among the first to help build this tool.</div>
+
+      <ul class="feature-list">
+        <li><span class="check">✓</span> Unlimited scans, photo shrinks and signing — every day</li>
+        <li><span class="check">✓</span> No watermark on your scanned documents</li>
+        <li><span class="check">✓</span> Combine unlimited pages into one PDF</li>
+        <li><span class="check">✓</span> 📝 Retype, 🌐 Translate &amp; 🔊 Listen — 60 AI pages for each 30 days you pay</li>
+        <li><span class="check">✓</span> Share codes with family or students — each code works on one phone</li>
+      </ul>
+
+      <div class="plan-choices" role="radiogroup" aria-label="Choose a plan">
+        <label class="plan-card" for="planFamily">
+          <input type="radio" name="plan" id="planFamily" value="family" checked>
+          <span class="plan-body">
+            <span class="plan-name">👨‍👩‍👧 Family</span>
+            <span class="plan-price">₱250 <small>/ 30 days</small></span>
+            <span class="plan-desc">You + up to <b>5</b> family members. Everyone shares <b>60 AI pages</b>.</span>
+          </span>
+        </label>
+        <label class="plan-card" for="planClass">
+          <input type="radio" name="plan" id="planClass" value="class">
+          <span class="plan-body">
+            <span class="plan-name">🏫 Class</span>
+            <span class="plan-price">₱1,500 <small>/ 30 days</small></span>
+            <span class="plan-desc">Teacher + up to <b>50</b> students (one code each). The class shares <b>100 AI pages</b>.</span>
+          </span>
+        </label>
+      </div>
+
+      <div class="price-tag">
+        <div class="note">No auto-charge, no card stored. Pay once and get a code good for 30 days. Unused AI pages don't carry over — each new payment starts fresh.</div>
+      </div>
+
+      <label class="terms-agree" for="termsAgree">
+        <input type="checkbox" id="termsAgree">
+        <span>I have read and agree to the <a href="/terms.html" target="_blank" rel="noopener">Terms of Use</a>.</span>
+      </label>
+      <button class="subscribe-btn" id="subscribeBtn" disabled>Subscribe / Pay Now</button>
+      <div class="error-box" id="paywallError" style="display:none;"></div>
+
+           <p class="paywall-fine">Payments are processed securely by PayMongo. You'll be taken to their payment page and brought right back here.</p>
+           <p class="paywall-fine">After paying, your access code will show up right here — and you'll always be able to find it again under Settings → Premium status.</p>
+            <p class="paywall-fine">Didn't get your access code after paying? Email <a href="mailto:scanfixall@gmail.com" style="color:inherit;">scanfixall@gmail.com</a> and we'll sort it out.</p>
+    </div>
+  </main>
+</div>
+
+<div id="camModal" style="display:none;position:fixed;inset:0;z-index:9000;background:rgba(10,14,20,.92);align-items:center;justify-content:center;padding:16px;">
+  <div style="width:100%;max-width:640px;display:flex;flex-direction:column;gap:12px;">
+    <div style="color:#EDE6D6;font-weight:600;text-align:center;" id="camTitle">Camera</div>
+    <video id="camVideo" autoplay playsinline muted style="width:100%;max-height:65vh;background:#000;border-radius:12px;object-fit:contain;"></video>
+    <div class="tool-upload-row">
+      <button class="tool-btn primary" id="camSnapBtn">📸 Snap</button>
+      <button class="tool-btn" id="camSwitchBtn" style="display:none;">🔄 Switch camera</button>
+      <button class="tool-btn" id="camCancelBtn">Cancel</button>
+    </div>
+  </div>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script>
+(function(){
+  // ---- View elements & simple navigation ----
+  const homeView = document.getElementById('homeView');
+  const scanView = document.getElementById('scanView');
+  const shrinkView = document.getElementById('shrinkView');
+  const signView = document.getElementById('signView');
+  const settingsView = document.getElementById('settingsView');
+  const paywallView = document.getElementById('paywallView');
+
+  const homeBtn = document.getElementById('homeBtn');
+  const settingsBtn = document.getElementById('settingsBtn');
+  const closeSettingsBtn = document.getElementById('closeSettingsBtn');
+  const paywallBtn = document.getElementById('paywallBtn');
+  const closePaywallBtn = document.getElementById('closePaywallBtn');
+  const goScanBtn = document.getElementById('goScanBtn');
+  const goShrinkBtn = document.getElementById('goShrinkBtn');
+  const goSignBtn = document.getElementById('goSignBtn');
+  const closeScanBtn = document.getElementById('closeScanBtn');
+  const closeShrinkBtn = document.getElementById('closeShrinkBtn');
+  const closeSignBtn = document.getElementById('closeSignBtn');
+
+  const premiumBadge = document.getElementById('premiumBadge');
+  const redeemCodeInput = document.getElementById('redeemCodeInput');
+  const redeemCodeBtn = document.getElementById('redeemCodeBtn');
+  const redeemError = document.getElementById('redeemError');
+  const myCodeHint = document.getElementById('myCodeHint');
+  const familyCodesSection = document.getElementById('familyCodesSection');
+  const familyLabelInput = document.getElementById('familyLabelInput');
+  const familyIntro = document.getElementById('familyIntro');
+  const createFamilyCodeBtn = document.getElementById('createFamilyCodeBtn');
+  const familyCodeError = document.getElementById('familyCodeError');
+  const familyCodesList = document.getElementById('familyCodesList');
+  const subscribeBtn = document.getElementById('subscribeBtn');
+  const paywallError = document.getElementById('paywallError');
+  const paidBanner = document.getElementById('paidBanner');
+  const freeCountHint = document.getElementById('freeCountHint');
+
+  const VIEWS = {
+    home: homeView,
+    scan: scanView,
+    shrink: shrinkView,
+    sign: signView,
+    settings: settingsView,
+    paywall: paywallView
+  };
+  let currentView = 'home';
+
+  function showView(name){
+    Object.keys(VIEWS).forEach(k => { VIEWS[k].style.display = (k === name) ? '' : 'none'; });
+    if(name === 'home') VIEWS.home.style.display = 'flex';
+    currentView = name;
+    window.scrollTo(0,0);
+  }
+
+  homeBtn.addEventListener('click', () => showView('home'));
+  goScanBtn.addEventListener('click', () => showView('scan'));
+  goShrinkBtn.addEventListener('click', () => showView('shrink'));
+  goSignBtn.addEventListener('click', () => showView('sign'));
+  closeScanBtn.addEventListener('click', () => { resetScanTool(); showView('home'); });
+  closeShrinkBtn.addEventListener('click', () => { resetShrinkTool(); showView('home'); });
+  closeSignBtn.addEventListener('click', () => { resetSignTool(); showView('home'); });
+
+  let screenBeforeSettings = 'home';
+  settingsBtn.addEventListener('click', () => {
+    screenBeforeSettings = currentView === 'settings' ? screenBeforeSettings : currentView;
+    showView('settings');
+  });
+  closeSettingsBtn.addEventListener('click', () => showView(screenBeforeSettings));
+
+  // ---- Free-tier daily usage limit ----
+  // Everything runs on-device, so there's no server cost to worry about —
+  // this cap exists purely to make Premium worth unlocking. Resets every
+  // calendar day (device's local time).
+  const FREE_DAILY_LIMIT = 3;
+  const USAGE_KEY = 'sf_daily_usage';
+
+  // ================= FREE MONTH =================
+  // Until this moment (Philippine time) ScanFixAll is completely free for
+  // everyone: no prices shown, no daily limit, no watermark, multi-page PDFs.
+  // Retype (which costs real AI money per page) still needs a free access code.
+  // On November 1 the app goes back to normal automatically — no upload needed.
+  // To end or extend the free month, change only this date.
+  const FREE_UNTIL = new Date('2026-11-01T00:00:00+08:00').getTime();
+  function isFreeMonth(){ return Date.now() < FREE_UNTIL; }
+
+  function isPremiumActive(){
+    if(isFreeMonth()) return true;
+    return localStorage.getItem('sf_premium_unlocked') === 'true';
+  }
+
+  function getUsageToday(){
+    const today = new Date().toDateString();
+    let raw = null;
+    try{ raw = JSON.parse(localStorage.getItem(USAGE_KEY) || 'null'); }catch(e){}
+    if(!raw || raw.date !== today) return { date: today, count: 0 };
+    return raw;
+  }
+
+  function bumpUsage(){
+    const usage = getUsageToday();
+    usage.count += 1;
+    localStorage.setItem(USAGE_KEY, JSON.stringify(usage));
+    updateFreeCountHint();
+  }
+
+  function canUseToolNow(){
+    if(isPremiumActive()) return true;
+    return getUsageToday().count < FREE_DAILY_LIMIT;
+  }
+
+  function updateFreeCountHint(){
+    if(isFreeMonth()){
+      freeCountHint.textContent = '🎉 ScanFixAll is free to use during October 2026 — no limits, no watermark.';
+      return;
+    }
+    if(isPremiumActive()){
+      freeCountHint.textContent = '⭐ Premium — unlimited scans and shrinks, no watermark.';
+      return;
+    }
+    const usage = getUsageToday();
+    const left = Math.max(0, FREE_DAILY_LIMIT - usage.count);
+    freeCountHint.textContent = left > 0
+      ? ('Free plan: ' + left + ' of ' + FREE_DAILY_LIMIT + ' scans/shrinks left today.')
+      : 'Free plan: you\'ve used today\'s 3 free scans/shrinks — unlock Premium for unlimited.';
+  }
+
+  function blockIfOutOfFreeUses(errorBoxEl){
+    if(canUseToolNow()) return false;
+    errorBoxEl.textContent = 'You\'ve used today\'s 3 free scans/shrinks. Unlock Premium for unlimited use — tap the ⭐ Premium tab above.';
+    errorBoxEl.style.display = 'block';
+    return true;
+  }
+
+  function formatBytes(bytes){
+    if(bytes < 1024) return bytes + ' B';
+    if(bytes < 1024*1024) return (bytes/1024).toFixed(0) + ' KB';
+    return (bytes/(1024*1024)).toFixed(2) + ' MB';
+  }
+
+  function dataUrlSizeBytes(dataUrl){
+    const base64 = dataUrl.split(',')[1] || '';
+    return Math.round(base64.length * 0.75);
+  }
+
+  // Explains in plain words why a file couldn't be opened as a picture.
+  function photoErrorMessage(file){
+    const name = (file && file.name) || 'that file';
+    const ext = (name.split('.').pop() || '').toLowerCase();
+    if(ext === 'pdf') return '"' + name + '" is a PDF, not a photo. Please choose a JPG or PNG picture.';
+    if(ext === 'heic' || ext === 'heif') return '"' + name + '" is an iPhone photo (HEIC), which this browser can\'t open. Please choose a JPG or PNG, or set the iPhone camera to "Most Compatible".';
+    if(ext === 'tif' || ext === 'tiff') return '"' + name + '" is a TIFF scan, which this browser can\'t open. Please save it as JPG or PNG first.';
+    if(['doc','docx','xls','xlsx','ppt','pptx','txt'].includes(ext)) return '"' + name + '" is a document, not a photo. Please choose a JPG or PNG picture.';
+    if(file && file.size === 0) return '"' + name + '" is empty. It may not have finished downloading. Please try another one.';
+    return 'Could not open "' + name + '" as a picture. Please choose a JPG or PNG photo.';
+  }
+
+  function loadImageFromFile(file){
+    // Uses a lightweight object URL instead of a big text copy of the photo,
+    // so large phone photos don't run the browser out of memory.
+    return new Promise((resolve, reject) => {
+      const url = URL.createObjectURL(file);
+      const img = new Image();
+      img.onload = () => { URL.revokeObjectURL(url); resolve({ img, originalBytes: file.size }); };
+      img.onerror = () => { URL.revokeObjectURL(url); reject(new Error(photoErrorMessage(file))); };
+      img.src = url;
+    });
+  }
+
+  // ---- Small status message at the bottom of the screen ----
+  const sfaToast = document.createElement('div');
+  sfaToast.setAttribute('role','status');
+  sfaToast.style.cssText = 'position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:#1c2530;color:#fff;padding:12px 18px;border-radius:12px;font-size:15px;font-weight:600;box-shadow:0 4px 16px rgba(0,0,0,.3);z-index:9999;max-width:90vw;text-align:center;display:none;';
+  document.body.appendChild(sfaToast);
+  let sfaToastTimer = null;
+  function showStatus(msg, hideAfterMs){
+    clearTimeout(sfaToastTimer);
+    sfaToast.textContent = msg;
+    sfaToast.style.display = 'block';
+    if(hideAfterMs) sfaToastTimer = setTimeout(() => { sfaToast.style.display = 'none'; }, hideAfterMs);
+  }
+
+  // ---- In-page camera (for laptops, whose browsers ignore "use the camera") ----
+  const camModal = document.getElementById('camModal');
+  const camVideo = document.getElementById('camVideo');
+  const camSnapBtn = document.getElementById('camSnapBtn');
+  const camSwitchBtn = document.getElementById('camSwitchBtn');
+  const camCancelBtn = document.getElementById('camCancelBtn');
+  const camTitle = document.getElementById('camTitle');
+  let camStream = null, camDevices = [], camDeviceIdx = 0, camOnPhoto = null;
+
+  // Phones and tablets have a real camera app that the file picker opens directly —
+  // it focuses better and takes sharper photos, so they keep using it.
+  const isTouchDevice = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
+
+  function stopCamera(){
+    if(camStream){ camStream.getTracks().forEach(t => t.stop()); camStream = null; }
+    camVideo.srcObject = null;
+    camModal.style.display = 'none';
+  }
+  async function startCamera(deviceId){
+    if(camStream){ camStream.getTracks().forEach(t => t.stop()); camStream = null; }
+    const video = deviceId ? { deviceId: { exact: deviceId } } : { facingMode: 'environment' };
+    video.width = { ideal: 1920 }; video.height = { ideal: 1080 };
+    camStream = await navigator.mediaDevices.getUserMedia({ video, audio: false });
+    camVideo.srcObject = camStream;
+    try{
+      camDevices = (await navigator.mediaDevices.enumerateDevices()).filter(d => d.kind === 'videoinput');
+    }catch(e){ camDevices = []; }
+    camSwitchBtn.style.display = camDevices.length > 1 ? '' : 'none';
+  }
+  // Opens the camera window; calls onPhoto(file) after Snap. Returns false if no camera could be opened.
+  async function openCameraWindow(title, onPhoto){
+    if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return false;
+    camOnPhoto = onPhoto;
+    camTitle.textContent = title;
+    camModal.style.display = 'flex';
+    try{
+      await startCamera(null);
+      return true;
+    }catch(err){
+      stopCamera();
+      const denied = err && (err.name === 'NotAllowedError' || err.name === 'SecurityError');
+      showStatus(denied
+        ? 'Camera is blocked. Click the camera icon in the address bar to allow it — or use Upload Photo.'
+        : 'No camera was found on this device. Please use Upload Photo instead.', 6000);
+      return true;   // handled (message shown); don't also open the file window
+    }
+  }
+  camSwitchBtn.addEventListener('click', async () => {
+    if(camDevices.length < 2) return;
+    camDeviceIdx = (camDeviceIdx + 1) % camDevices.length;
+    try{ await startCamera(camDevices[camDeviceIdx].deviceId); }catch(e){ showStatus('Could not switch camera.', 3000); }
+  });
+  camCancelBtn.addEventListener('click', stopCamera);
+  camSnapBtn.addEventListener('click', () => {
+    if(!camStream || !camVideo.videoWidth){ showStatus('The camera is still starting — try again in a moment.', 2500); return; }
+    const c = document.createElement('canvas');
+    c.width = camVideo.videoWidth; c.height = camVideo.videoHeight;
+    c.getContext('2d').drawImage(camVideo, 0, 0);
+    const handler = camOnPhoto;
+    stopCamera();
+    c.toBlob(blob => {
+      if(blob && handler) handler(new File([blob], 'camera-' + Date.now() + '.jpg', { type: 'image/jpeg' }));
+    }, 'image/jpeg', 0.92);
+  });
+
+  // "Take Photo": phone camera app on phones, the in-page camera window on laptops.
+  function takePhoto(inputEl, handler, resultWrapEl, errorEl, title){
+    if(isTouchDevice){
+      inputEl.setAttribute('capture','environment');
+      inputEl.click();
+      return;
+    }
+    openCameraWindow(title, (file) => runPickedFile(file, handler, resultWrapEl, errorEl)).then(ok => {
+      if(!ok){ inputEl.removeAttribute('capture'); inputEl.click(); }   // very old browser: fall back to picking a file
+    });
+  }
+
+  // Runs when a photo is picked: shows "Opening…", loads it, scrolls to it,
+  // then clears the picker so the same photo can be chosen again.
+  async function onPhotoPicked(inputEl, handler, resultWrapEl, errorEl){
+    const file = inputEl.files && inputEl.files[0];
+    if(!file) return;
+    try{
+      await runPickedFile(file, handler, resultWrapEl, errorEl);
+    }finally{
+      inputEl.value = '';
+    }
+  }
+  async function runPickedFile(file, handler, resultWrapEl, errorEl){
+    showStatus('Opening your photo…');
+    await handler(file);
+    if(errorEl && errorEl.style.display === 'block'){
+      showStatus(errorEl.textContent, 5000);
+      errorEl.scrollIntoView({ behavior:'smooth', block:'center' });
+      return;
+    }
+    showStatus('Photo ready ✓', 2000);
+    if(resultWrapEl) resultWrapEl.scrollIntoView({ behavior:'smooth', block:'start' });
+  }
+
+  // =========================================================
+  // SCAN A DOCUMENT
+  // =========================================================
+  const scanFileInput = document.getElementById('scanFileInput');
+  const scanTakePhotoBtn = document.getElementById('scanTakePhotoBtn');
+  const scanUploadBtn = document.getElementById('scanUploadBtn');
+  const scanCanvasWrap = document.getElementById('scanCanvasWrap');
+  const scanCanvas = document.getElementById('scanCanvas');
+  const scanEditControls = document.getElementById('scanEditControls');
+  const scanRotateLeftBtn = document.getElementById('scanRotateLeftBtn');
+  const scanRotateRightBtn = document.getElementById('scanRotateRightBtn');
+  const scanStraightenSlider = document.getElementById('scanStraightenSlider');
+  const scanEnhanceBtn = document.getElementById('scanEnhanceBtn');
+  const scanBwBtn = document.getElementById('scanBwBtn');
+  const scanAddPageBtn = document.getElementById('scanAddPageBtn');
+  const scanPageThumbs = document.getElementById('scanPageThumbs');
+  const scanSizeEstimate = document.getElementById('scanSizeEstimate');
+  const scanSaveImageBtn = document.getElementById('scanSaveImageBtn');
+  const scanSavePdfBtn = document.getElementById('scanSavePdfBtn');
+  const scanError = document.getElementById('scanError');
+
+  const scanCornerControls = document.getElementById('scanCornerControls');
+  const scanFlattenBtn = document.getElementById('scanFlattenBtn');
+  const scanWholePhotoBtn = document.getElementById('scanWholePhotoBtn');
+  const scanAdjustCornersBtn = document.getElementById('scanAdjustCornersBtn');
+
+  let scanCurrentImg = null;   // the photo currently being edited (null = none)
+  let scanSrcCanvas = null;    // that photo, at a working size, used for corners + flattening
+  let scanCorners = null;      // [topLeft, topRight, bottomRight, bottomLeft] in scanSrcCanvas pixels
+  let scanMode = 'corners';    // 'corners' = placing the dots, 'result' = flattened page
+  let scanFlatCanvas = null;   // the flattened (straightened + cropped) page
+  let scanCleanCache = {};     // cleaned versions of scanFlatCanvas, keyed by B&W on/off
+  let scanBaseRotation = 0;    // 0/90/180/270 from the rotate buttons (applied to the result)
+  let scanFineAngle = 0;       // -15..15 from the straighten slider
+  let scanEnhanceOn = true;    // "Clean paper"
+  let scanBwOn = false;
+  let scanPages = [];          // finished page data URLs (JPEG), one per page
+  let scanDragIdx = -1;
+
+  function scanCtx(){ return scanCanvas.getContext('2d'); }
+
+  // ---------- 1. Find the paper's 4 corners automatically ----------
+  // Shrinks the photo, finds the biggest bright area (the paper), and takes
+  // its outermost points as the corners. The user can drag them afterwards.
+  function detectPaperCorners(src){
+    const W = src.width, H = src.height;
+    const s = Math.min(1, 360 / Math.max(W, H));
+    const w = Math.max(8, Math.round(W * s)), h = Math.max(8, Math.round(H * s));
+    const c = document.createElement('canvas'); c.width = w; c.height = h;
+    const cx = c.getContext('2d'); cx.drawImage(src, 0, 0, w, h);
+    const d = cx.getImageData(0, 0, w, h).data;
+    const gray = new Uint8Array(w * h);
+    const hist = new Array(256).fill(0);
+    for(let i = 0; i < w * h; i++){
+      const g = (d[i*4] * 0.299 + d[i*4+1] * 0.587 + d[i*4+2] * 0.114) | 0;
+      gray[i] = g; hist[g]++;
+    }
+    // Otsu threshold: best split between "paper" and "background" brightness.
+    let sum = 0; for(let i = 0; i < 256; i++) sum += i * hist[i];
+    let sumB = 0, wB = 0, best = 0, thr = 128;
+    for(let t = 0; t < 256; t++){
+      wB += hist[t]; if(!wB) continue;
+      const wF = w * h - wB; if(!wF) break;
+      sumB += t * hist[t];
+      const mB = sumB / wB, mF = (sum - sumB) / wF;
+      const between = wB * wF * (mB - mF) * (mB - mF);
+      if(between > best){ best = between; thr = t; }
+    }
+    // Largest connected bright area.
+    const label = new Int32Array(w * h).fill(-1);
+    let bestId = -1, bestSize = 0, id = 0;
+    const stack = [];
+    for(let start = 0; start < w * h; start++){
+      if(gray[start] <= thr || label[start] !== -1) continue;
+      let size = 0; stack.push(start); label[start] = id;
+      while(stack.length){
+        const p = stack.pop(); size++;
+        const x = p % w, y = (p / w) | 0;
+        const nb = [x > 0 ? p-1 : -1, x < w-1 ? p+1 : -1, y > 0 ? p-w : -1, y < h-1 ? p+w : -1];
+        for(const q of nb){ if(q >= 0 && label[q] === -1 && gray[q] > thr){ label[q] = id; stack.push(q); } }
+      }
+      if(size > bestSize){ bestSize = size; bestId = id; }
+      id++;
+    }
+    const inset = (f) => [
+      {x: W*f, y: H*f}, {x: W*(1-f), y: H*f}, {x: W*(1-f), y: H*(1-f)}, {x: W*f, y: H*(1-f)}
+    ];
+    if(bestId < 0 || bestSize < w * h * 0.12) return inset(0.04);
+    let tl = null, tr = null, br = null, bl = null;
+    let tlV = Infinity, brV = -Infinity, trV = -Infinity, blV = Infinity;
+    for(let p = 0; p < w * h; p++){
+      if(label[p] !== bestId) continue;
+      const x = p % w, y = (p / w) | 0;
+      if(x + y < tlV){ tlV = x + y; tl = {x, y}; }
+      if(x + y > brV){ brV = x + y; br = {x, y}; }
+      if(x - y > trV){ trV = x - y; tr = {x, y}; }
+      if(x - y < blV){ blV = x - y; bl = {x, y}; }
+    }
+    // If the "paper" fills basically the whole photo, keep a small margin.
+    if(bestSize > w * h * 0.97) return inset(0.02);
+    return [tl, tr, br, bl].map(p => ({ x: (p.x + 0.5) / s, y: (p.y + 0.5) / s }));
+  }
+
+  // ---------- 2. Flatten: stretch the 4-corner shape into a straight rectangle ----------
+  function solveLinear(A, b){
+    const n = b.length;
+    for(let i = 0; i < n; i++){
+      let piv = i;
+      for(let r = i + 1; r < n; r++) if(Math.abs(A[r][i]) > Math.abs(A[piv][i])) piv = r;
+      [A[i], A[piv]] = [A[piv], A[i]]; [b[i], b[piv]] = [b[piv], b[i]];
+      for(let r = i + 1; r < n; r++){
+        const f = A[r][i] / A[i][i];
+        for(let c = i; c < n; c++) A[r][c] -= f * A[i][c];
+        b[r] -= f * b[i];
+      }
+    }
+    const x = new Array(n);
+    for(let i = n - 1; i >= 0; i--){
+      let s = b[i];
+      for(let c = i + 1; c < n; c++) s -= A[i][c] * x[c];
+      x[i] = s / A[i][i];
+    }
+    return x;
+  }
+  // Maps a point in the flat output back to where it came from in the photo.
+  function homography(fromPts, toPts){
+    const A = [], b = [];
+    for(let i = 0; i < 4; i++){
+      const {x, y} = fromPts[i], {x: u, y: v} = toPts[i];
+      A.push([x, y, 1, 0, 0, 0, -u*x, -u*y]); b.push(u);
+      A.push([0, 0, 0, x, y, 1, -v*x, -v*y]); b.push(v);
+    }
+    const h = solveLinear(A, b);
+    return [h[0], h[1], h[2], h[3], h[4], h[5], h[6], h[7], 1];
+  }
+  function flattenPage(src, corners){
+    const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
+    const [tl, tr, br, bl] = corners;
+    let outW = Math.max(dist(tl, tr), dist(bl, br));
+    let outH = Math.max(dist(tl, bl), dist(tr, br));
+    const cap = Math.min(1, 1800 / Math.max(outW, outH));
+    outW = Math.max(16, Math.round(outW * cap)); outH = Math.max(16, Math.round(outH * cap));
+    const H = homography(
+      [{x:0,y:0}, {x:outW,y:0}, {x:outW,y:outH}, {x:0,y:outH}],
+      [tl, tr, br, bl]
+    );
+    const sw = src.width, sh = src.height;
+    const sd = src.getContext('2d').getImageData(0, 0, sw, sh).data;
+    const out = document.createElement('canvas'); out.width = outW; out.height = outH;
+    const octx = out.getContext('2d');
+    const od = octx.createImageData(outW, outH);
+    const o = od.data;
+    for(let y = 0; y < outH; y++){
+      for(let x = 0; x < outW; x++){
+        const X = x + 0.5, Y = y + 0.5;
+        const den = H[6]*X + H[7]*Y + 1;
+        let u = (H[0]*X + H[1]*Y + H[2]) / den - 0.5;
+        let v = (H[3]*X + H[4]*Y + H[5]) / den - 0.5;
+        u = Math.max(0, Math.min(sw - 1.001, u)); v = Math.max(0, Math.min(sh - 1.001, v));
+        const x0 = u | 0, y0 = v | 0, fx = u - x0, fy = v - y0;
+        const i00 = (y0*sw + x0) * 4, i10 = i00 + 4, i01 = i00 + sw*4, i11 = i01 + 4;
+        const k = (y*outW + x) * 4;
+        for(let ch = 0; ch < 3; ch++){
+          const top = sd[i00+ch] + (sd[i10+ch] - sd[i00+ch]) * fx;
+          const bot = sd[i01+ch] + (sd[i11+ch] - sd[i01+ch]) * fx;
+          o[k+ch] = top + (bot - top) * fy;
+        }
+        o[k+3] = 255;
+      }
+    }
+    octx.putImageData(od, 0, 0);
+    return out;
+  }
+
+  // ---------- 3. Clean paper: even out shadows and wrinkles, whiten the page ----------
+  // Estimates how bright the bare paper is at every spot (ignoring the thin
+  // dark text), then divides by it — so shadows and wrinkle shading become
+  // plain white while the text stays dark.
+  function cleanPaper(flat, bw){
+    const w = flat.width, h = flat.height;
+    // Fine enough to follow wrinkle shadows, coarse enough to skip over letters.
+    const bs = Math.min(1, 160 / Math.max(w, h));
+    const sw = Math.max(4, Math.round(w * bs)), sh = Math.max(4, Math.round(h * bs));
+    const small = document.createElement('canvas'); small.width = sw; small.height = sh;
+    const sctx = small.getContext('2d');
+    sctx.imageSmoothingQuality = 'high';
+    sctx.drawImage(flat, 0, 0, sw, sh);
+    let bg = sctx.getImageData(0, 0, sw, sh);
+    const pass = (data, fn, r) => {
+      const src = new Uint8ClampedArray(data.data), dst = data.data;
+      for(let y = 0; y < sh; y++) for(let x = 0; x < sw; x++){
+        for(let ch = 0; ch < 3; ch++){
+          let acc = fn === 'max' ? 0 : 0, n = 0;
+          for(let dy = -r; dy <= r; dy++) for(let dx = -r; dx <= r; dx++){
+            const xx = Math.min(sw-1, Math.max(0, x+dx)), yy = Math.min(sh-1, Math.max(0, y+dy));
+            const val = src[(yy*sw + xx)*4 + ch];
+            if(fn === 'max'){ if(val > acc) acc = val; } else { acc += val; n++; }
+          }
+          dst[(y*sw + x)*4 + ch] = fn === 'max' ? acc : acc / n;
+        }
+      }
+    };
+    pass(bg, 'max', 2);   // remove the text, keep the paper
+    pass(bg, 'mean', 1);  // smooth it
+    sctx.putImageData(bg, 0, 0);
+    const bgFull = document.createElement('canvas'); bgFull.width = w; bgFull.height = h;
+    const bctx = bgFull.getContext('2d');
+    bctx.imageSmoothingQuality = 'high';
+    bctx.drawImage(small, 0, 0, w, h);
+    const bd = bctx.getImageData(0, 0, w, h).data;
+
+    const out = document.createElement('canvas'); out.width = w; out.height = h;
+    const octx = out.getContext('2d');
+    const fd = flat.getContext('2d').getImageData(0, 0, w, h);
+    const d = fd.data;
+    const strength = bw ? 1.9 : 1.5;
+    for(let i = 0; i < d.length; i += 4){
+      if(bw){
+        const g = d[i]*0.299 + d[i+1]*0.587 + d[i+2]*0.114;
+        const bgv = Math.max(1, bd[i]*0.299 + bd[i+1]*0.587 + bd[i+2]*0.114);
+        let v = Math.min(255, g * 255 / bgv);
+        v = 255 - (255 - v) * strength;
+        if(v > 232) v = 255;
+        d[i] = d[i+1] = d[i+2] = v;
+      } else {
+        let allWhite = true;
+        const vals = [0,0,0];
+        for(let ch = 0; ch < 3; ch++){
+          let v = Math.min(255, d[i+ch] * 255 / Math.max(1, bd[i+ch]));
+          v = 255 - (255 - v) * strength;
+          vals[ch] = v;
+          if(v <= 236) allWhite = false;
+        }
+        d[i] = allWhite ? 255 : vals[0];
+        d[i+1] = allWhite ? 255 : vals[1];
+        d[i+2] = allWhite ? 255 : vals[2];
+      }
+    }
+    octx.putImageData(fd, 0, 0);
+    return out;
+  }
+
+  // The finished page before rotation: flattened, then cleaned or grayscale as chosen.
+  function processedPage(){
+    if(!scanFlatCanvas) return null;
+    if(scanEnhanceOn){
+      const key = scanBwOn ? 'bw' : 'color';
+      if(!scanCleanCache[key]) scanCleanCache[key] = cleanPaper(scanFlatCanvas, scanBwOn);
+      return scanCleanCache[key];
+    }
+    if(scanBwOn){
+      if(!scanCleanCache.plainBw){
+        const c = document.createElement('canvas'); c.width = scanFlatCanvas.width; c.height = scanFlatCanvas.height;
+        const cx = c.getContext('2d'); cx.drawImage(scanFlatCanvas, 0, 0);
+        const id = cx.getImageData(0, 0, c.width, c.height), d = id.data;
+        for(let i = 0; i < d.length; i += 4){ const g = d[i]*0.299 + d[i+1]*0.587 + d[i+2]*0.114; d[i] = d[i+1] = d[i+2] = g; }
+        cx.putImageData(id, 0, 0);
+        scanCleanCache.plainBw = c;
+      }
+      return scanCleanCache.plainBw;
+    }
+    return scanFlatCanvas;
+  }
+
+  function buildSrcCanvas(img){
+    const s = Math.min(1, 2000 / Math.max(img.width, img.height));
+    const c = document.createElement('canvas');
+    c.width = Math.round(img.width * s); c.height = Math.round(img.height * s);
+    c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+    return c;
+  }
+
+  function showScanMode(mode){
+    scanMode = mode;
+    scanCornerControls.style.display = mode === 'corners' ? 'block' : 'none';
+    scanEditControls.style.display = mode === 'result' ? 'block' : 'none';
+    renderScanCanvas();
+  }
+
+  function renderScanCanvas(){
+    if(!scanSrcCanvas) return;
+    const ctx = scanCtx();
+    if(scanMode === 'corners'){
+      const s = Math.min(1, 1600 / Math.max(scanSrcCanvas.width, scanSrcCanvas.height));
+      scanCanvas.width = Math.round(scanSrcCanvas.width * s);
+      scanCanvas.height = Math.round(scanSrcCanvas.height * s);
+      ctx.drawImage(scanSrcCanvas, 0, 0, scanCanvas.width, scanCanvas.height);
+      // Dim everything outside the chosen area, then draw the outline + dots.
+      const pts = scanCorners.map(p => ({x: p.x * s, y: p.y * s}));
+      ctx.save();
+      ctx.fillStyle = 'rgba(0,0,0,0.45)';
+      ctx.beginPath();
+      ctx.rect(0, 0, scanCanvas.width, scanCanvas.height);
+      ctx.moveTo(pts[0].x, pts[0].y); for(let i = 3; i >= 1; i--) ctx.lineTo(pts[i].x, pts[i].y); ctx.closePath();
+      ctx.fill('evenodd');
+      ctx.strokeStyle = '#C9A227';
+      ctx.lineWidth = Math.max(2, scanCanvas.width / 250);
+      ctx.beginPath(); ctx.moveTo(pts[0].x, pts[0].y); pts.slice(1).forEach(p => ctx.lineTo(p.x, p.y)); ctx.closePath(); ctx.stroke();
+      const rDot = Math.max(10, scanCanvas.width / 45);
+      pts.forEach(p => {
+        ctx.beginPath(); ctx.arc(p.x, p.y, rDot, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(201,162,39,0.85)'; ctx.fill();
+        ctx.lineWidth = Math.max(2, rDot / 4); ctx.strokeStyle = '#ffffff'; ctx.stroke();
+      });
+      ctx.restore();
+      scanSizeEstimate.textContent = '—';
+      return;
+    }
+    const page = processedPage();
+    const totalAngle = (scanBaseRotation + scanFineAngle) * Math.PI / 180;
+    const swapped = (scanBaseRotation % 180 !== 0);
+    const iw = swapped ? page.height : page.width;
+    const ih = swapped ? page.width : page.height;
+    const scale = Math.min(1, 1800 / Math.max(iw, ih));
+    scanCanvas.width = Math.round(iw * scale);
+    scanCanvas.height = Math.round(ih * scale);
+    ctx.save();
+    ctx.fillStyle = '#ffffff';                       // white, not black, in any corners the rotation uncovers
+    ctx.fillRect(0, 0, scanCanvas.width, scanCanvas.height);
+    ctx.translate(scanCanvas.width / 2, scanCanvas.height / 2);
+    ctx.rotate(totalAngle);
+    ctx.drawImage(page, -page.width * scale / 2, -page.height * scale / 2, page.width * scale, page.height * scale);
+    ctx.restore();
+    scanSizeEstimate.textContent = '~' + formatBytes(dataUrlSizeBytes(scanCanvas.toDataURL('image/jpeg', 0.82)));
+  }
+
+  function doFlatten(){
+    if(!scanSrcCanvas) return;
+    showStatus('Flattening and cleaning…');
+    // Let the message paint before the heavy work starts.
+    setTimeout(() => {
+      scanFlatCanvas = flattenPage(scanSrcCanvas, scanCorners);
+      scanCleanCache = {};
+      scanFineAngle = 0; scanStraightenSlider.value = 0;
+      showScanMode('result');
+      showStatus('Page ready ✓', 2000);
+      scanCanvasWrap.scrollIntoView({ behavior:'smooth', block:'start' });
+    }, 30);
+  }
+
+  function resetScanTool(){
+    scanCurrentImg = null;
+    scanSrcCanvas = null;
+    scanFlatCanvas = null;
+    scanCleanCache = {};
+    scanCorners = null;
+    scanBaseRotation = 0;
+    scanFineAngle = 0;
+    scanStraightenSlider.value = 0;
+    scanEnhanceOn = true;
+    scanEnhanceBtn.classList.add('active');
+    scanBwOn = false;
+    scanBwBtn.classList.remove('active');
+    scanPages = [];
+    scanPageThumbs.innerHTML = '';
+    scanCanvasWrap.style.display = 'none';
+    scanCornerControls.style.display = 'none';
+    scanEditControls.style.display = 'none';
+    scanError.style.display = 'none';
+    scanFileInput.value = '';
+    if(typeof updateScanPdfLabel === 'function') updateScanPdfLabel();
+  }
+
+  async function handleScanFile(file){
+    scanError.style.display = 'none';
+    if(blockIfOutOfFreeUses(scanError)) return;
+    try{
+      const { img } = await loadImageFromFile(file);
+      scanCurrentImg = img;
+      scanSrcCanvas = buildSrcCanvas(img);
+      scanCorners = detectPaperCorners(scanSrcCanvas);
+      scanFlatCanvas = null;
+      scanCleanCache = {};
+      scanBaseRotation = 0;
+      scanFineAngle = 0;
+      scanStraightenSlider.value = 0;
+      scanCanvasWrap.style.display = 'flex';
+      showScanMode('corners');
+    }catch(err){
+      scanError.textContent = err.message || 'Something went wrong reading that photo.';
+      scanError.style.display = 'block';
+    }
+  }
+
+  // Dragging the corner dots.
+  function canvasPoint(e){
+    const r = scanCanvas.getBoundingClientRect();
+    const s = scanSrcCanvas.width / r.width;
+    return { x: (e.clientX - r.left) * s, y: (e.clientY - r.top) * s, perCssPx: s };
+  }
+  scanCanvas.addEventListener('pointerdown', (e) => {
+    if(scanMode !== 'corners' || !scanCorners) return;
+    const p = canvasPoint(e);
+    const grab = 34 * p.perCssPx;                 // generous finger-sized grab area
+    let best = -1, bestD = Infinity;
+    scanCorners.forEach((c, i) => { const d = Math.hypot(c.x - p.x, c.y - p.y); if(d < bestD){ bestD = d; best = i; } });
+    if(bestD <= grab){
+      scanDragIdx = best;
+      scanCanvas.setPointerCapture(e.pointerId);
+      e.preventDefault();
+    }
+  });
+  scanCanvas.addEventListener('pointermove', (e) => {
+    if(scanDragIdx < 0) return;
+    const p = canvasPoint(e);
+    scanCorners[scanDragIdx] = {
+      x: Math.max(0, Math.min(scanSrcCanvas.width, p.x)),
+      y: Math.max(0, Math.min(scanSrcCanvas.height, p.y))
+    };
+    renderScanCanvas();
+    e.preventDefault();
+  });
+  ['pointerup','pointercancel'].forEach(t => scanCanvas.addEventListener(t, () => { scanDragIdx = -1; }));
+
+  scanTakePhotoBtn.addEventListener('click', () => takePhoto(scanFileInput, handleScanFile, scanCanvasWrap, scanError, 'Take a photo of your document'));
+  scanUploadBtn.addEventListener('click', () => { scanFileInput.removeAttribute('capture'); scanFileInput.click(); });
+  scanFileInput.addEventListener('change', () => {
+    onPhotoPicked(scanFileInput, handleScanFile, scanCanvasWrap, scanError);
+  });
+
+  scanFlattenBtn.addEventListener('click', doFlatten);
+  scanWholePhotoBtn.addEventListener('click', () => {
+    if(!scanSrcCanvas) return;
+    const W = scanSrcCanvas.width, H = scanSrcCanvas.height;
+    scanCorners = [{x:0,y:0},{x:W,y:0},{x:W,y:H},{x:0,y:H}];
+    doFlatten();
+  });
+  scanAdjustCornersBtn.addEventListener('click', () => showScanMode('corners'));
+
+  scanRotateLeftBtn.addEventListener('click', () => { scanBaseRotation = (scanBaseRotation + 270) % 360; renderScanCanvas(); });
+  scanRotateRightBtn.addEventListener('click', () => { scanBaseRotation = (scanBaseRotation + 90) % 360; renderScanCanvas(); });
+  scanStraightenSlider.addEventListener('input', () => { scanFineAngle = parseFloat(scanStraightenSlider.value); renderScanCanvas(); });
+  scanEnhanceBtn.addEventListener('click', () => { scanEnhanceOn = !scanEnhanceOn; scanEnhanceBtn.classList.toggle('active', scanEnhanceOn); renderScanCanvas(); });
+  scanBwBtn.addEventListener('click', () => { scanBwOn = !scanBwOn; scanBwBtn.classList.toggle('active', scanBwOn); renderScanCanvas(); });
+
+  // Saving needs a finished page. If the user is still placing the dots, flatten first.
+  function ensureScanResult(){
+    if(scanMode === 'corners' && scanSrcCanvas){
+      scanFlatCanvas = flattenPage(scanSrcCanvas, scanCorners);
+      scanCleanCache = {};
+      showScanMode('result');
+    }
+  }
+
+  function finishedPageDataUrl(){
+    ensureScanResult();
+    // Free plan gets a small watermark on the exported page; Premium doesn't.
+    const out = document.createElement('canvas');
+    out.width = scanCanvas.width;
+    out.height = scanCanvas.height;
+    const octx = out.getContext('2d');
+    octx.drawImage(scanCanvas, 0, 0);
+    if(!isPremiumActive()){
+      octx.font = Math.max(12, Math.round(out.width * 0.028)) + 'px sans-serif';
+      octx.fillStyle = 'rgba(120,120,120,0.55)';
+      octx.textAlign = 'right';
+      octx.fillText('Scanned with ScanFixAll', out.width - 10, out.height - 10);
+    }
+    return out.toDataURL('image/jpeg', 0.85);
+  }
+
+  function renderScanPageThumbs(){
+    scanPageThumbs.innerHTML = '';
+    scanPages.forEach((dataUrl, idx) => {
+      const wrap = document.createElement('div');
+      wrap.className = 'page-thumb';
+      const img = document.createElement('img');
+      img.src = dataUrl;
+      const rm = document.createElement('button');
+      rm.className = 'remove-thumb';
+      rm.textContent = '✕';
+      rm.addEventListener('click', () => { scanPages.splice(idx,1); renderScanPageThumbs(); });
+      wrap.appendChild(img);
+      wrap.appendChild(rm);
+      scanPageThumbs.appendChild(wrap);
+    });
+    updateScanPdfLabel();
+  }
+
+  // Tells free users up front that a multi-page PDF needs Premium,
+  // instead of surprising them after they tap Save.
+  const scanPdfLabelDefault = scanSavePdfBtn.textContent;
+  function updateScanPdfLabel(){
+    const multiPage = scanPages.length >= 1;
+    scanSavePdfBtn.textContent = (multiPage && !isPremiumActive())
+      ? scanPdfLabelDefault + ' ⭐ Premium'
+      : scanPdfLabelDefault;
+  }
+
+  scanAddPageBtn.addEventListener('click', () => {
+    if(!scanCurrentImg) return;
+    scanPages.push(finishedPageDataUrl());
+    renderScanPageThumbs();
+    scanCurrentImg = null;
+    scanSrcCanvas = null;
+    scanFlatCanvas = null;
+    scanCleanCache = {};
+    scanCanvasWrap.style.display = 'none';
+    scanCornerControls.style.display = 'none';
+    scanFileInput.value = '';
+    showStatus('Page added ✓ Now take or upload the next page.', 3000);
+  });
+
+  scanSaveImageBtn.addEventListener('click', () => {
+    if(!scanCurrentImg && scanPages.length === 0){
+      scanError.textContent = 'Take or upload a photo first.';
+      scanError.style.display = 'block';
+      return;
+    }
+    const dataUrl = scanCurrentImg ? finishedPageDataUrl() : scanPages[scanPages.length - 1];
+    const a = document.createElement('a');
+    a.href = dataUrl;
+    a.download = 'scan-' + Date.now() + '.jpg';
+    a.click();
+    bumpUsage();
+  });
+
+  scanSavePdfBtn.addEventListener('click', () => {
+    const pages = scanPages.slice();
+    if(scanCurrentImg) pages.push(finishedPageDataUrl());
+    if(pages.length === 0){
+      scanError.textContent = 'Take or upload a photo first.';
+      scanError.style.display = 'block';
+      return;
+    }
+    if(!isPremiumActive() && pages.length > 1){
+      scanError.textContent = 'Combining multiple pages into one PDF is a Premium feature. Unlock Premium, or save each page separately as an image.';
+      scanError.style.display = 'block';
+      return;
+    }
+    try{
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF({ unit: 'pt' });
+      pages.forEach((dataUrl, idx) => {
+        // Read the picture's size straight from its data (a new Image()
+        // would still be 0×0 here because it hasn't finished loading).
+        const props = doc.getImageProperties(dataUrl);
+        const pageWidth = doc.internal.pageSize.getWidth();
+        const pageHeight = doc.internal.pageSize.getHeight();
+        // Fit the image within the page, preserving its aspect ratio.
+        const ratio = Math.min(pageWidth / props.width, pageHeight / props.height);
+        const w = props.width * ratio;
+        const h = props.height * ratio;
+        if(idx > 0) doc.addPage();
+        doc.addImage(dataUrl, 'JPEG', (pageWidth - w) / 2, (pageHeight - h) / 2, w, h);
+      });
+      doc.save('scan-' + Date.now() + '.pdf');
+      bumpUsage();
+    }catch(err){
+      scanError.textContent = 'Could not build the PDF right now. Please try again.';
+      scanError.style.display = 'block';
+    }
+  });
+
+  // =========================================================
+  // RETYPE AS NEW DOCUMENT (Premium)
+  // =========================================================
+  const scanRetypeBtn = document.getElementById('scanRetypeBtn');
+  const retypePanel = document.getElementById('retypePanel');
+  const retypePaper = document.getElementById('retypePaper');
+  const retypeSignBtn = document.getElementById('retypeSignBtn');
+  const retypeSaveImageBtn = document.getElementById('retypeSaveImageBtn');
+  const retypeSavePdfBtn = document.getElementById('retypeSavePdfBtn');
+  const retypeBackBtn = document.getElementById('retypeBackBtn');
+  let retypeBusy = false;
+  let pendingSignHint = null;   // where to put the signature when coming from a retyped page
+  let retypeLetterhead = null;  // picture of the original letterhead, cut from the scan
+  const retypeLetterheadRow = document.getElementById('retypeLetterheadRow');
+  const retypeKeepLetterhead = document.getElementById('retypeKeepLetterhead');
+  const retypeLetterheadImg = document.getElementById('retypeLetterheadImg');
+
+  // Cuts the letterhead band out of the page the reader looked at, trims
+  // the empty white edges, and keeps it as a picture.
+  function cutLetterhead(pageCanvas, band){
+    const y0 = Math.floor(pageCanvas.height * band.top), y1 = Math.ceil(pageCanvas.height * band.bottom);
+    const w = pageCanvas.width, h = Math.max(1, y1 - y0);
+    const d = pageCanvas.getContext('2d').getImageData(0, y0, w, h).data;
+    let minX = w, maxX = -1, minY = h, maxY = -1;
+    for(let y = 0; y < h; y++) for(let x = 0; x < w; x++){
+      const i = (y*w + x)*4;
+      if(d[i] < 200 || d[i+1] < 200 || d[i+2] < 200){ if(x < minX) minX = x; if(x > maxX) maxX = x; if(y < minY) minY = y; if(y > maxY) maxY = y; }
+    }
+    if(maxX < 0) return null;
+    const pad = 6;
+    minX = Math.max(0, minX - pad); maxX = Math.min(w, maxX + pad); minY = Math.max(0, minY - pad); maxY = Math.min(h, maxY + pad);
+    const c = document.createElement('canvas');
+    c.width = maxX - minX; c.height = maxY - minY;
+    c.getContext('2d').drawImage(pageCanvas, minX, y0 + minY, c.width, c.height, 0, 0, c.width, c.height);
+    // Remember how wide it was compared to the whole page, so it keeps its real size.
+    c._pageFrac = c.width / w;
+    return c;
+  }
+
+  function refreshLetterheadPreview(){
+    const on = !!retypeLetterhead && retypeKeepLetterhead.checked;
+    retypeLetterheadImg.style.display = on ? 'block' : 'none';
+    document.getElementById('retypeCopyNote').style.display = on ? 'block' : 'none';
+    if(on){
+      retypeLetterheadImg.src = retypeLetterhead.toDataURL('image/png');
+      retypeLetterheadImg.style.width = Math.min(92, retypeLetterhead._pageFrac * 100) + '%';
+      retypeLetterheadImg.style.marginLeft = 'auto'; retypeLetterheadImg.style.marginRight = 'auto';
+    }
+  }
+  retypeKeepLetterhead.addEventListener('change', refreshLetterheadPreview);
+
+  function escapeHtml(t){ return t.replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+  // Turns the reader's blocks into editable HTML on the white page.
+  function showRetypedBlocks(blocks, signerBlock){
+    retypePaper.innerHTML = blocks.map((b, i) => {
+      const html = escapeHtml(b.text)
+        .replace(/\*\*([\s\S]+?)\*\*/g, '<b>$1</b>')
+        .replace(/\[\?\]/g, '<mark style="background:#ffe08a;color:#111;">[?]</mark>')
+        .replace(/\n/g, '<br>');
+      const align = b.align === 'justify' ? 'justify' : b.align;
+      const cls = 'rt-block' + (i === signerBlock ? ' rt-signer' : '');
+      return '<div class="' + cls + '" dir="auto" data-type="' + b.type + '" data-align="' + b.align + '" style="text-align:' + (align === 'left' ? 'start' : align) + '">' + html + '</div>';
+    }).join('');
+  }
+
+  function openRetypePanel(){
+    scanCanvasWrap.style.display = 'none';
+    scanEditControls.style.display = 'none';
+    scanCornerControls.style.display = 'none';
+    retypePanel.style.display = 'block';
+    retypePanel.scrollIntoView({ behavior:'smooth', block:'start' });
+  }
+  function closeRetypePanel(){
+    retypePanel.style.display = 'none';
+    if(scanSrcCanvas){
+      scanCanvasWrap.style.display = 'flex';
+      showScanMode(scanFlatCanvas ? 'result' : 'corners');
+    }
+  }
+
+  scanRetypeBtn.addEventListener('click', async () => {
+    if(retypeBusy) return;
+    scanError.style.display = 'none';
+    if(!isPremiumActive()){
+      scanError.textContent = 'Retype is a Premium feature. Tap the ⭐ Premium tab above to unlock it.';
+      scanError.style.display = 'block';
+      scanError.scrollIntoView({ behavior:'smooth', block:'center' });
+      return;
+    }
+    const code = localStorage.getItem(PREMIUM_CODE_KEY);
+    if(!code){
+      scanError.textContent = isFreeMonth()
+        ? 'Retype needs a free access code from your teacher. Tap ⚙ Settings above, enter the code, then try Retype again.'
+        : 'Please re-enter your access code in ⭐ Premium, then try Retype again.';
+      scanError.style.display = 'block';
+      return;
+    }
+    ensureScanResult();
+    const page = processedPage();
+    if(!page || scanCanvasWrap.style.display === 'none'){
+      scanError.textContent = 'Please open the page you want to retype first: tap Upload Photo (or Take Photo), then Flatten & clean, then Retype.';
+      scanError.style.display = 'block';
+      scanError.scrollIntoView({ behavior:'smooth', block:'center' });
+      return;
+    }
+    // The AI reads best from the straightened photo BEFORE whitening — on
+    // crumpled paper the whitening can break letters apart. Draw it upright,
+    // turned the same way as on screen. 1568px is the largest size the
+    // reader actually uses; bigger would only be shrunk again.
+    const readSize = 1568;
+    const swappedR = (scanBaseRotation % 180 !== 0);
+    const fw = swappedR ? scanFlatCanvas.height : scanFlatCanvas.width;
+    const fh = swappedR ? scanFlatCanvas.width : scanFlatCanvas.height;
+    const rs = Math.min(1, readSize / Math.max(fw, fh));
+    const readCanvas = document.createElement('canvas');
+    readCanvas.width = Math.round(fw * rs); readCanvas.height = Math.round(fh * rs);
+    const rctx = readCanvas.getContext('2d');
+    rctx.fillStyle = '#ffffff'; rctx.fillRect(0, 0, readCanvas.width, readCanvas.height);
+    rctx.translate(readCanvas.width / 2, readCanvas.height / 2);
+    rctx.rotate((scanBaseRotation + scanFineAngle) * Math.PI / 180);
+    rctx.drawImage(scanFlatCanvas, -scanFlatCanvas.width * rs / 2, -scanFlatCanvas.height * rs / 2, scanFlatCanvas.width * rs, scanFlatCanvas.height * rs);
+    const image = readCanvas.toDataURL('image/jpeg', 0.92);
+
+    // The whitened page (as on screen) is still used to cut out a clean letterhead.
+    const s = Math.min(1, 1600 / Math.max(scanCanvas.width, scanCanvas.height));
+    const send = document.createElement('canvas');
+    send.width = Math.round(scanCanvas.width * s); send.height = Math.round(scanCanvas.height * s);
+    send.getContext('2d').drawImage(scanCanvas, 0, 0, send.width, send.height);
+
+    retypeBusy = true;
+    const label = scanRetypeBtn.textContent;
+    scanRetypeBtn.textContent = '⏳ Reading your page…';
+    scanRetypeBtn.disabled = true;
+    showStatus('Reading your page carefully… this usually takes 20–60 seconds.');
+    try{
+      // Long pages are read in the background (up to 15 minutes on the server):
+      // 1) hand in the photo and get a ticket, 2) start the reading,
+      // 3) ask every few seconds whether the ticket is ready.
+      const post = async (url, obj) => {
+        const r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(obj) });
+        const raw = await r.text().catch(() => '');
+        let d = {}; try{ d = JSON.parse(raw.trim() || '{}'); }catch(e){}
+        return { r, d, raw };
+      };
+      let data = null;
+      const mode = (document.querySelector('input[name="retypeKind"]:checked') || {}).value === 'notes' ? 'notes' : 'letter';
+      const t = await post('/.netlify/functions/retype-job', { action: 'start', code, image, mode });
+      if(t.r.ok && t.d.jobId){
+        await fetch('/.netlify/functions/retype-work-background', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ jobId: t.d.jobId })
+        });
+        const giveUpAt = Date.now() + 5 * 60 * 1000;
+        let tick = 0;
+        while(Date.now() < giveUpAt){
+          await new Promise(res => setTimeout(res, 3000));
+          tick++;
+          if(tick === 10) showStatus('Still reading… crowded pages take longer. Please keep this page open.');
+          const st = await post('/.netlify/functions/retype-job', { action: 'status', jobId: t.d.jobId }).catch(() => null);
+          if(st && st.d && !st.d.pending && (st.d.error || st.d.blocks)){ data = st.d; break; }
+        }
+        if(!data) throw new Error('Reading is taking much longer than usual. Please try again in a few minutes.');
+      } else if(t.d.error){
+        throw new Error(t.d.error);
+      } else {
+        // Ticket desk not on the server yet: use the one-minute reader.
+        const q = await post('/.netlify/functions/retype-careful', { code, image, mode });
+        if(q.r.ok && !q.raw.trim()) throw new Error('Reading took too long and was cut off. If the page has a lot of writing, drag the gold corner dots to include only the part you need, then tap Retype again.');
+        data = q.d;
+        if(!data.error && (!q.r.ok || !Array.isArray(data.blocks))){
+          throw new Error(q.r.status === 504 || q.r.status === 502 ? 'Reading took too long. Please try again.' : 'Could not retype right now (' + q.r.status + '). Please try again.');
+        }
+      }
+      if(data.error) throw new Error(data.error);
+      if(!Array.isArray(data.blocks)) throw new Error('Could not retype right now. Please try again.');
+      showRetypedBlocks(data.blocks, data.signerBlock);
+      document.getElementById('retypeGrammarBox').style.display = 'none';
+      retypeOriginalHtml = null; retypeOriginalRow.style.display = 'none'; resetListen();
+      retypeTranslateNote.textContent = 'Translating uses 1 Retype page. You can switch back to the original any time.';
+      retypeLetterhead = (data.letterhead && data.letterhead.found) ? cutLetterhead(send, data.letterhead) : null;
+      retypeLetterheadRow.style.display = retypeLetterhead ? 'flex' : 'none';
+      retypeKeepLetterhead.checked = false;   // off unless the person chooses it
+      refreshLetterheadPreview();
+      openRetypePanel();
+      const unsure = (retypePaper.innerHTML.match(/\[\?\]/g) || []).length;
+      document.getElementById('retypeUnsureCount').textContent = unsure === 1 ? '1 word' : unsure + ' words';
+      document.getElementById('retypeUnsureBox').style.display = unsure ? 'block' : 'none';
+      showStatus((unsure ? 'Retyped ✓ ' + unsure + ' word' + (unsure > 1 ? 's' : '') + ' marked [?] could not be read clearly — tap each yellow [?] and type the correct word.' : 'Retyped ✓ Tap any word to fix it.') + (typeof data.pagesLeft === 'number' ? ' (' + data.pagesLeft + ' Retype pages left for this 30-day period)' : ''), 4000);
+    }catch(err){
+      sfaToast.style.display = 'none';
+      scanError.textContent = err.message || 'Could not retype right now. Please try again.';
+      scanError.style.display = 'block';
+      scanError.scrollIntoView({ behavior:'smooth', block:'center' });
+    }finally{
+      retypeBusy = false;
+      scanRetypeBtn.textContent = label;
+      scanRetypeBtn.disabled = false;
+    }
+  });
+  retypeBackBtn.addEventListener('click', closeRetypePanel);
+
+  // Only one fold-open section at a time, so every heading stays on screen.
+  document.querySelectorAll('details.fold').forEach(d => {
+    d.addEventListener('toggle', () => {
+      if(!d.open) return;
+      d.parentElement.querySelectorAll(':scope > details.fold[open]').forEach(o => { if(o !== d) o.open = false; });
+      setTimeout(() => { const r = d.getBoundingClientRect(); if(r.top < 0 || r.top > window.innerHeight * 0.6) d.scrollIntoView({ behavior:'smooth', block:'start' }); }, 30);
+    });
+  });
+
+  // ---- 🔊 Listen: the AI voice reads the page that is showing ----
+  const retypeListenBtn = document.getElementById('retypeListenBtn');
+  const retypeAudio = document.getElementById('retypeAudio');
+  const retypeListenNote = document.getElementById('retypeListenNote');
+  let listenCache = { text: null, url: null };   // same text again = replay, no extra page
+  let listenBusy = false;
+  retypeListenBtn.addEventListener('click', async () => {
+    if(listenBusy) return;
+    const code = localStorage.getItem(PREMIUM_CODE_KEY);
+    if(!isPremiumActive() || !code){ retypeListenNote.textContent = 'Listen is a Premium feature. Please unlock Premium (or enter your free access code) first.'; return; }
+    const text = rtBlockEls().map(el => el.innerText.trim()).filter(Boolean).join('\n\n');
+    if(!text){ retypeListenNote.textContent = 'There is no text on the page to read.'; return; }
+    if(listenCache.text === text && listenCache.url){
+      retypeAudio.style.display = 'block'; retypeAudio.currentTime = 0; retypeAudio.play().catch(() => {});
+      retypeListenNote.textContent = 'Playing again — no extra page used.';
+      return;
+    }
+    listenBusy = true;
+    const label = retypeListenBtn.textContent;
+    retypeListenBtn.textContent = '⏳ Preparing the voice…'; retypeListenBtn.disabled = true;
+    retypeListenNote.textContent = 'Preparing the AI voice… about 5–20 seconds.';
+    try{
+      const res = await fetch('/.netlify/functions/listen-page', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code, text })
+      });
+      const type = res.headers.get('Content-Type') || '';
+      if(type.indexOf('application/json') >= 0){
+        const d = await res.json().catch(() => ({}));
+        throw new Error(d.error || 'Could not read the page aloud right now.');
+      }
+      if(!res.ok) throw new Error('Could not read the page aloud right now (' + res.status + '). Please try again.');
+      const blob = await res.blob();
+      if(!blob.size) throw new Error('The voice service did not answer. Please try again in a moment. (No page was used.)');
+      if(listenCache.url) URL.revokeObjectURL(listenCache.url);
+      listenCache = { text, url: URL.createObjectURL(blob) };
+      retypeAudio.src = listenCache.url;
+      retypeAudio.style.display = 'block';
+      retypeAudio.play().catch(() => {});
+      const left = res.headers.get('X-Pages-Left');
+      retypeListenNote.textContent = '🔊 Playing. Use the player to pause or replay — replaying is free.' + (left !== null ? ' (' + left + ' AI pages left)' : '');
+    }catch(err){
+      retypeListenNote.textContent = err.message || 'Could not read the page aloud right now.';
+    }finally{
+      listenBusy = false; retypeListenBtn.textContent = label; retypeListenBtn.disabled = false;
+    }
+  });
+  function resetListen(){ try{ retypeAudio.pause(); }catch(e){} retypeAudio.style.display = 'none'; }
+
+  // ---- Translate: keeps the original so the person can switch back ----
+  const retypeTranslateBtn = document.getElementById('retypeTranslateBtn');
+  const retypeLang = document.getElementById('retypeLang');
+  const retypeTranslateNote = document.getElementById('retypeTranslateNote');
+  const retypeOriginalRow = document.getElementById('retypeOriginalRow');
+  let retypeOriginalHtml = null;     // the page before translating
+  let translateBusy = false;
+
+  // One block of the page as text, with **bold** and line breaks kept.
+  function blockToMarked(el){
+    let out = '';
+    const walk = (n, bold) => {
+      if(n.nodeType === 3){ out += n.textContent; return; }
+      if(n.nodeType !== 1) return;
+      if(n.tagName === 'BR'){ out += '\n'; return; }
+      const b = !bold && (n.tagName === 'B' || n.tagName === 'STRONG');
+      if(/^(DIV|P)$/.test(n.tagName) && n !== el && out && !out.endsWith('\n')) out += '\n';
+      if(b) out += '**';
+      n.childNodes.forEach(c => walk(c, bold || b));
+      if(b) out += '**';
+    };
+    walk(el, false);
+    return out.replace(/\*\*\*\*/g, '').replace(/\n+$/, '');
+  }
+
+  retypeTranslateBtn.addEventListener('click', async () => {
+    if(translateBusy) return;
+    const code = localStorage.getItem(PREMIUM_CODE_KEY);
+    if(!isPremiumActive() || !code){ retypeTranslateNote.textContent = 'Translate is a Premium feature. Please unlock Premium first.'; return; }
+    const els = rtBlockEls();
+    if(!els.length) return;
+    const texts = els.map(blockToMarked);
+    if(!texts.some(t => t.trim())) return;
+    translateBusy = true;
+    const label = retypeTranslateBtn.textContent;
+    retypeTranslateBtn.textContent = '⏳ Translating…'; retypeTranslateBtn.disabled = true;
+    retypeTranslateNote.textContent = 'Translating… this takes about 10–40 seconds.';
+    try{
+      const res = await fetch('/.netlify/functions/translate-page', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code, blocks: texts, lang: retypeLang.value })
+      });
+      const raw = await res.text().catch(() => '');
+      let data = {}; try{ data = JSON.parse(raw.trim() || '{}'); }catch(e){}
+      if(res.ok && !raw.trim()) throw new Error('Translating took too long. Please try a shorter page.');
+      if(data.error) throw new Error(data.error);
+      if(!Array.isArray(data.blocks) || data.blocks.length !== els.length) throw new Error('Could not translate right now. Please try again.');
+      if(retypeOriginalHtml === null) retypeOriginalHtml = retypePaper.innerHTML;
+      const signerIdx = els.findIndex(el => el.classList.contains('rt-signer'));
+      showRetypedBlocks(els.map((el, i) => ({ type: el.dataset.type || 'paragraph', align: el.dataset.align || 'left', text: data.blocks[i] })), signerIdx);
+      retypeOriginalRow.style.display = 'flex';
+      document.getElementById('retypeGrammarBox').style.display = 'none';
+      retypeTranslateNote.textContent = 'Translated to ' + (data.language || 'the chosen language') + ' ✓ Tap any word to fix it.' + (typeof data.pagesLeft === 'number' ? ' (' + data.pagesLeft + ' pages left for this 30-day period)' : '');
+    }catch(err){
+      retypeTranslateNote.textContent = err.message || 'Could not translate right now. Please try again.';
+    }finally{
+      translateBusy = false; retypeTranslateBtn.textContent = label; retypeTranslateBtn.disabled = false;
+    }
+  });
+
+  document.getElementById('retypeOriginalBtn').addEventListener('click', () => {
+    if(retypeOriginalHtml === null) return;
+    retypePaper.innerHTML = retypeOriginalHtml;
+    retypeOriginalHtml = null;
+    retypeOriginalRow.style.display = 'none';
+    document.getElementById('retypeGrammarBox').style.display = 'none';
+    retypeTranslateNote.textContent = 'Back to the original ✓ Translating again uses 1 Retype page.';
+  });
+
+  // ---- Optional grammar suggestions: nothing changes unless the person accepts it ----
+  const retypeGrammarBtn = document.getElementById('retypeGrammarBtn');
+  const retypeGrammarBox = document.getElementById('retypeGrammarBox');
+  const retypeGrammarIntro = document.getElementById('retypeGrammarIntro');
+  const retypeGrammarList = document.getElementById('retypeGrammarList');
+  const retypeGrammarAllRow = document.getElementById('retypeGrammarAllRow');
+  let grammarBusy = false;
+
+  function rtBlockEls(){ return Array.from(retypePaper.children).filter(el => el.classList.contains('rt-block')); }
+
+  // Replace the first place `from` appears inside one block, keeping bold text bold.
+  function applyFixInBlock(el, from, to){
+    const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+    let n;
+    while((n = walker.nextNode())){
+      const i = n.textContent.indexOf(from);
+      if(i >= 0){ n.textContent = n.textContent.slice(0, i) + to + n.textContent.slice(i + from.length); return true; }
+    }
+    return false;
+  }
+
+  function grammarDoneCheck(){
+    if(!retypeGrammarList.querySelector('.gfix-open')){
+      retypeGrammarAllRow.style.display = 'none';
+      retypeGrammarIntro.textContent = 'All done ✓ Your page is updated. You can still tap any word to change it.';
+    }
+  }
+
+  function showGrammarFixes(fixes){
+    retypeGrammarList.innerHTML = '';
+    retypeGrammarBox.style.display = 'block';
+    if(!fixes.length){
+      retypeGrammarIntro.textContent = 'No grammar or spelling mistakes found ✓';
+      retypeGrammarAllRow.style.display = 'none';
+      return;
+    }
+    retypeGrammarIntro.innerHTML = '<b>' + fixes.length + ' suggestion' + (fixes.length > 1 ? 's' : '') + '.</b> Nothing is changed until you tap ✓. Names, places, numbers and dates are never touched.';
+    const blocks = rtBlockEls();
+    fixes.forEach(f => {
+      const row = document.createElement('div');
+      row.className = 'gfix-open';
+      row.style.cssText = 'background:#fff; color:#111; border-radius:8px; padding:10px 12px; margin-top:8px; font-size:15px; line-height:1.4;';
+      row.innerHTML = '<div><s style="color:#b3261e;">' + escapeHtml(f.from) + '</s> → <b style="color:#1b7f3b;">' + escapeHtml(f.to) + '</b>'
+        + (f.why ? ' <span style="color:#777; font-size:13px;">(' + escapeHtml(f.why) + ')</span>' : '') + '</div>'
+        + '<div style="margin-top:8px; display:flex; gap:8px;"><button class="tool-btn" data-act="yes" style="flex:1; padding:8px;">✓ Accept</button><button class="tool-btn" data-act="no" style="flex:1; padding:8px;">✗ Skip</button></div>';
+      const settle = (msg) => { row.className = 'gfix-done'; row.style.opacity = '0.6'; row.lastChild.innerHTML = '<span style="font-size:13px;">' + msg + '</span>'; grammarDoneCheck(); };
+      row._accept = () => {
+        const el = blocks[f.block];
+        if(el && applyFixInBlock(el, f.from, f.to)) settle('✓ Changed');
+        else settle('Could not find it — please fix it by hand if needed.');
+      };
+      row.querySelector('[data-act="yes"]').addEventListener('click', row._accept);
+      row.querySelector('[data-act="no"]').addEventListener('click', () => settle('Skipped — kept as original'));
+      retypeGrammarList.appendChild(row);
+    });
+    retypeGrammarAllRow.style.display = 'flex';
+  }
+
+  document.getElementById('retypeGrammarAllBtn').addEventListener('click', () => {
+    retypeGrammarList.querySelectorAll('.gfix-open').forEach(r => r._accept());
+  });
+  document.getElementById('retypeGrammarCloseBtn').addEventListener('click', () => {
+    retypeGrammarList.querySelectorAll('.gfix-open [data-act="no"]').forEach(b => b.click());
+  });
+
+  retypeGrammarBtn.addEventListener('click', async () => {
+    if(grammarBusy) return;
+    const code = localStorage.getItem(PREMIUM_CODE_KEY);
+    if(!isPremiumActive() || !code){
+      retypeGrammarBox.style.display = 'block'; retypeGrammarList.innerHTML = ''; retypeGrammarAllRow.style.display = 'none';
+      retypeGrammarIntro.textContent = 'Grammar suggestions are a Premium feature. Please unlock Premium first.';
+      return;
+    }
+    const texts = rtBlockEls().map(el => el.innerText);
+    if(!texts.some(t => t.trim())) return;
+    grammarBusy = true;
+    const label = retypeGrammarBtn.textContent;
+    retypeGrammarBtn.textContent = '⏳ Checking…'; retypeGrammarBtn.disabled = true;
+    try{
+      const res = await fetch('/.netlify/functions/grammar-check', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code, blocks: texts })
+      });
+      const raw = await res.text().catch(() => '');
+      let data = {}; try{ data = JSON.parse(raw.trim() || '{}'); }catch(e){}
+      if(data.error) throw new Error(data.error);
+      if(!Array.isArray(data.fixes)) throw new Error('Could not check the grammar right now. Please try again.');
+      showGrammarFixes(data.fixes);
+      retypeGrammarBox.scrollIntoView({ behavior:'smooth', block:'start' });
+    }catch(err){
+      retypeGrammarBox.style.display = 'block'; retypeGrammarList.innerHTML = ''; retypeGrammarAllRow.style.display = 'none';
+      retypeGrammarIntro.textContent = err.message || 'Could not check the grammar right now. Please try again.';
+    }finally{
+      grammarBusy = false; retypeGrammarBtn.textContent = label; retypeGrammarBtn.disabled = false;
+    }
+  });
+
+  // ---- Read the (possibly edited) page back into lines of bold/normal text ----
+  function readRetypeBlocks(){
+    const blocks = [];
+    Array.from(retypePaper.childNodes).forEach(node => {
+      if(node.nodeType === 3){                       // loose text typed outside a block
+        if(node.textContent.trim()) blocks.push({ type:'paragraph', align:'left', signer:false, lines:[[{ t: node.textContent, b:false }]] });
+        return;
+      }
+      if(node.nodeType !== 1) return;
+      const lines = [[]];
+      const walk = (n, bold) => {
+        if(n.nodeType === 3){ if(n.textContent) lines[lines.length-1].push({ t: n.textContent.replace(/\n/g,' '), b: bold }); return; }
+        if(n.nodeType !== 1) return;
+        const tag = n.tagName;
+        if(tag === 'BR'){ lines.push([]); return; }
+        const isBlock = /^(DIV|P)$/.test(tag) && n !== node;
+        if(isBlock && lines[lines.length-1].length) lines.push([]);
+        const b = bold || tag === 'B' || tag === 'STRONG' || parseInt(getComputedStyle(n).fontWeight, 10) >= 600;
+        n.childNodes.forEach(c => walk(c, b));
+        if(isBlock) lines.push([]);
+      };
+      walk(node, false);
+      while(lines.length > 1 && lines[lines.length-1].length === 0) lines.pop();
+      if(!lines.some(l => l.some(r => r.t.trim()))) return;
+      blocks.push({
+        type: node.dataset && node.dataset.type === 'lines' ? 'lines' : 'paragraph',
+        align: (node.dataset && node.dataset.align) || 'left',
+        signer: node.classList && node.classList.contains('rt-signer'),
+        lines
+      });
+    });
+    return blocks;
+  }
+
+  // ---- Draw the retyped document onto clean A4 pages (150 dpi) ----
+  const RT_W = 1240, RT_H = 1754, RT_MX = 150, RT_TOP = 150, RT_BOTTOM = 130;
+  const RT_FONT = "'Tinos','Times New Roman',Times,'Noto Serif CJK JP','Noto Serif JP','Noto Sans CJK JP','Hiragino Mincho ProN','Yu Mincho','Noto Naskh Arabic','Noto Sans Arabic','Noto Sans Devanagari',serif";
+  // Chinese / Japanese characters (and full-width punctuation) — these can wrap between any two letters.
+  const RT_WIDE = /[\u2E80-\u2FFF\u3000-\u30FF\u3400-\u4DBF\u4E00-\u9FFF\uF900-\uFAFF\uFF00-\uFFEF]/;
+  const RT_WIDE_SPLIT = /[\u2E80-\u2FFF\u3000-\u30FF\u3400-\u4DBF\u4E00-\u9FFF\uF900-\uFAFF\uFF00-\uFFEF]|[^\u2E80-\u2FFF\u3000-\u30FF\u3400-\u4DBF\u4E00-\u9FFF\uF900-\uFAFF\uFF00-\uFFEF]+/g;
+  // Arabic / Hebrew letters (written right to left).
+  const RT_RTL_G = /[\u0590-\u08FF\uFB1D-\uFDFF\uFE70-\uFEFF]/g;
+  function rtFont(size, bold){ return (bold ? '700 ' : '400 ') + size + 'px ' + RT_FONT; }
+
+  function layoutRetype(size, firstTop){
+    const meas = document.createElement('canvas').getContext('2d');
+    const lh = Math.round(size * 1.38), maxW = RT_W - RT_MX * 2;
+    const items = [];       // {kind:'line', words, align, justify} | {kind:'gap', h} | {kind:'signerMark'}
+    readRetypeBlocks().forEach(block => {
+      const allText = block.lines.map(l => l.map(r => r.t).join('')).join(' ');
+      block.rtl = (allText.match(RT_RTL_G) || []).length > (allText.match(/[A-Za-z]/g) || []).length;
+      if(block.signer) items.push({ kind:'gap', h: Math.round(lh * 2.6) }, { kind:'signerMark' });
+      block.lines.forEach(runs => {
+        // Split into words that remember bold, keeping pieces that touch (e.g. "services" + ",") together.
+        // Chinese/Japanese have no spaces: each of those characters is its own "word" that can
+        // wrap anywhere, with no space added around it (sp = a space goes before this word).
+        const words = []; let cur = null, prevSpace = true, prevWide = false;
+        runs.forEach(r => r.t.split(/(\s+)/).forEach(piece => {
+          if(!piece) return;
+          if(/^\s+$/.test(piece)){ prevSpace = true; return; }
+          (piece.match(RT_WIDE_SPLIT) || []).forEach(seg => {
+            const wide = RT_WIDE.test(seg);
+            if(!prevSpace && cur && !wide && !prevWide) cur.parts.push({ w: seg, b: r.b });
+            else { cur = { parts: [{ w: seg, b: r.b }], sp: prevSpace && words.length > 0 }; words.push(cur); }
+            prevSpace = false; prevWide = wide;
+          });
+        }));
+        words.forEach(wd => { wd.width = wd.parts.reduce((a, p) => { meas.font = rtFont(size, p.b); p.width = meas.measureText(p.w).width; return a + p.width; }, 0); });
+        meas.font = rtFont(size, false);
+        const space = meas.measureText(' ').width;
+        if(words.length === 0){ items.push({ kind:'gap', h: lh }); return; }
+        let line = [], lineW = 0;
+        const flush = (last) => {
+          items.push({ kind:'line', words: line, align: block.align, rtl: block.rtl, justify: block.type === 'paragraph' && block.align === 'justify' && !last, lh });
+          line = []; lineW = 0;
+        };
+        words.forEach(wd => {
+          const gap = (line.length && wd.sp) ? space : 0;
+          if(line.length && lineW + gap + wd.width > maxW) flush(false);
+          lineW += (line.length && wd.sp) ? space + wd.width : wd.width; line.push(wd);
+        });
+        if(line.length) flush(true);
+      });
+      items.push({ kind:'gap', h: Math.round(lh * 0.55) });
+    });
+    // Break into pages.
+    // Page 1 may start lower to leave room for the letterhead.
+    const pages = [[]]; let y = 0;
+    const availFor = (pi) => RT_H - (pi === 0 ? firstTop : RT_TOP) - RT_BOTTOM;
+    items.forEach(it => {
+      const h = it.kind === 'line' ? it.lh : (it.h || 0);
+      if(it.kind === 'line' && y + h > availFor(pages.length - 1)){ pages.push([]); y = 0; }
+      if(it.kind === 'gap' && y === 0) return;          // no blank space at the top of a page
+      pages[pages.length-1].push({ ...it, y });
+      y += h;
+    });
+    return { pages, size, space: (() => { meas.font = rtFont(size, false); return meas.measureText(' ').width; })() };
+  }
+
+  function renderRetypePages(){
+    // Start at 12 pt; shrink a little (not below ~10 pt) to fit one page before spilling onto a second.
+    // Room for the original letterhead at the top of page 1, if kept.
+    let lhDraw = null, firstTop = RT_TOP;
+    if(retypeLetterhead && retypeKeepLetterhead.checked){
+      let w = RT_W * Math.min(0.92, retypeLetterhead._pageFrac);
+      let h = w * retypeLetterhead.height / retypeLetterhead.width;
+      if(h > RT_H * 0.2){ h = RT_H * 0.2; w = h * retypeLetterhead.width / retypeLetterhead.height; }
+      lhDraw = { x: (RT_W - w) / 2, y: 60, w, h };
+      firstTop = Math.max(RT_TOP, 60 + h + 50);
+    }
+    let lay = null;
+    for(let size = 26; size >= 21; size -= 0.5){ lay = layoutRetype(size, firstTop); if(lay.pages.length === 1) break; }
+    const maxW = RT_W - RT_MX * 2;
+    let signerFrac = null;
+    const canvases = lay.pages.map((items, pi) => {
+      const c = document.createElement('canvas'); c.width = RT_W; c.height = RT_H;
+      const ctx = c.getContext('2d');
+      ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, RT_W, RT_H);
+      if(pi === 0 && lhDraw) ctx.drawImage(retypeLetterhead, lhDraw.x, lhDraw.y, lhDraw.w, lhDraw.h);
+      if(lhDraw){   // honest note on every page when a real letterhead is reused
+        ctx.save(); ctx.fillStyle = '#8a8a8a'; ctx.font = '400 17px Arial, sans-serif'; ctx.textAlign = 'center';
+        ctx.fillText('Retyped copy \u2014 made with ScanFixAll. Not the original document.', RT_W / 2, RT_H - 55);
+        ctx.restore();
+      }
+      const top = pi === 0 ? firstTop : RT_TOP;
+      ctx.fillStyle = '#111111'; ctx.textBaseline = 'alphabetic';
+      items.forEach(it => {
+        if(it.kind === 'signerMark'){ if(pi === 0 && signerFrac === null) signerFrac = (top + it.y) / RT_H; return; }
+        if(it.kind !== 'line') return;
+        const total = it.words.reduce((a, w) => a + w.width, 0);
+        const gaps = it.words.filter((w, i) => i > 0 && w.sp).length;
+        let space = lay.space;
+        if(it.justify && gaps > 0) space = (maxW - total) / gaps;
+        const lineW = total + space * gaps;
+        let align = it.align;
+        if(it.rtl) align = align === 'right' ? 'left' : (align === 'center' ? 'center' : 'right');
+        if(it.rtl && it.justify) align = 'justify';
+        let x = RT_MX;
+        if(align === 'center') x = RT_MX + (maxW - lineW) / 2;
+        if(align === 'right') x = RT_MX + maxW - lineW;
+        const baseY = top + it.y + lay.size;
+        const startX = x;
+        it.words.forEach((w, i) => {
+          if(i > 0 && w.sp) x += space;
+          // Right-to-left languages: place each word mirrored, so the first word sits on the right.
+          if(it.rtl){
+            // Mirror the word's place, and let the browser order letters/commas right-to-left inside it.
+            let right = 2 * startX + lineW - x;
+            ctx.save(); ctx.direction = 'rtl'; ctx.textAlign = 'right';
+            w.parts.forEach(p => { ctx.font = rtFont(lay.size, p.b); ctx.fillText(p.w, right, baseY); right -= p.width; });
+            ctx.restore();
+          } else {
+            let px = x;
+            w.parts.forEach(p => { ctx.font = rtFont(lay.size, p.b); ctx.fillText(p.w, px, baseY); px += p.width; });
+          }
+          x += w.width;
+        });
+      });
+      return c;
+    });
+    return { canvases, signerFrac };
+  }
+
+  async function retypeReadyFonts(){
+    if(!document.fonts) return;
+    try{ await Promise.race([Promise.all([document.fonts.load("400 26px Tinos"), document.fonts.load("700 26px Tinos")]), new Promise(r => setTimeout(r, 2500))]); }catch(e){}
+  }
+
+  retypeSaveImageBtn.addEventListener('click', async () => {
+    await retypeReadyFonts();
+    const { canvases } = renderRetypePages();
+    const a = document.createElement('a');
+    a.href = canvases[0].toDataURL('image/jpeg', 0.92);
+    a.download = 'retyped-' + Date.now() + '.jpg';
+    a.click();
+    showStatus(canvases.length > 1 ? 'Saved page 1. This document has ' + canvases.length + ' pages — use Save as PDF to get them all.' : 'Saved to your Downloads folder ✓', 4000);
+  });
+
+  retypeSavePdfBtn.addEventListener('click', async () => {
+    await retypeReadyFonts();
+    const { canvases } = renderRetypePages();
+    try{
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF({ unit: 'pt', format: 'a4' });
+      const pw = doc.internal.pageSize.getWidth(), ph = doc.internal.pageSize.getHeight();
+      canvases.forEach((c, i) => { if(i) doc.addPage(); doc.addImage(c.toDataURL('image/jpeg', 0.92), 'JPEG', 0, 0, pw, ph); });
+      doc.save('retyped-' + Date.now() + '.pdf');
+      showStatus('Saved to your Downloads folder ✓', 3000);
+    }catch(err){
+      scanError.textContent = 'Could not build the PDF right now. Please try again.';
+      scanError.style.display = 'block';
+    }
+  });
+
+  retypeSignBtn.addEventListener('click', async () => {
+    await retypeReadyFonts();
+    const { canvases, signerFrac } = renderRetypePages();
+    const blob = await new Promise(r => canvases[0].toBlob(r, 'image/jpeg', 0.92));
+    const file = new File([blob], 'retyped-page.jpg', { type: 'image/jpeg' });
+    pendingSignHint = signerFrac !== null ? { xFrac: RT_MX / RT_W, yFrac: signerFrac } : null;
+    showView('sign');
+    await handleSignFile(file);
+    showStatus('Now tap ✍️ Add Signature and draw your signature.', 4000);
+  });
+
+  // =========================================================
+  // SHRINK A PHOTO
+  // =========================================================
+  const shrinkFileInput = document.getElementById('shrinkFileInput');
+  const shrinkTakePhotoBtn = document.getElementById('shrinkTakePhotoBtn');
+  const shrinkUploadBtn = document.getElementById('shrinkUploadBtn');
+  const shrinkCanvasWrap = document.getElementById('shrinkCanvasWrap');
+  const shrinkCanvas = document.getElementById('shrinkCanvas');
+  const shrinkEditControls = document.getElementById('shrinkEditControls');
+  const shrinkOriginalSize = document.getElementById('shrinkOriginalSize');
+  const shrinkNewSize = document.getElementById('shrinkNewSize');
+  const shrinkSaveBtn = document.getElementById('shrinkSaveBtn');
+  const shrinkError = document.getElementById('shrinkError');
+  const presetButtons = document.querySelectorAll('.size-preset-btn');
+
+  const SIZE_PRESETS = {
+    small:  { maxDim: 900,  quality: 0.62 },
+    medium: { maxDim: 1400, quality: 0.75 },
+    large:  { maxDim: 2000, quality: 0.85 }
+  };
+
+  let shrinkOriginalImg = null;
+  let shrinkOriginalBytes = 0;
+  let shrinkPreset = 'medium';
+  let shrinkResultDataUrl = null;
+
+  function resetShrinkTool(){
+    shrinkOriginalImg = null;
+    shrinkOriginalBytes = 0;
+    shrinkResultDataUrl = null;
+    shrinkCanvasWrap.style.display = 'none';
+    shrinkEditControls.style.display = 'none';
+    shrinkError.style.display = 'none';
+    shrinkFileInput.value = '';
+    shrinkOriginalSize.textContent = '—';
+    shrinkNewSize.textContent = '—';
+  }
+
+  function renderShrinkResult(){
+    if(!shrinkOriginalImg) return;
+    const preset = SIZE_PRESETS[shrinkPreset];
+    const img = shrinkOriginalImg;
+    const scale = Math.min(1, preset.maxDim / Math.max(img.width, img.height));
+    const cw = Math.max(1, Math.round(img.width * scale));
+    const ch = Math.max(1, Math.round(img.height * scale));
+    shrinkCanvas.width = cw;
+    shrinkCanvas.height = ch;
+    const ctx = shrinkCanvas.getContext('2d');
+    ctx.clearRect(0,0,cw,ch);
+    ctx.drawImage(img, 0, 0, cw, ch);
+    shrinkResultDataUrl = shrinkCanvas.toDataURL('image/jpeg', preset.quality);
+    shrinkNewSize.textContent = formatBytes(dataUrlSizeBytes(shrinkResultDataUrl));
+  }
+
+  async function handleShrinkFile(file){
+    shrinkError.style.display = 'none';
+    if(blockIfOutOfFreeUses(shrinkError)) return;
+    try{
+      const { img, originalBytes } = await loadImageFromFile(file);
+      shrinkOriginalImg = img;
+      shrinkOriginalBytes = originalBytes;
+      shrinkOriginalSize.textContent = formatBytes(originalBytes);
+      shrinkCanvasWrap.style.display = 'flex';
+      shrinkEditControls.style.display = 'block';
+      renderShrinkResult();
+    }catch(err){
+      shrinkError.textContent = err.message || 'Something went wrong reading that photo.';
+      shrinkError.style.display = 'block';
+    }
+  }
+
+  shrinkTakePhotoBtn.addEventListener('click', () => takePhoto(shrinkFileInput, handleShrinkFile, shrinkCanvasWrap, shrinkError, 'Take a photo'));
+  shrinkUploadBtn.addEventListener('click', () => { shrinkFileInput.removeAttribute('capture'); shrinkFileInput.click(); });
+  shrinkFileInput.addEventListener('change', () => {
+    onPhotoPicked(shrinkFileInput, handleShrinkFile, shrinkCanvasWrap, shrinkError);
+  });
+
+  presetButtons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      presetButtons.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      shrinkPreset = btn.getAttribute('data-preset');
+      renderShrinkResult();
+    });
+  });
+
+  shrinkSaveBtn.addEventListener('click', () => {
+    if(!shrinkResultDataUrl){
+      shrinkError.textContent = 'Take or upload a photo first.';
+      shrinkError.style.display = 'block';
+      return;
+    }
+    const a = document.createElement('a');
+    a.href = shrinkResultDataUrl;
+    a.download = 'shrunk-' + Date.now() + '.jpg';
+    a.click();
+    bumpUsage();
+  });
+
+  // =========================================================
+  // SIGN A DOCUMENT
+  // =========================================================
+  const signFileInput = document.getElementById('signFileInput');
+  const signTakePhotoBtn = document.getElementById('signTakePhotoBtn');
+  const signUploadBtn = document.getElementById('signUploadBtn');
+  const signCanvasWrap = document.getElementById('signCanvasWrap');
+  const signCanvas = document.getElementById('signCanvas');
+  const signOverlayCanvas = document.getElementById('signOverlayCanvas');
+  const signEditControls = document.getElementById('signEditControls');
+  const signOpenPadBtn = document.getElementById('signOpenPadBtn');
+  const signPlacementControls = document.getElementById('signPlacementControls');
+  const signSizeSlider = document.getElementById('signSizeSlider');
+  const signRedoBtn = document.getElementById('signRedoBtn');
+  const signPlaceBtn = document.getElementById('signPlaceBtn');
+  const signPlacedHint = document.getElementById('signPlacedHint');
+  const signSaveImageBtn = document.getElementById('signSaveImageBtn');
+  const signSavePdfBtn = document.getElementById('signSavePdfBtn');
+  const signError = document.getElementById('signError');
+
+  const sigPadModal = document.getElementById('sigPadModal');
+  const sigPadCanvas = document.getElementById('sigPadCanvas');
+  const sigPadClearBtn = document.getElementById('sigPadClearBtn');
+  const sigPadCancelBtn = document.getElementById('sigPadCancelBtn');
+  const sigPadUseBtn = document.getElementById('sigPadUseBtn');
+
+  let signatureImg = null;      // drawn signature, as an Image (transparent PNG)
+  let sigAspect = 3;            // width/height ratio of the drawn signature
+  let sigPos = { x: 0, y: 0 };  // top-left, in signCanvas's own pixel space
+  let sigDragging = false;
+  let sigDragOffset = { x: 0, y: 0 };
+  let signPlacedOnce = false;
+
+  function resetSignTool(){
+    pendingSignHint = null;
+    signatureImg = null;
+    signPlacedOnce = false;
+    signCanvasWrap.style.display = 'none';
+    signEditControls.style.display = 'none';
+    signPlacementControls.style.display = 'none';
+    signPlacedHint.style.display = 'none';
+    signError.style.display = 'none';
+    signFileInput.value = '';
+    const octx = signOverlayCanvas.getContext('2d');
+    octx.clearRect(0,0,signOverlayCanvas.width, signOverlayCanvas.height);
+  }
+
+  async function handleSignFile(file){
+    signError.style.display = 'none';
+    if(blockIfOutOfFreeUses(signError)) return;
+    try{
+      const { img } = await loadImageFromFile(file);
+      const maxDim = 1600;
+      const scale = Math.min(1, maxDim / Math.max(img.width, img.height));
+      const cw = Math.round(img.width * scale);
+      const ch = Math.round(img.height * scale);
+      signCanvas.width = cw;
+      signCanvas.height = ch;
+      signOverlayCanvas.width = cw;
+      signOverlayCanvas.height = ch;
+      const ctx = signCanvas.getContext('2d');
+      ctx.clearRect(0,0,cw,ch);
+      ctx.drawImage(img, 0, 0, cw, ch);
+      signCanvasWrap.style.display = 'flex';
+      signEditControls.style.display = 'block';
+      signPlacementControls.style.display = 'none';
+      signPlacedHint.style.display = 'none';
+      signPlacedOnce = false;
+    }catch(err){
+      signError.textContent = err.message || 'Something went wrong reading that photo.';
+      signError.style.display = 'block';
+    }
+  }
+
+  signTakePhotoBtn.addEventListener('click', () => takePhoto(signFileInput, handleSignFile, signCanvasWrap, signError, 'Take a photo of the page to sign'));
+  signUploadBtn.addEventListener('click', () => { signFileInput.removeAttribute('capture'); signFileInput.click(); });
+  signFileInput.addEventListener('change', () => {
+    onPhotoPicked(signFileInput, handleSignFile, signCanvasWrap, signError);
+  });
+
+  // ---- Signature pad modal (draw with finger/mouse) ----
+  let padDrawing = false;
+  let padHasStroke = false;
+
+  function openSigPad(){
+    sigPadModal.style.display = 'flex';
+    // Size the drawing canvas to match how big it will actually appear.
+    requestAnimationFrame(() => {
+      const rect = sigPadCanvas.getBoundingClientRect();
+      sigPadCanvas.width = Math.round(rect.width * 2);
+      sigPadCanvas.height = Math.round(rect.height * 2);
+      const ctx = sigPadCanvas.getContext('2d');
+      ctx.clearRect(0,0,sigPadCanvas.width, sigPadCanvas.height);
+      ctx.lineWidth = 5;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      ctx.strokeStyle = '#151B26';
+      padHasStroke = false;
+    });
+  }
+
+  function padPointFromEvent(evt){
+    const rect = sigPadCanvas.getBoundingClientRect();
+    const scaleX = sigPadCanvas.width / rect.width;
+    const scaleY = sigPadCanvas.height / rect.height;
+    return { x: (evt.clientX - rect.left) * scaleX, y: (evt.clientY - rect.top) * scaleY };
+  }
+
+  sigPadCanvas.addEventListener('pointerdown', (evt) => {
+    padDrawing = true;
+    padHasStroke = true;
+    sigPadCanvas.setPointerCapture(evt.pointerId);
+    const p = padPointFromEvent(evt);
+    const ctx = sigPadCanvas.getContext('2d');
+    ctx.beginPath();
+    ctx.moveTo(p.x, p.y);
+  });
+  sigPadCanvas.addEventListener('pointermove', (evt) => {
+    if(!padDrawing) return;
+    const p = padPointFromEvent(evt);
+    const ctx = sigPadCanvas.getContext('2d');
+    ctx.lineTo(p.x, p.y);
+    ctx.stroke();
+  });
+  function endPadStroke(){ padDrawing = false; }
+  sigPadCanvas.addEventListener('pointerup', endPadStroke);
+  sigPadCanvas.addEventListener('pointercancel', endPadStroke);
+  sigPadCanvas.addEventListener('pointerleave', endPadStroke);
+
+  signOpenPadBtn.addEventListener('click', openSigPad);
+  signRedoBtn.addEventListener('click', openSigPad);
+
+  sigPadClearBtn.addEventListener('click', () => {
+    const ctx = sigPadCanvas.getContext('2d');
+    ctx.clearRect(0,0,sigPadCanvas.width, sigPadCanvas.height);
+    padHasStroke = false;
+  });
+
+  sigPadCancelBtn.addEventListener('click', () => { sigPadModal.style.display = 'none'; });
+
+  sigPadUseBtn.addEventListener('click', () => {
+    if(!padHasStroke){
+      sigPadModal.style.display = 'none';
+      return;
+    }
+    const dataUrl = trimmedSignatureDataUrl(sigPadCanvas);
+    const img = new Image();
+    img.onload = () => {
+      signatureImg = img;
+      sigAspect = img.width / img.height;
+      const wPct = parseInt(signSizeSlider.value, 10) / 100;
+      const w = signCanvas.width * wPct;
+      const h = w / sigAspect;
+      if(pendingSignHint){
+        // Coming from a retyped page: sit just above the printed name.
+        sigPos = { x: signCanvas.width * pendingSignHint.xFrac, y: Math.max(0, signCanvas.height * pendingSignHint.yFrac - h * 1.0) };
+      } else {
+        // Otherwise start in the middle of the page, where it's easy to see and drag.
+        sigPos = { x: (signCanvas.width - w) / 2, y: (signCanvas.height - h) / 2 };
+      }
+      signPlacementControls.style.display = 'block';
+      signPlacedHint.style.display = 'none';
+      drawSigOverlay();
+      sigPadModal.style.display = 'none';
+    };
+    img.src = dataUrl;
+  });
+
+  // Cuts away the empty space around the drawn signature so its size slider
+  // controls the ink itself, not a mostly-blank box.
+  function trimmedSignatureDataUrl(c){
+    const w = c.width, h = c.height;
+    const d = c.getContext('2d').getImageData(0, 0, w, h).data;
+    let minX = w, minY = h, maxX = -1, maxY = -1;
+    for(let y = 0; y < h; y += 2) for(let x = 0; x < w; x += 2){
+      if(d[(y*w + x)*4 + 3] > 20){ if(x < minX) minX = x; if(x > maxX) maxX = x; if(y < minY) minY = y; if(y > maxY) maxY = y; }
+    }
+    if(maxX < 0) return c.toDataURL('image/png');
+    const pad = 6;
+    minX = Math.max(0, minX - pad); minY = Math.max(0, minY - pad);
+    maxX = Math.min(w, maxX + pad); maxY = Math.min(h, maxY + pad);
+    const out = document.createElement('canvas'); out.width = maxX - minX; out.height = maxY - minY;
+    out.getContext('2d').drawImage(c, minX, minY, out.width, out.height, 0, 0, out.width, out.height);
+    return out.toDataURL('image/png');
+  }
+
+  function currentSigSize(){
+    const wPct = parseInt(signSizeSlider.value, 10) / 100;
+    const w = signCanvas.width * wPct;
+    const h = w / sigAspect;
+    return { w, h };
+  }
+
+  function drawSigOverlay(){
+    if(!signatureImg) return;
+    const octx = signOverlayCanvas.getContext('2d');
+    octx.clearRect(0,0,signOverlayCanvas.width, signOverlayCanvas.height);
+    const { w, h } = currentSigSize();
+    octx.drawImage(signatureImg, sigPos.x, sigPos.y, w, h);
+    octx.strokeStyle = 'rgba(201,162,39,0.9)';
+    octx.lineWidth = Math.max(2, signOverlayCanvas.width * 0.003);
+    octx.strokeRect(sigPos.x, sigPos.y, w, h);
+  }
+
+  signSizeSlider.addEventListener('input', drawSigOverlay);
+
+  function overlayPointFromEvent(evt){
+    const rect = signOverlayCanvas.getBoundingClientRect();
+    const scaleX = signOverlayCanvas.width / rect.width;
+    const scaleY = signOverlayCanvas.height / rect.height;
+    return { x: (evt.clientX - rect.left) * scaleX, y: (evt.clientY - rect.top) * scaleY };
+  }
+
+  signOverlayCanvas.addEventListener('pointerdown', (evt) => {
+    if(!signatureImg) return;
+    const p = overlayPointFromEvent(evt);
+    const { w, h } = currentSigSize();
+    if(p.x >= sigPos.x && p.x <= sigPos.x + w && p.y >= sigPos.y && p.y <= sigPos.y + h){
+      sigDragging = true;
+      sigDragOffset = { x: p.x - sigPos.x, y: p.y - sigPos.y };
+      signOverlayCanvas.setPointerCapture(evt.pointerId);
+    }
+  });
+  signOverlayCanvas.addEventListener('pointermove', (evt) => {
+    if(!sigDragging) return;
+    const p = overlayPointFromEvent(evt);
+    const { w, h } = currentSigSize();
+    let nx = p.x - sigDragOffset.x;
+    let ny = p.y - sigDragOffset.y;
+    nx = Math.max(0, Math.min(signCanvas.width - w, nx));
+    ny = Math.max(0, Math.min(signCanvas.height - h, ny));
+    sigPos = { x: nx, y: ny };
+    drawSigOverlay();
+  });
+  function endSigDrag(){ sigDragging = false; }
+  signOverlayCanvas.addEventListener('pointerup', endSigDrag);
+  signOverlayCanvas.addEventListener('pointercancel', endSigDrag);
+
+  signPlaceBtn.addEventListener('click', () => {
+    if(!signatureImg) return;
+    const ctx = signCanvas.getContext('2d');
+    const { w, h } = currentSigSize();
+    ctx.drawImage(signatureImg, sigPos.x, sigPos.y, w, h);
+    const octx = signOverlayCanvas.getContext('2d');
+    octx.clearRect(0,0,signOverlayCanvas.width, signOverlayCanvas.height);
+    signatureImg = null;
+    signPlacementControls.style.display = 'none';
+    signPlacedOnce = true;
+    signPlacedHint.textContent = '✅ Signature placed. You can tap "Add Signature" again to add another, or save below.';
+    signPlacedHint.style.display = 'block';
+  });
+
+  function finishedSignPageDataUrl(){
+    const out = document.createElement('canvas');
+    out.width = signCanvas.width;
+    out.height = signCanvas.height;
+    const octx = out.getContext('2d');
+    octx.drawImage(signCanvas, 0, 0);
+    if(!isPremiumActive()){
+      octx.font = Math.max(12, Math.round(out.width * 0.028)) + 'px sans-serif';
+      octx.fillStyle = 'rgba(120,120,120,0.55)';
+      octx.textAlign = 'right';
+      octx.fillText('Signed with ScanFixAll', out.width - 10, out.height - 10);
+    }
+    return out.toDataURL('image/jpeg', 0.9);
+  }
+
+  signSaveImageBtn.addEventListener('click', () => {
+    if(!signCanvas.width){
+      signError.textContent = 'Open a document first.';
+      signError.style.display = 'block';
+      return;
+    }
+    const a = document.createElement('a');
+    a.href = finishedSignPageDataUrl();
+    a.download = 'signed-' + Date.now() + '.jpg';
+    a.click();
+    bumpUsage();
+  });
+
+  signSavePdfBtn.addEventListener('click', () => {
+    if(!signCanvas.width){
+      signError.textContent = 'Open a document first.';
+      signError.style.display = 'block';
+      return;
+    }
+    try{
+      const dataUrl = finishedSignPageDataUrl();
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF({ unit: 'pt' });
+      const img = new Image();
+      img.src = dataUrl;
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const pageHeight = doc.internal.pageSize.getHeight();
+      const ratio = Math.min(pageWidth / signCanvas.width, pageHeight / signCanvas.height);
+      const w = signCanvas.width * ratio;
+      const h = signCanvas.height * ratio;
+      doc.addImage(dataUrl, 'JPEG', (pageWidth - w) / 2, (pageHeight - h) / 2, w, h);
+      doc.save('signed-' + Date.now() + '.pdf');
+      bumpUsage();
+    }catch(err){
+      signError.textContent = 'Could not build the PDF right now. Please try again.';
+      signError.style.display = 'block';
+    }
+  });
+
+  // =========================================================
+  // SHARE & PRINT (all tools) — free, no AI
+  // =========================================================
+  function dataUrlToBlob(dataUrl){
+    const [head, b64] = dataUrl.split(',');
+    const mime = (head.match(/data:([^;]+)/) || [])[1] || 'image/jpeg';
+    const bin = atob(b64); const arr = new Uint8Array(bin.length);
+    for(let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+    return new Blob([arr], { type: mime });
+  }
+  function pagesToPdfBlob(dataUrls){
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ unit: 'pt', format: 'a4' });
+    const pw = doc.internal.pageSize.getWidth(), ph = doc.internal.pageSize.getHeight();
+    dataUrls.forEach((u, i) => {
+      const pr = doc.getImageProperties(u);
+      const r = Math.min(pw / pr.width, ph / pr.height);
+      const w = pr.width * r, h = pr.height * r;
+      if(i) doc.addPage();
+      doc.addImage(u, 'JPEG', (pw - w) / 2, (ph - h) / 2, w, h);
+    });
+    return doc.output('blob');
+  }
+  // One page → a JPG picture (opens in Messenger, Viber, Gmail…); several → one PDF.
+  async function sharePages(dataUrls, baseName, errBox){
+    if(!dataUrls.length) return;
+    let file;
+    try{
+      file = dataUrls.length > 1
+        ? new File([pagesToPdfBlob(dataUrls)], baseName + '.pdf', { type: 'application/pdf' })
+        : new File([dataUrlToBlob(dataUrls[0])], baseName + '.jpg', { type: 'image/jpeg' });
+    }catch(e){
+      errBox.textContent = 'Could not prepare the file to share. Please try Save instead.';
+      errBox.style.display = 'block'; return;
+    }
+    if(navigator.canShare && navigator.canShare({ files: [file] })){
+      try{
+        await navigator.share({ files: [file], title: baseName });
+        bumpUsage();
+      }catch(e){
+        if(e && e.name === 'AbortError') return;          // the person closed the share menu
+        errBox.textContent = 'Sharing did not work here. Please use Save, then send the file from your Downloads.';
+        errBox.style.display = 'block';
+      }
+      return;
+    }
+    // This browser can't share files (for example some laptops or in-app browsers): save it instead.
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(file); a.download = file.name; a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 20000);
+    bumpUsage();
+    showStatus('This browser can\'t share directly, so the file was saved to your Downloads — send it from there.', 5000);
+  }
+  // Prints the pages through a hidden frame, one page per sheet.
+  function printPages(dataUrls, errBox){
+    if(!dataUrls.length) return;
+    const old = document.getElementById('sfaPrintFrame'); if(old) old.remove();
+    const f = document.createElement('iframe');
+    f.id = 'sfaPrintFrame';
+    f.setAttribute('aria-hidden', 'true');
+    f.style.cssText = 'position:fixed; right:0; bottom:0; width:0; height:0; border:0; visibility:hidden;';
+    document.body.appendChild(f);
+    const d = f.contentDocument;
+    d.open();
+    d.write('<!doctype html><html><head><title>ScanFixAll</title><style>@page{size:auto;margin:8mm}html,body{margin:0;padding:0;background:#fff}'
+      + '.pg{height:100vh;display:flex;align-items:center;justify-content:center;page-break-after:always;break-after:page}'
+      + '.pg:last-child{page-break-after:auto;break-after:auto}img{max-width:100%;max-height:100%;object-fit:contain}</style></head><body>'
+      + dataUrls.map(u => '<div class="pg"><img src="' + u + '"></div>').join('') + '</body></html>');
+    d.close();
+    const imgs = Array.from(d.images);
+    Promise.all(imgs.map(im => im.complete ? 1 : new Promise(r => { im.onload = im.onerror = r; }))).then(() => {
+      try{
+        f.contentWindow.focus();
+        f.contentWindow.print();
+        bumpUsage();
+      }catch(e){
+        errBox.textContent = 'Printing is not available in this browser. Please Save as PDF, then print the PDF.';
+        errBox.style.display = 'block';
+      }
+    });
+  }
+
+  // Scan: same page rules as Save as PDF
+  function scanPagesForOutput(){
+    const pages = scanPages.slice();
+    if(scanCurrentImg) pages.push(finishedPageDataUrl());
+    if(!pages.length){ scanError.textContent = 'Take or upload a photo first.'; scanError.style.display = 'block'; return null; }
+    if(!isPremiumActive() && pages.length > 1){
+      showStatus('Several pages together is a Premium feature — using the last page only.', 4000);
+      return [pages[pages.length - 1]];
+    }
+    return pages;
+  }
+  document.getElementById('scanShareBtn').addEventListener('click', () => { const p = scanPagesForOutput(); if(p) sharePages(p, 'scan-' + Date.now(), scanError); });
+  document.getElementById('scanPrintBtn').addEventListener('click', () => { const p = scanPagesForOutput(); if(p) printPages(p, scanError); });
+
+  // Retype
+  async function retypePagesForOutput(){
+    await retypeReadyFonts();
+    return renderRetypePages().canvases.map(c => c.toDataURL('image/jpeg', 0.92));
+  }
+  document.getElementById('retypeShareBtn').addEventListener('click', async () => sharePages(await retypePagesForOutput(), 'retyped-' + Date.now(), scanError));
+  document.getElementById('retypePrintBtn').addEventListener('click', async () => printPages(await retypePagesForOutput(), scanError));
+
+  // Shrink
+  document.getElementById('shrinkShareBtn').addEventListener('click', () => {
+    if(!shrinkResultDataUrl){ shrinkError.textContent = 'Take or upload a photo first.'; shrinkError.style.display = 'block'; return; }
+    sharePages([shrinkResultDataUrl], 'shrunk-' + Date.now(), shrinkError);
+  });
+
+  // Sign
+  function signPageForOutput(){
+    if(!signCanvas.width){ signError.textContent = 'Open a document first.'; signError.style.display = 'block'; return null; }
+    return [finishedSignPageDataUrl()];
+  }
+  document.getElementById('signShareBtn').addEventListener('click', () => { const p = signPageForOutput(); if(p) sharePages(p, 'signed-' + Date.now(), signError); });
+  document.getElementById('signPrintBtn').addEventListener('click', () => { const p = signPageForOutput(); if(p) printPages(p, signError); });
+
+  // ---- "Convert a File": a Premium feature that is coming soon ----
+  document.getElementById('goConvertBtn').addEventListener('click', () => {
+    const note = document.getElementById('convertSoonNote');
+    note.innerHTML = '<b>📂 Convert a File is coming soon for Premium.</b><br>You\'ll be able to open a Word, PowerPoint or PDF file and turn it into a clean document you can retype, translate, summarize, sign, share and print. For now, you can take a screenshot of the page and use <b>Scan a Document</b>.';
+    note.style.display = note.style.display === 'block' ? 'none' : 'block';
+  });
+
+  updateFreeCountHint();
+
+
+  // ---- Paywall (ScanFixAll Premium) ----
+  let screenBeforePaywall = 'home';
+
+  function openPaywall(){
+    if(isFreeMonth()) return;   // no prices or payments during the free month
+    screenBeforePaywall = currentView === 'paywall' ? screenBeforePaywall : currentView;
+    showView('paywall');
+  }
+
+  function closePaywall(){
+    showView(screenBeforePaywall);
+  }
+
+  paywallBtn.addEventListener('click', openPaywall);
+  closePaywallBtn.addEventListener('click', closePaywall);
+
+  // ---- Premium access code: unlock, store, and display ----
+  const PREMIUM_FLAG_KEY = 'sf_premium_unlocked';
+  const PREMIUM_CODE_KEY = 'sf_premium_code';
+  const PREMIUM_EXPIRES_KEY = 'sf_premium_expires_at';
+  const CHECKOUT_SESSION_KEY = 'sf_pending_checkout_session_id';
+
+  function formatExpiryDate(iso){
+    try{
+      return new Date(iso).toLocaleDateString(undefined, { weekday:'long', month:'long', day:'numeric', year:'numeric' });
+    }catch(e){
+      return iso;
+    }
+  }
+
+  function refreshPremiumUI(){
+    if(typeof updateScanPdfLabel === 'function') updateScanPdfLabel();
+    // If a stored expiry has already passed, treat Premium as locked again
+    // automatically — no server round-trip needed, the code already proved
+    // itself genuine when it was first redeemed.
+    const storedExpiry = localStorage.getItem(PREMIUM_EXPIRES_KEY);
+    if(storedExpiry && Date.now() > new Date(storedExpiry).getTime()){
+      localStorage.removeItem(PREMIUM_FLAG_KEY);
+      localStorage.removeItem(PREMIUM_EXPIRES_KEY);
+      // Keep PREMIUM_CODE_KEY around so myCodeHint doesn't lose the code
+      // reference on locked state — it just won't unlock features anymore.
+    }
+
+    const unlocked = localStorage.getItem(PREMIUM_FLAG_KEY) === 'true';
+    const savedCode = localStorage.getItem(PREMIUM_CODE_KEY);
+    const expiresAt = localStorage.getItem(PREMIUM_EXPIRES_KEY);
+    if(unlocked){
+      premiumBadge.textContent = 'Unlocked ✅';
+      premiumBadge.className = 'premium-badge unlocked';
+      if(savedCode){
+        myCodeHint.style.display = 'block';
+        const expiryLine = expiresAt ? (' — active until ' + formatExpiryDate(expiresAt)) : '';
+        const planName = isFreeMonth() ? 'Free access code' : (savedCode.startsWith('SC-') ? 'Class Plan' : (savedCode.startsWith('SF-') ? 'Shared code' : 'Family Premium'));
+        myCodeHint.textContent = planName + ' · Your access code: ' + savedCode + expiryLine + '. It works on this device' + (savedCode.startsWith('SF-') ? ' only.' : ' and one more (for example your laptop).');
+      }
+      if(savedCode && (savedCode.startsWith('SE-') || savedCode.startsWith('SC-'))){
+        familyIntro.textContent = savedCode.startsWith('SC-')
+          ? 'Create a code for each student (up to 50). Each code works on one phone, and all students share the class\'s 100 AI pages. You can turn a code off or reset its device anytime.'
+          : 'Create a code for each family member (up to 5). Each code works on one phone, and everyone shares your 60 AI pages. You can turn a code off or reset its device anytime.';
+        familyLabelInput.placeholder = savedCode.startsWith('SC-') ? "Student's name (e.g. Juan)" : "Family member's name (e.g. Maria)";
+        familyCodesSection.style.display = 'block';
+        loadFamilyCodes();
+      } else {
+        familyCodesSection.style.display = 'none';
+      }
+    } else {
+      premiumBadge.textContent = isFreeMonth() ? 'No code yet' : 'Not unlocked';
+      premiumBadge.className = 'premium-badge locked';
+      myCodeHint.style.display = 'none';
+      familyCodesSection.style.display = 'none';
+    }
+  }
+
+  async function loadFamilyCodes(){
+    const ownerCode = localStorage.getItem(PREMIUM_CODE_KEY);
+    if(!ownerCode) return;
+    familyCodeError.style.display = 'none';
+    try{
+      const res = await fetch('/.netlify/functions/list-family-codes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ownerCode })
+      });
+      const data = await res.json().catch(() => ({}));
+      if(!res.ok) throw new Error(data.error || 'Could not load family codes.');
+      renderFamilyCodes(data.codes || [], data.max);
+    }catch(err){
+      familyCodesList.innerHTML = '';
+      familyCodeError.textContent = err.message || 'Could not load family codes right now.';
+      familyCodeError.style.display = 'block';
+    }
+  }
+
+  function renderFamilyCodes(codes, max){
+    familyCodesList.innerHTML = '';
+    if(max){
+      const active = codes.filter(c => !c.revoked).length;
+      const count = document.createElement('div');
+      count.className = 'hint';
+      count.textContent = active + ' of ' + max + ' codes in use';
+      familyCodesList.appendChild(count);
+    }
+    if(codes.length === 0){
+      const p = document.createElement('div');
+      p.className = 'hint';
+      p.textContent = 'No family codes yet — create one above.';
+      familyCodesList.appendChild(p);
+      return;
+    }
+    codes.forEach(c => {
+      const item = document.createElement('div');
+      item.className = 'family-code-item';
+
+      const info = document.createElement('div');
+      const name = document.createElement('div');
+      name.className = 'family-code-name';
+      name.textContent = c.label;
+      const value = document.createElement('div');
+      value.className = 'family-code-value';
+      value.textContent = c.code;
+      info.appendChild(name);
+      info.appendChild(value);
+
+      const right = document.createElement('div');
+      right.className = 'family-code-right';
+
+      const status = document.createElement('span');
+      status.className = 'family-code-status ' + (c.revoked ? 'revoked' : 'active');
+      status.textContent = c.revoked ? 'Off' : (c.hasDevice ? 'Active · on a phone' : 'Active · not used yet');
+
+      let resetBtn = null;
+      if(c.hasDevice && !c.revoked){
+        resetBtn = document.createElement('button');
+        resetBtn.className = 'skip-btn';
+        resetBtn.textContent = 'Reset device';
+        resetBtn.title = 'Lets this code be used on a new phone';
+        resetBtn.addEventListener('click', async () => {
+          resetBtn.disabled = true;
+          try{
+            const res = await fetch('/.netlify/functions/reset-device', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ ownerCode: localStorage.getItem(PREMIUM_CODE_KEY), code: c.code })
+            });
+            const data = await res.json().catch(() => ({}));
+            if(!res.ok || !data.ok) throw new Error(data.error || 'Could not reset that device.');
+            showStatus('Device reset ✓ ' + c.label + ' can now enter the code on their new phone.', 4000);
+            loadFamilyCodes();
+          }catch(err){
+            familyCodeError.textContent = err.message || 'Could not reset that device right now.';
+            familyCodeError.style.display = 'block';
+            resetBtn.disabled = false;
+          }
+        });
+      }
+
+      const toggleBtn = document.createElement('button');
+      toggleBtn.className = 'skip-btn';
+      toggleBtn.textContent = c.revoked ? 'Turn on' : 'Turn off';
+      toggleBtn.addEventListener('click', async () => {
+        toggleBtn.disabled = true;
+        try{
+          const ownerCode = localStorage.getItem(PREMIUM_CODE_KEY);
+          const res = await fetch('/.netlify/functions/revoke-family-code', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ ownerCode, code: c.code, revoked: !c.revoked })
+          });
+          const data = await res.json().catch(() => ({}));
+          if(!res.ok || !data.ok) throw new Error(data.error || 'Could not update that code.');
+          loadFamilyCodes();
+        }catch(err){
+          familyCodeError.textContent = err.message || 'Could not update that code right now.';
+          familyCodeError.style.display = 'block';
+          toggleBtn.disabled = false;
+        }
+      });
+
+      right.appendChild(status);
+      if(resetBtn) right.appendChild(resetBtn);
+      right.appendChild(toggleBtn);
+      item.appendChild(info);
+      item.appendChild(right);
+      familyCodesList.appendChild(item);
+    });
+  }
+
+  createFamilyCodeBtn.addEventListener('click', async () => {
+    const label = familyLabelInput.value.trim();
+    familyCodeError.style.display = 'none';
+    if(!label){
+      familyCodeError.textContent = 'Please type a name first.';
+      familyCodeError.style.display = 'block';
+      return;
+    }
+    const ownerCode = localStorage.getItem(PREMIUM_CODE_KEY);
+    if(!ownerCode) return;
+    createFamilyCodeBtn.disabled = true;
+    createFamilyCodeBtn.textContent = '…';
+    try{
+      const res = await fetch('/.netlify/functions/create-family-code', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ownerCode, label })
+      });
+      const data = await res.json().catch(() => ({}));
+      if(!res.ok || !data.code) throw new Error(data.error || 'Could not create a code right now.');
+      familyLabelInput.value = '';
+      loadFamilyCodes();
+    }catch(err){
+      familyCodeError.textContent = err.message || 'Could not create a code right now.';
+      familyCodeError.style.display = 'block';
+    }finally{
+      createFamilyCodeBtn.disabled = false;
+      createFamilyCodeBtn.textContent = 'Create code';
+    }
+  });
+
+  // A random ID for this browser, so a code can be locked to the device it's used on.
+  // (Websites can't read a phone's number or serial number — this is the private way.)
+  const DEVICE_ID_KEY = 'sf_device_id';
+  function getDeviceId(){
+    let id = null;
+    try{ id = localStorage.getItem(DEVICE_ID_KEY); }catch(e){}
+    if(!id || !/^[0-9a-f]{16,64}$/i.test(id)){
+      const bytes = new Uint8Array(16);
+      crypto.getRandomValues(bytes);
+      id = Array.from(bytes, b => b.toString(16).padStart(2, '0')).join('');
+      try{ localStorage.setItem(DEVICE_ID_KEY, id); }catch(e){}
+    }
+    return id;
+  }
+  // Registers this device for a code (used right after paying).
+  function claimThisDevice(code){
+    return fetch('/.netlify/functions/verify-code', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code, deviceId: getDeviceId() })
+    }).catch(() => {});
+  }
+
+  function unlockPremium(code, expiresAt){
+    localStorage.setItem(PREMIUM_FLAG_KEY, 'true');
+    if(code) localStorage.setItem(PREMIUM_CODE_KEY, code);
+    if(expiresAt) localStorage.setItem(PREMIUM_EXPIRES_KEY, expiresAt);
+    else localStorage.removeItem(PREMIUM_EXPIRES_KEY); // old-format/tester codes: no built-in expiry to store
+    refreshPremiumUI();
+  }
+
+  redeemCodeBtn.addEventListener('click', async () => {
+    const typed = redeemCodeInput.value.trim();
+    redeemError.style.display = 'none';
+    if(!typed){
+      redeemError.textContent = 'Please type in a code first.';
+      redeemError.style.display = 'block';
+      return;
+    }
+    redeemCodeBtn.disabled = true;
+    redeemCodeBtn.textContent = '…';
+    try {
+      const res = await fetch('/.netlify/functions/verify-code', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code: typed, deviceId: getDeviceId() })
+      });
+      const data = await res.json().catch(() => ({}));
+      if(!res.ok){
+        // A real server-side problem (e.g. a missing setting) — show the
+        // actual reason instead of implying the code itself was wrong.
+        throw new Error(data.error || ('Server error (' + res.status + '). Please try again in a moment.'));
+      }
+      if(data.valid){
+        unlockPremium(typed.toUpperCase(), data.expiresAt);
+        redeemCodeInput.value = '';
+      } else if(data.reason === 'expired'){
+        redeemError.textContent = 'This code has expired. Please renew to keep using Premium features.';
+        redeemError.style.display = 'block';
+      } else if(data.reason === 'device'){
+        redeemError.textContent = data.role === 'member'
+          ? 'This code is already being used on another device. Each family or student code works on one device only. If this is your code and you changed phones, ask the person who gave it to you to tap "Reset device" in their Settings.'
+          : 'This code is already being used on 2 devices (the limit). If you changed phones, email scanfixall@gmail.com with your code and we will reset it.';
+        redeemError.style.display = 'block';
+      } else if(data.reason === 'refresh'){
+        redeemError.textContent = 'Please refresh this page (pull down, or press Ctrl + Shift + R on a computer) and try again.';
+        redeemError.style.display = 'block';
+      } else {
+        redeemError.textContent = "That code doesn't look right — please check for typos and try again.";
+        redeemError.style.display = 'block';
+      }
+    } catch (err) {
+      redeemError.textContent = err.message || 'Could not check that code right now. Please try again in a moment.';
+      redeemError.style.display = 'block';
+    } finally {
+      redeemCodeBtn.disabled = false;
+      redeemCodeBtn.textContent = 'Unlock';
+    }
+  });
+
+  // Free-month wording: hide the Premium tab and prices, explain the free code.
+  (function applyFreeMonth(){
+    if(!isFreeMonth()) return;
+    const pw = document.getElementById('paywallBtn');
+    if(pw && pw.parentElement) pw.parentElement.style.display = 'none';   // hides the star AND its "Premium" label
+    const lbl = document.getElementById('premiumStatusLabel');
+    if(lbl) lbl.textContent = '🔑 Access code (for Retype)';
+    const rh = document.getElementById('redeemHint');
+    if(rh) rh.textContent = 'October promo: scanning, Clean paper, Shrink and Sign are free. Each free access code also includes 3 free AI pages (Retype, Translate, Listen) to try — enter your code above.';
+    const rb = document.getElementById('scanRetypeBtn');
+    if(rb) rb.textContent = '📝 Retype as new document (free access code)';
+    const rw = document.getElementById('retypePlanWord');
+    if(rw) rw.textContent = '3 free pages with an access code';
+  })();
+  refreshPremiumUI();
+
+  // Pay only works after the Terms box is ticked.
+  const termsAgree = document.getElementById('termsAgree');
+  termsAgree.addEventListener('change', () => { subscribeBtn.disabled = !termsAgree.checked; });
+  subscribeBtn.addEventListener('click', async () => {
+    paywallError.style.display = 'none';
+    if(!termsAgree.checked){
+      paywallError.textContent = 'Please tick "I agree to the Terms of Use" first.';
+      paywallError.style.display = 'block';
+      return;
+    }
+    subscribeBtn.disabled = true;
+    subscribeBtn.textContent = 'Redirecting to payment…';
+    try {
+      const chosenPlan = (document.querySelector('input[name="plan"]:checked') || {}).value === 'class' ? 'class' : 'family';
+      const res = await fetch('/.netlify/functions/create-checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ plan: chosenPlan })
+      });
+      if(!res.ok){
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.error || ('Could not start checkout. (' + res.status + ')'));
+      }
+      const data = await res.json();
+      if(!data.checkout_url) throw new Error('Did not receive a payment link. Please try again.');
+      // Save the session id so that when we come back after paying,
+      // we can ask the server to confirm this exact payment and issue a code.
+      if(data.session_id) sessionStorage.setItem(CHECKOUT_SESSION_KEY, data.session_id);
+      window.location.href = data.checkout_url;
+    } catch (err) {
+      paywallError.textContent = err.message;
+      paywallError.style.display = 'block';
+      subscribeBtn.disabled = !termsAgree.checked;
+      subscribeBtn.textContent = 'Subscribe / Pay Now';
+    }
+  });
+
+  // After returning from PayMongo's checkout page, show a banner explaining
+  // what happened, based on the ?paid= flag in the URL, then clean the URL up.
+  (function checkPaymentReturn(){
+    const params = new URLSearchParams(window.location.search);
+    const paid = params.get('paid');
+    if(!paid) return;
+
+    function showBanner(html){
+      paidBanner.innerHTML = html + '<button aria-label="Dismiss">✕</button>';
+      paidBanner.className = 'paid-banner';
+      paidBanner.style.display = 'flex';
+      paidBanner.querySelector('button').addEventListener('click', () => { paidBanner.style.display = 'none'; });
+    }
+
+    if(paid === 'success'){
+      showBanner('<span>🎉 Thank you for your support! Confirming your payment…</span>');
+
+      const sessionId = sessionStorage.getItem(CHECKOUT_SESSION_KEY);
+      if(sessionId){
+        fetch('/.netlify/functions/verify-payment', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ session_id: sessionId })
+        })
+          .then(res => res.json().then(data => ({ ok: res.ok, data })))
+          .then(({ ok, data }) => {
+            if(ok && data.code){
+              claimThisDevice(data.code);
+              unlockPremium(data.code, data.expiresAt);
+              const expiryLine = data.expiresAt ? ('<div style="font-size:12px; color:var(--text-muted); margin-top:8px;">Active for 30 days, until ' + formatExpiryDate(data.expiresAt) + '</div>') : '';
+              showBanner(
+                '<div>🎉 Thank you for your support! Premium is unlocked on this device.' +
+                '<div class="code-box"><div class="code-label">Your access code (save this — it also unlocks Premium for anyone you share it with)</div>' +
+                '<div class="code-value">' + data.code + '</div>' +
+                expiryLine +
+                '<button class="copy-code-btn" id="copyCodeBtn">Copy code</button></div></div>'
+              );
+              const copyBtn = document.getElementById('copyCodeBtn');
+              if(copyBtn) copyBtn.addEventListener('click', () => {
+                navigator.clipboard.writeText(data.code).then(() => { copyBtn.textContent = 'Copied ✓'; });
+              });
+            } else {
+              showBanner('<span>🎉 Thank you for your support! We couldn\'t automatically confirm the payment on this device. If you completed payment, please try reopening the app in the same browser you paid in, or email scanfixall@gmail.com with your PayMongo receipt or reference number and we\'ll send your code.</span>');
+            }
+          })
+          .catch(() => {
+            showBanner('<span>🎉 Thank you for your support! We couldn\'t automatically confirm the payment right now. Please try reopening the app in the same browser you paid in.</span>');
+          })
+          .finally(() => sessionStorage.removeItem(CHECKOUT_SESSION_KEY));
+      } else {
+        showBanner('<span>🎉 Thank you for your support! We couldn\'t find this payment session on this device (perhaps a different tab was used). If you completed payment, please email scanfixall@gmail.com with your PayMongo receipt or reference number and we\'ll send your code.</span>');
+      }
+    } else if(paid === 'cancelled'){
+      showBanner('<span>Payment was cancelled — no charge was made. You can try again anytime.</span>');
+    } else {
+      return;
+    }
+
+    // Clean the ?paid=... param out of the address bar
+    params.delete('paid');
+    const newUrl = window.location.pathname + (params.toString() ? ('?' + params.toString()) : '');
+    window.history.replaceState({}, '', newUrl);
+
+    // Open the paywall screen so the banner has context
+    openPaywall();
+  })();
+
+
+})();
+</script>
+
+</body>
+</html>
