@@ -1948,6 +1948,11 @@
         </div>
         <div id="retypePanel" style="display:none;">
           <div class="tool-hint">Here's your page retyped fresh. <b>Tap any word to fix it.</b> The handwritten signature is left out — use <b>Sign this page</b> to sign it again.</div>
+          <div id="retypeUnsureBox" style="display:none; margin-top:10px; padding:12px 14px; border-radius:12px; background:#FFF4CC; color:#3A2E00; border:1.5px solid #E0BB3D; font-size:14.5px; line-height:1.5;">
+            <b>✏️ <span id="retypeUnsureCount"></span> the AI could not read clearly.</b><br>
+            They are marked <span style="background:#ffe08a; padding:0 4px; border-radius:3px;">[?]</span> in yellow. <b>Tap each yellow [?]</b>, delete it, and <b>type the correct word</b>.<br>
+            <span style="font-size:13px;">Please also check names, dates and numbers. The yellow color shows only on screen — it will <b>not</b> appear when you save, share or print.</span>
+          </div>
           <label class="tool-hint" id="retypeLetterheadRow" style="display:none; margin-top:10px; gap:8px; align-items:center; cursor:pointer;">
             <input type="checkbox" id="retypeKeepLetterhead" style="width:20px;height:20px;">
             <span><b>Keep original letterhead / logo</b> — only if it is <i>your own</i> or your organization's. A small <i>"Retyped copy"</i> note is added at the bottom of the page.</span>
@@ -3259,7 +3264,9 @@
       refreshLetterheadPreview();
       openRetypePanel();
       const unsure = (retypePaper.innerHTML.match(/\[\?\]/g) || []).length;
-      showStatus((unsure ? 'Retyped ✓ ' + unsure + ' word' + (unsure > 1 ? 's' : '') + ' marked [?] could not be read clearly — please type them in.' : 'Retyped ✓ Tap any word to fix it.') + (typeof data.pagesLeft === 'number' ? ' (' + data.pagesLeft + ' Retype pages left for this 30-day period)' : ''), 4000);
+      document.getElementById('retypeUnsureCount').textContent = unsure === 1 ? '1 word' : unsure + ' words';
+      document.getElementById('retypeUnsureBox').style.display = unsure ? 'block' : 'none';
+      showStatus((unsure ? 'Retyped ✓ ' + unsure + ' word' + (unsure > 1 ? 's' : '') + ' marked [?] could not be read clearly — tap each yellow [?] and type the correct word.' : 'Retyped ✓ Tap any word to fix it.') + (typeof data.pagesLeft === 'number' ? ' (' + data.pagesLeft + ' Retype pages left for this 30-day period)' : ''), 4000);
     }catch(err){
       sfaToast.style.display = 'none';
       scanError.textContent = err.message || 'Could not retype right now. Please try again.';
