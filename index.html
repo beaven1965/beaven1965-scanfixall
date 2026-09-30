@@ -1537,6 +1537,9 @@
     font-family:inherit;
   }
   .mode-card:active{ background:var(--surface-line); }
+  .mode-card.soon{ border:1.5px dashed var(--gold); background:transparent; }
+  .mode-card.soon .mode-icon{ opacity:.85; }
+  .soon-badge{ display:inline-block; margin-left:6px; padding:2px 8px; border-radius:999px; background:var(--gold); color:var(--ink-deep); font-family:'Inter',sans-serif; font-size:11px; font-weight:700; vertical-align:middle; letter-spacing:.3px; }
   .mode-card .mode-icon{
     font-size:34px;
     line-height:1;
@@ -1605,6 +1608,8 @@
   .fold[open] > summary::after{ transform:translateY(-50%) rotate(0deg); }
   .fold > summary small{ display:block; font-weight:400; color:#6b7384; font-size:12.5px; margin-top:2px; }
   .fold > .fold-body{ padding:0 12px 14px; }
+  .mini-help > summary{ list-style:none; }
+  .mini-help > summary::-webkit-details-marker{ display:none; }
   .canvas-wrap{
     background:var(--ink-deep);
     border:1px solid var(--surface-line);
@@ -1838,6 +1843,14 @@
             <span class="mode-sub">Draw your signature and place it on a document photo — no printer needed.</span>
           </span>
         </button>
+        <button class="mode-card soon" id="goConvertBtn" aria-describedby="convertSoonNote">
+          <span class="mode-icon">📂</span>
+          <span>
+            <span class="mode-title" style="display:block;">Convert a File <span class="soon-badge">🔒 COMING SOON</span></span>
+            <span class="mode-sub">Turn a Word, PowerPoint or PDF file into a clean document — then retype, translate or summarize it. Premium.</span>
+          </span>
+        </button>
+        <div class="tool-hint" id="convertSoonNote" style="display:none; margin-top:-4px; padding:12px 14px; border-radius:12px; background:var(--surface); color:var(--text); line-height:1.5;"></div>
       </div>
       <div class="free-count-hint" id="freeCountHint"></div>
     </div>
@@ -1902,15 +1915,17 @@
           <div class="tool-upload-row" style="margin-top:6px;">
             <button class="tool-btn" id="scanRetypeBtn">📝 Retype as new document ⭐ Premium</button>
           </div>
-          <div class="tool-hint" style="margin-top:8px;">
-            <b>Clean or Retype?</b><br>
+          <details class="tool-hint mini-help" style="margin-top:8px;">
+            <summary style="cursor:pointer; text-decoration:underline;">Which should I use — Clean or Retype?</summary>
+            <div style="margin-top:6px;">
             <b>✨ Clean paper</b> (free): keeps the <i>original</i> page — letterhead, logo and handwritten signature stay — but faint creases or stains may still show.<br>
             <b>📝 Retype</b> (<span id="retypePlanWord">Premium</span>): reads the text and prints it on a <i>brand-new</i> white page. Perfectly clean. You can keep the original letterhead/logo as a picture, and you sign it again.
-          </div>
             </div>
           </details>
-          <details class="fold" id="foldSave" open>
-            <summary>💾 Save or add more pages<small>Image, PDF, or several pages in one PDF</small></summary>
+            </div>
+          </details>
+          <details class="fold" id="foldSave">
+            <summary>💾 Save · Share · Print<small>Image or PDF · add more pages · send · print</small></summary>
             <div class="fold-body">
           <div class="tool-hint" style="margin-top:0;">Got more pages? Add them before saving — they'll all go into one PDF.</div>
           <div class="page-thumbs" id="scanPageThumbs" style="margin-top:10px;"></div>
@@ -1923,6 +1938,10 @@
           <div class="tool-upload-row" style="margin-top:10px;">
             <button class="tool-btn primary" id="scanSaveImageBtn">⬇ Save as Image</button>
             <button class="tool-btn primary" id="scanSavePdfBtn">⬇ Save as PDF</button>
+          </div>
+          <div class="tool-upload-row" style="margin-top:10px;">
+            <button class="tool-btn" id="scanShareBtn">📤 Share</button>
+            <button class="tool-btn" id="scanPrintBtn">🖨 Print</button>
           </div>
             </div>
           </details>
@@ -1984,10 +2003,19 @@
           <div class="tool-upload-row" style="margin-top:10px;">
             <button class="tool-btn primary" id="retypeSignBtn">✍️ Sign this page</button>
           </div>
-          <div class="tool-upload-row" style="margin-top:10px;">
+          <details class="fold" id="foldRetypeSave" open>
+            <summary>💾 Save · Share · Print<small>Image or PDF · send · print</small></summary>
+            <div class="fold-body">
+          <div class="tool-upload-row" style="margin-top:0;">
             <button class="tool-btn primary" id="retypeSaveImageBtn">⬇ Save as Image</button>
             <button class="tool-btn primary" id="retypeSavePdfBtn">⬇ Save as PDF</button>
           </div>
+          <div class="tool-upload-row" style="margin-top:10px;">
+            <button class="tool-btn" id="retypeShareBtn">📤 Share</button>
+            <button class="tool-btn" id="retypePrintBtn">🖨 Print</button>
+          </div>
+            </div>
+          </details>
           <div class="tool-upload-row" style="margin-top:10px;">
             <button class="tool-btn" id="retypeBackBtn">↩ Back to the scanned page</button>
           </div>
@@ -2028,6 +2056,9 @@
           </div>
           <div class="tool-upload-row" style="margin-top:10px;">
             <button class="tool-btn primary" id="shrinkSaveBtn">⬇ Download Shrunk Photo</button>
+          </div>
+          <div class="tool-upload-row" style="margin-top:10px;">
+            <button class="tool-btn" id="shrinkShareBtn">📤 Share</button>
           </div>
         </div>
       </div>
@@ -2075,6 +2106,10 @@
           <div class="tool-upload-row" style="margin-top:14px;">
             <button class="tool-btn primary" id="signSaveImageBtn">⬇ Save as Image</button>
             <button class="tool-btn primary" id="signSavePdfBtn">⬇ Save as PDF</button>
+          </div>
+          <div class="tool-upload-row" style="margin-top:10px;">
+            <button class="tool-btn" id="signShareBtn">📤 Share</button>
+            <button class="tool-btn" id="signPrintBtn">🖨 Print</button>
           </div>
         </div>
       </div>
@@ -3232,6 +3267,15 @@
   });
   retypeBackBtn.addEventListener('click', closeRetypePanel);
 
+  // Only one fold-open section at a time, so every heading stays on screen.
+  document.querySelectorAll('details.fold').forEach(d => {
+    d.addEventListener('toggle', () => {
+      if(!d.open) return;
+      d.parentElement.querySelectorAll(':scope > details.fold[open]').forEach(o => { if(o !== d) o.open = false; });
+      setTimeout(() => { const r = d.getBoundingClientRect(); if(r.top < 0 || r.top > window.innerHeight * 0.6) d.scrollIntoView({ behavior:'smooth', block:'start' }); }, 30);
+    });
+  });
+
   // ---- Translate: keeps the original so the person can switch back ----
   const retypeTranslateBtn = document.getElementById('retypeTranslateBtn');
   const retypeLang = document.getElementById('retypeLang');
@@ -3978,6 +4022,131 @@
       signError.textContent = 'Could not build the PDF right now. Please try again.';
       signError.style.display = 'block';
     }
+  });
+
+  // =========================================================
+  // SHARE & PRINT (all tools) — free, no AI
+  // =========================================================
+  function dataUrlToBlob(dataUrl){
+    const [head, b64] = dataUrl.split(',');
+    const mime = (head.match(/data:([^;]+)/) || [])[1] || 'image/jpeg';
+    const bin = atob(b64); const arr = new Uint8Array(bin.length);
+    for(let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+    return new Blob([arr], { type: mime });
+  }
+  function pagesToPdfBlob(dataUrls){
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ unit: 'pt', format: 'a4' });
+    const pw = doc.internal.pageSize.getWidth(), ph = doc.internal.pageSize.getHeight();
+    dataUrls.forEach((u, i) => {
+      const pr = doc.getImageProperties(u);
+      const r = Math.min(pw / pr.width, ph / pr.height);
+      const w = pr.width * r, h = pr.height * r;
+      if(i) doc.addPage();
+      doc.addImage(u, 'JPEG', (pw - w) / 2, (ph - h) / 2, w, h);
+    });
+    return doc.output('blob');
+  }
+  // One page → a JPG picture (opens in Messenger, Viber, Gmail…); several → one PDF.
+  async function sharePages(dataUrls, baseName, errBox){
+    if(!dataUrls.length) return;
+    let file;
+    try{
+      file = dataUrls.length > 1
+        ? new File([pagesToPdfBlob(dataUrls)], baseName + '.pdf', { type: 'application/pdf' })
+        : new File([dataUrlToBlob(dataUrls[0])], baseName + '.jpg', { type: 'image/jpeg' });
+    }catch(e){
+      errBox.textContent = 'Could not prepare the file to share. Please try Save instead.';
+      errBox.style.display = 'block'; return;
+    }
+    if(navigator.canShare && navigator.canShare({ files: [file] })){
+      try{
+        await navigator.share({ files: [file], title: baseName });
+        bumpUsage();
+      }catch(e){
+        if(e && e.name === 'AbortError') return;          // the person closed the share menu
+        errBox.textContent = 'Sharing did not work here. Please use Save, then send the file from your Downloads.';
+        errBox.style.display = 'block';
+      }
+      return;
+    }
+    // This browser can't share files (for example some laptops or in-app browsers): save it instead.
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(file); a.download = file.name; a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 20000);
+    bumpUsage();
+    showStatus('This browser can\'t share directly, so the file was saved to your Downloads — send it from there.', 5000);
+  }
+  // Prints the pages through a hidden frame, one page per sheet.
+  function printPages(dataUrls, errBox){
+    if(!dataUrls.length) return;
+    const old = document.getElementById('sfaPrintFrame'); if(old) old.remove();
+    const f = document.createElement('iframe');
+    f.id = 'sfaPrintFrame';
+    f.setAttribute('aria-hidden', 'true');
+    f.style.cssText = 'position:fixed; right:0; bottom:0; width:0; height:0; border:0; visibility:hidden;';
+    document.body.appendChild(f);
+    const d = f.contentDocument;
+    d.open();
+    d.write('<!doctype html><html><head><title>ScanFixAll</title><style>@page{size:auto;margin:8mm}html,body{margin:0;padding:0;background:#fff}'
+      + '.pg{height:100vh;display:flex;align-items:center;justify-content:center;page-break-after:always;break-after:page}'
+      + '.pg:last-child{page-break-after:auto;break-after:auto}img{max-width:100%;max-height:100%;object-fit:contain}</style></head><body>'
+      + dataUrls.map(u => '<div class="pg"><img src="' + u + '"></div>').join('') + '</body></html>');
+    d.close();
+    const imgs = Array.from(d.images);
+    Promise.all(imgs.map(im => im.complete ? 1 : new Promise(r => { im.onload = im.onerror = r; }))).then(() => {
+      try{
+        f.contentWindow.focus();
+        f.contentWindow.print();
+        bumpUsage();
+      }catch(e){
+        errBox.textContent = 'Printing is not available in this browser. Please Save as PDF, then print the PDF.';
+        errBox.style.display = 'block';
+      }
+    });
+  }
+
+  // Scan: same page rules as Save as PDF
+  function scanPagesForOutput(){
+    const pages = scanPages.slice();
+    if(scanCurrentImg) pages.push(finishedPageDataUrl());
+    if(!pages.length){ scanError.textContent = 'Take or upload a photo first.'; scanError.style.display = 'block'; return null; }
+    if(!isPremiumActive() && pages.length > 1){
+      showStatus('Several pages together is a Premium feature — using the last page only.', 4000);
+      return [pages[pages.length - 1]];
+    }
+    return pages;
+  }
+  document.getElementById('scanShareBtn').addEventListener('click', () => { const p = scanPagesForOutput(); if(p) sharePages(p, 'scan-' + Date.now(), scanError); });
+  document.getElementById('scanPrintBtn').addEventListener('click', () => { const p = scanPagesForOutput(); if(p) printPages(p, scanError); });
+
+  // Retype
+  async function retypePagesForOutput(){
+    await retypeReadyFonts();
+    return renderRetypePages().canvases.map(c => c.toDataURL('image/jpeg', 0.92));
+  }
+  document.getElementById('retypeShareBtn').addEventListener('click', async () => sharePages(await retypePagesForOutput(), 'retyped-' + Date.now(), scanError));
+  document.getElementById('retypePrintBtn').addEventListener('click', async () => printPages(await retypePagesForOutput(), scanError));
+
+  // Shrink
+  document.getElementById('shrinkShareBtn').addEventListener('click', () => {
+    if(!shrinkResultDataUrl){ shrinkError.textContent = 'Take or upload a photo first.'; shrinkError.style.display = 'block'; return; }
+    sharePages([shrinkResultDataUrl], 'shrunk-' + Date.now(), shrinkError);
+  });
+
+  // Sign
+  function signPageForOutput(){
+    if(!signCanvas.width){ signError.textContent = 'Open a document first.'; signError.style.display = 'block'; return null; }
+    return [finishedSignPageDataUrl()];
+  }
+  document.getElementById('signShareBtn').addEventListener('click', () => { const p = signPageForOutput(); if(p) sharePages(p, 'signed-' + Date.now(), signError); });
+  document.getElementById('signPrintBtn').addEventListener('click', () => { const p = signPageForOutput(); if(p) printPages(p, signError); });
+
+  // ---- "Convert a File": a Premium feature that is coming soon ----
+  document.getElementById('goConvertBtn').addEventListener('click', () => {
+    const note = document.getElementById('convertSoonNote');
+    note.innerHTML = '<b>📂 Convert a File is coming soon for Premium.</b><br>You\'ll be able to open a Word, PowerPoint or PDF file and turn it into a clean document you can retype, translate, summarize, sign, share and print. For now, you can take a screenshot of the page and use <b>Scan a Document</b>.';
+    note.style.display = note.style.display === 'block' ? 'none' : 'block';
   });
 
   updateFreeCountHint();
