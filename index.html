@@ -2013,6 +2013,10 @@
             <button class="tool-btn" id="retypeListenBtn">🔊 Listen — AI voice</button>
           </div>
           <audio id="retypeAudio" controls style="display:none; width:100%; margin-top:8px;"></audio>
+          <div class="tool-upload-row" id="retypeAudioRow" style="margin-top:8px; display:none;">
+            <button class="tool-btn" id="retypeAudioSaveBtn">⬇ Save audio</button>
+            <button class="tool-btn" id="retypeAudioShareBtn">📤 Share audio</button>
+          </div>
           <div class="tool-hint" id="retypeListenNote" style="margin-top:6px;">Reads the page aloud — the original or the translation, whichever is showing. Uses 1 AI page. Playing it again is free.</div>
             </div>
           </details>
@@ -3332,6 +3336,7 @@
       listenCache = { text, url: URL.createObjectURL(blob) };
       retypeAudio.src = listenCache.url;
       retypeAudio.style.display = 'block';
+      document.getElementById('retypeAudioRow').style.display = 'flex';
       retypeAudio.play().catch(() => {});
       const left = res.headers.get('X-Pages-Left');
       retypeListenNote.textContent = '🔊 Playing. Use the player to pause or replay — replaying is free.' + (left !== null ? ' (' + left + ' AI pages left)' : '');
@@ -3341,7 +3346,33 @@
       listenBusy = false; retypeListenBtn.textContent = label; retypeListenBtn.disabled = false;
     }
   });
-  function resetListen(){ try{ retypeAudio.pause(); }catch(e){} retypeAudio.style.display = 'none'; }
+  function resetListen(){ try{ retypeAudio.pause(); }catch(e){} retypeAudio.style.display = 'none'; document.getElementById('retypeAudioRow').style.display = 'none'; }
+  // Save / share the narration as an MP3 file (free — the audio is already made).
+  async function narrationFile(){
+    if(!listenCache.url) return null;
+    const blob = await fetch(listenCache.url).then(r => r.blob());
+    return new File([blob], 'narration-' + Date.now() + '.mp3', { type: 'audio/mpeg' });
+  }
+  function downloadFile(file){
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(file); a.download = file.name;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 20000);
+  }
+  document.getElementById('retypeAudioSaveBtn').addEventListener('click', async () => {
+    const f = await narrationFile(); if(!f) return;
+    downloadFile(f);
+    retypeListenNote.textContent = 'Audio saved to your Downloads ✓ (' + f.name + ')';
+  });
+  document.getElementById('retypeAudioShareBtn').addEventListener('click', async () => {
+    const f = await narrationFile(); if(!f) return;
+    if(navigator.canShare && navigator.canShare({ files: [f] })){
+      try{ await navigator.share({ files: [f], title: 'Narration' }); return; }
+      catch(e){ if(e && e.name === 'AbortError') return; }
+    }
+    downloadFile(f);
+    retypeListenNote.textContent = 'This browser can\'t share audio directly, so it was saved to your Downloads — send it from there.';
+  });
 
   // ---- Translate: keeps the original so the person can switch back ----
   const retypeTranslateBtn = document.getElementById('retypeTranslateBtn');
