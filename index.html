@@ -1786,6 +1786,9 @@
     color:var(--text-muted);
     line-height:1.5;
   }
+  .share-app-btn{ margin:4px auto 0; display:block; padding:10px 18px; border-radius:999px; border:1.5px solid var(--gold); background:rgba(255,255,255,.85);
+    color:var(--gold); font-weight:700; font-size:14.5px; cursor:pointer; box-shadow:0 1px 4px rgba(30,50,52,.10); font-family:inherit; }
+  .share-app-btn:active{ transform:scale(.97); }
 </style>
 
 <style id="art-theme">
@@ -1883,6 +1886,23 @@
         <div class="tool-hint" id="convertSoonNote" style="display:none; margin-top:-4px; padding:12px 14px; border-radius:12px; background:var(--surface); color:var(--text); line-height:1.5;"></div>
       </div>
       <div class="free-count-hint" id="freeCountHint"></div>
+      <button type="button" class="share-app-btn" id="shareAppBtn">📤 Share this app</button>
+      <script>
+      (function(){
+        var b = document.getElementById('shareAppBtn');
+        b.addEventListener('click', async function(){
+          var url = location.origin + '/';
+          var text = "Scan, clean, shrink and sign documents on your phone — free to try:";
+          if(navigator.share){
+            try{ await navigator.share({ title: "ScanFixAll", text: text, url: url }); return; }
+            catch(e){ if(e && e.name === 'AbortError') return; }
+          }
+          try{ await navigator.clipboard.writeText(text + ' ' + url); b.textContent = '✅ Link copied — paste it in Messenger'; }
+          catch(e){ prompt('Copy this link and send it:', url); }
+          setTimeout(function(){ b.textContent = '📤 Share this app'; }, 3500);
+        });
+      })();
+      </script>
     </div>
 
     <!-- SCAN A DOCUMENT -->
