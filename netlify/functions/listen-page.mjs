@@ -12,6 +12,27 @@ import { getStore } from '@netlify/blobs';
 const PAGE_LIMIT = { family: 60, class: 100 };    // AI pages per 30-day PAID code (Family ₱250 / Class ₱1,500)
 const FREE_PAGE_LIMIT = 3;                          // free (trial) codes: 3 AI pages in total
 
+// 🎁 Free load: a phone/laptop with no code gets FREE_PAGE_LIMIT AI pages, one time, counted as 'free:<device>'.
+const FREE_DAILY_ALL = 60;   // safety cap: free pages for everyone together per day (protects the AI bill)
+const validDevice = (d) => /^[0-9a-f]{16,64}$/i.test(String(d || ''));
+async function checkCodeOrFree(code, secret, device){
+  if (!String(code || '').trim()) {
+    return validDevice(device) ? { valid: true, owner: 'free:' + String(device).toLowerCase(), plan: 'free', free: true } : { valid: false, reason: 'refresh' };
+  }
+  return checkCode(code, secret);
+}
+const phDay = () => new Date(Date.now() + 8 * 3600 * 1000).toISOString().slice(0, 10);
+async function freeDayFull(checked){
+  if (!checked.free) return false;
+  return (Number(await getStore('retype-pages').get('free-day:' + phDay())) || 0) >= FREE_DAILY_ALL;
+}
+async function bumpFreeDay(checked){
+  if (!checked.free) return;
+  const st = getStore('retype-pages'), k = 'free-day:' + phDay();
+  await st.set(k, String((Number(await st.get(k)) || 0) + 1));
+}
+const BUSY = 'ScanFixAll is very busy today, so the free AI pages are paused until tomorrow. Scanning, Clean paper, Shrink and Sign still work.';
+
 // Paid codes are marked in the 'paid-codes' store by verify-payment when PayMongo
 // confirms the payment. Any other code is a free promo code. The owner can also
 // list codes (comma-separated) in the PAID_CODES environment variable.
@@ -96,7 +117,7 @@ export default async (req) => {
   if (!secret) return json({ error: 'Server is missing ACCESS_CODE_SECRET as a Netlify environment variable.' });
 
   const body = await req.json().catch(() => null) || {};
-  const checked = await checkCode(body.code, secret);
+  const checked = await checkCodeOrFree(body.code, secret, body.device);
   if (!checked.valid) {
     return json({ error: checked.reason === 'expired'
       ? 'Your Premium code has expired. Please renew to use Listen.'
@@ -109,6 +130,7 @@ export default async (req) => {
   const usageStore = getStore('retype-pages');
   const used = Number(await usageStore.get(checked.owner)) || 0;
   if (used >= limit) return json({ error: limitReachedMsg(limit, paid), pagesLeft: 0 });
+  if (await freeDayFull(checked)) return json({ error: BUSY });
 
   const parts = pieces(text);
   const stream = new ReadableStream({
@@ -125,7 +147,7 @@ export default async (req) => {
         } catch (e) { break; }
         if (!res.ok) { console.log('listen: voice service error', res.status); break; }
         const buf = new Uint8Array(await res.arrayBuffer());
-        if (!counted) { counted = true; await usageStore.set(checked.owner, String(used + 1)); }
+        if (!counted) { counted = true; await usageStore.set(checked.owner, String(used + 1)); await bumpFreeDay(checked); }
         controller.enqueue(buf);
       }
       controller.close();

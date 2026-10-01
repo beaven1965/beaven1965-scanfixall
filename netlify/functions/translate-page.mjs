@@ -11,6 +11,27 @@ const MODEL = 'claude-sonnet-5';     // better with Philippine languages than th
 const PAGE_LIMIT = { family: 60, class: 100 };    // AI pages per 30-day PAID code (Family ₱250 / Class ₱1,500)
 const FREE_PAGE_LIMIT = 3;                          // free (trial) codes: 3 AI pages in total
 
+// 🎁 Free load: a phone/laptop with no code gets FREE_PAGE_LIMIT AI pages, one time, counted as 'free:<device>'.
+const FREE_DAILY_ALL = 60;   // safety cap: free pages for everyone together per day (protects the AI bill)
+const validDevice = (d) => /^[0-9a-f]{16,64}$/i.test(String(d || ''));
+async function checkCodeOrFree(code, secret, device){
+  if (!String(code || '').trim()) {
+    return validDevice(device) ? { valid: true, owner: 'free:' + String(device).toLowerCase(), plan: 'free', free: true } : { valid: false, reason: 'refresh' };
+  }
+  return checkCode(code, secret);
+}
+const phDay = () => new Date(Date.now() + 8 * 3600 * 1000).toISOString().slice(0, 10);
+async function freeDayFull(checked){
+  if (!checked.free) return false;
+  return (Number(await getStore('retype-pages').get('free-day:' + phDay())) || 0) >= FREE_DAILY_ALL;
+}
+async function bumpFreeDay(checked){
+  if (!checked.free) return;
+  const st = getStore('retype-pages'), k = 'free-day:' + phDay();
+  await st.set(k, String((Number(await st.get(k)) || 0) + 1));
+}
+const BUSY = 'ScanFixAll is very busy today, so the free AI pages are paused until tomorrow. Scanning, Clean paper, Shrink and Sign still work.';
+
 // Paid codes are marked in the 'paid-codes' store by verify-payment when PayMongo
 // confirms the payment. Any other code is a free promo code. The owner can also
 // list codes (comma-separated) in the PAID_CODES environment variable.
@@ -98,7 +119,7 @@ async function doTranslate(body, deadline){
   const { code, blocks, lang } = body || {};
   const langName = LANGUAGES[lang];
   if (!langName) return { error: 'Please choose a language.' };
-  const checked = await checkCode(code, secret);
+  const checked = await checkCodeOrFree(code, secret, body && body.device);
   if (!checked.valid) {
     return { error: checked.reason === 'expired'
       ? 'Your Premium code has expired. Please renew to use Translate.'
@@ -111,6 +132,7 @@ async function doTranslate(body, deadline){
   const usageStore = getStore('retype-pages');
   const used = Number(await usageStore.get(checked.owner)) || 0;
   if (used >= limit) return { error: limitReachedMsg(limit, paid), pagesLeft: 0 };
+  if (await freeDayFull(checked)) return { error: BUSY };
 
   const numbered = texts.map((t, i) => 'Block ' + i + ':\n' + t).join('\n\n');
   const abort = new AbortController();
@@ -145,6 +167,7 @@ async function doTranslate(body, deadline){
     return { error: 'Could not translate right now. Please try again.' };
   }
   await usageStore.set(checked.owner, String(used + 1));     // count only a finished translation
+  await bumpFreeDay(checked);
   return { blocks: parsed.blocks.map(b => b.slice(0, 6000)), language: langName, pagesLeft: Math.max(0, limit - used - 1) };
 }
 

@@ -7,6 +7,28 @@
 
 import crypto from 'node:crypto';
 import { getStore } from '@netlify/blobs';
+const FREE_PAGE_LIMIT = 3;
+
+// 🎁 Free load: a phone/laptop with no code gets FREE_PAGE_LIMIT AI pages, one time, counted as 'free:<device>'.
+const FREE_DAILY_ALL = 60;   // safety cap: free pages for everyone together per day (protects the AI bill)
+const validDevice = (d) => /^[0-9a-f]{16,64}$/i.test(String(d || ''));
+async function checkCodeOrFree(code, secret, device){
+  if (!String(code || '').trim()) {
+    return validDevice(device) ? { valid: true, owner: 'free:' + String(device).toLowerCase(), plan: 'free', free: true } : { valid: false, reason: 'refresh' };
+  }
+  return checkCode(code, secret);
+}
+const phDay = () => new Date(Date.now() + 8 * 3600 * 1000).toISOString().slice(0, 10);
+async function freeDayFull(checked){
+  if (!checked.free) return false;
+  return (Number(await getStore('retype-pages').get('free-day:' + phDay())) || 0) >= FREE_DAILY_ALL;
+}
+async function bumpFreeDay(checked){
+  if (!checked.free) return;
+  const st = getStore('retype-pages'), k = 'free-day:' + phDay();
+  await st.set(k, String((Number(await st.get(k)) || 0) + 1));
+}
+const BUSY = 'ScanFixAll is very busy today, so the free AI pages are paused until tomorrow. Scanning, Clean paper, Shrink and Sign still work.';
 
 const MODEL = 'claude-haiku-4-5-20251001';
 const OLD_FORMAT_CUTOFF_MS = new Date('2026-09-30T00:00:00+08:00').getTime();
@@ -82,12 +104,13 @@ async function doCheck(body, deadline){
   if (!apiKey || !secret) return { error: 'Grammar check is not set up on the server yet.' };
 
   const { code, blocks } = body || {};
-  const checked = await checkCode(code, secret);
+  const checked = await checkCodeOrFree(code, secret, body && body.device);
   if (!checked.valid) {
     return { error: checked.reason === 'expired'
       ? 'Your Premium code has expired. Please renew to use grammar suggestions.'
       : 'Grammar suggestions are a Premium feature. Your access code could not be confirmed.' };
   }
+  if (checked.free && (Number(await getStore('retype-pages').get(checked.owner)) || 0) >= FREE_PAGE_LIMIT) return { error: "You've used your " + FREE_PAGE_LIMIT + ' free AI pages. Get Premium (₱250 a month) for grammar suggestions and 60 AI pages.' };
   if (!Array.isArray(blocks) || !blocks.length) return { error: 'There is no text on the page to check.' };
   const texts = blocks.slice(0, 80).map(t => String(t || '').slice(0, 5000));
   const numbered = texts.map((t, i) => 'Block ' + i + ':\n' + t).join('\n\n');

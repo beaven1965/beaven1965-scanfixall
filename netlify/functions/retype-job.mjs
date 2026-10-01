@@ -11,6 +11,27 @@ import { getStore } from '@netlify/blobs';
 const PAGE_LIMIT = { family: 60, class: 100 };    // AI pages per 30-day PAID code (Family ₱250 / Class ₱1,500)
 const FREE_PAGE_LIMIT = 3;                          // free (trial) codes: 3 AI pages in total
 
+// 🎁 Free load: a phone/laptop with no code gets FREE_PAGE_LIMIT AI pages, one time, counted as 'free:<device>'.
+const FREE_DAILY_ALL = 60;   // safety cap: free pages for everyone together per day (protects the AI bill)
+const validDevice = (d) => /^[0-9a-f]{16,64}$/i.test(String(d || ''));
+async function checkCodeOrFree(code, secret, device){
+  if (!String(code || '').trim()) {
+    return validDevice(device) ? { valid: true, owner: 'free:' + String(device).toLowerCase(), plan: 'free', free: true } : { valid: false, reason: 'refresh' };
+  }
+  return checkCode(code, secret);
+}
+const phDay = () => new Date(Date.now() + 8 * 3600 * 1000).toISOString().slice(0, 10);
+async function freeDayFull(checked){
+  if (!checked.free) return false;
+  return (Number(await getStore('retype-pages').get('free-day:' + phDay())) || 0) >= FREE_DAILY_ALL;
+}
+async function bumpFreeDay(checked){
+  if (!checked.free) return;
+  const st = getStore('retype-pages'), k = 'free-day:' + phDay();
+  await st.set(k, String((Number(await st.get(k)) || 0) + 1));
+}
+const BUSY = 'ScanFixAll is very busy today, so the free AI pages are paused until tomorrow. Scanning, Clean paper, Shrink and Sign still work.';
+
 // Paid codes are marked in the 'paid-codes' store by verify-payment when PayMongo
 // confirms the payment. Any other code is a free promo code. The owner can also
 // list codes (comma-separated) in the PAID_CODES environment variable.
@@ -89,8 +110,7 @@ export default async (req) => {
     const secret = process.env.ACCESS_CODE_SECRET;
     if (!process.env.ANTHROPIC_API_KEY) return json({ error: 'Retype is not set up yet: the server is missing ANTHROPIC_API_KEY as a Netlify environment variable.' });
     if (!secret) return json({ error: 'Server is missing ACCESS_CODE_SECRET as a Netlify environment variable.' });
-    if (!body.code) return json({ error: 'Retype is a Premium feature. Please unlock Premium first.' });
-    const checked = await checkCode(body.code, secret);
+    const checked = await checkCodeOrFree(body.code, secret, body.device);
     if (!checked.valid) {
       return json({ error: checked.reason === 'expired'
         ? 'Your Premium code has expired. Please renew to use Retype.'
@@ -99,9 +119,10 @@ export default async (req) => {
     const { limit, paid } = await pageLimitFor(checked);
     const used = Number(await getStore('retype-pages').get(checked.owner)) || 0;
     if (used >= limit) return json({ error: limitReachedMsg(limit, paid), pagesLeft: 0 });
+    if (await freeDayFull(checked)) return json({ error: BUSY });
     if (!/^data:image\/(jpeg|png);base64,/.test(String(body.image || ''))) return json({ error: 'No page picture was received. Please try again.' });
     const jobId = crypto.randomUUID();
-    await jobs.setJSON(jobId, { code: body.code, image: body.image, mode: body.mode === 'notes' ? 'notes' : 'letter', at: Date.now() });
+    await jobs.setJSON(jobId, { code: body.code, device: body.device, image: body.image, mode: body.mode === 'notes' ? 'notes' : 'letter', at: Date.now() });
     return json({ jobId });
   }
 
