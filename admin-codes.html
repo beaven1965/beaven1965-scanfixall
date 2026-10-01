@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>ScanFixAll — Code Maker</title>
+<style>
+  body{ background:#FFFFFF; color:#111; font-family:system-ui,-apple-system,"Segoe UI",sans-serif; margin:0; }
+  main{ max-width:480px; margin:0 auto; padding:28px 16px 60px; }
+  h1{ font-size:22px; margin:0 0 4px; }
+  .sub{ color:#4B5563; font-size:14px; margin:0 0 20px; line-height:1.5; }
+  label{ display:block; font-weight:600; font-size:14px; margin:14px 0 6px; }
+  input, select{ width:100%; box-sizing:border-box; padding:12px; border-radius:10px; border:1.5px solid #A9CFCB; font-size:16px; color:#111; background:#fff; }
+  button{ width:100%; margin-top:16px; padding:14px; border:none; border-radius:10px; background:#2A7F86; color:#fff; font-weight:700; font-size:16px; cursor:pointer; }
+  button.light{ background:#fff; color:#1F5F66; border:1.5px solid #2A7F86; }
+  button:disabled{ opacity:.6; }
+  .result{ margin-top:18px; padding:16px; border:2px solid #2A7F86; border-radius:12px; background:#F1F8F7; display:none; }
+  .code{ font-family:ui-monospace,Menlo,Consolas,monospace; font-size:18px; font-weight:700; letter-spacing:.5px; word-break:break-all; margin:6px 0; }
+  .err{ color:#9B2C2C; margin-top:12px; font-size:14px; }
+  .item{ border-bottom:1px solid #E5E7EB; padding:10px 0; font-size:14px; }
+  .item .c{ font-family:ui-monospace,Menlo,Consolas,monospace; font-weight:600; word-break:break-all; }
+  .muted{ color:#6B7280; font-size:13px; }
+  .remember{ display:flex; align-items:center; gap:8px; margin-top:8px; font-weight:400; }
+  .remember input{ width:auto; }
+</style>
+</head>
+<body>
+<main>
+  <h1>🔑 Code Maker</h1>
+  <p class="sub">For you only. Make a ScanFixAll access code without a payment — for yourself, testers, or students you sponsor. Codes made here work only in ScanFixAll.</p>
+
+  <label for="pw">Your admin password</label>
+  <input id="pw" type="password" autocomplete="current-password" placeholder="ADMIN_PASSWORD from Netlify">
+  <label class="remember"><input type="checkbox" id="rememberPw"> Remember on this device</label>
+
+  <label for="plan">Kind of code</label>
+  <select id="plan">
+    <option value="free">Free trial — 3 AI pages, one time</option>
+    <option value="family" selected>Family — 60 AI pages, up to 5 family codes</option>
+    <option value="class">Class — 100 AI pages, up to 50 student codes</option>
+  </select>
+
+  <label for="days">How long should it work?</label>
+  <select id="days">
+    <option value="7">7 days</option>
+    <option value="30" selected>30 days</option>
+    <option value="60">60 days</option>
+    <option value="90">90 days</option>
+    <option value="180">6 months</option>
+    <option value="365">1 year</option>
+  </select>
+
+  <label for="note">Who is it for? (optional note, only you see this)</label>
+  <input id="note" type="text" maxlength="80" placeholder="e.g. Me, Ptr. Cruz, tester">
+
+  <button id="makeBtn">Make code</button>
+  <div class="err" id="err"></div>
+
+  <div class="result" id="result">
+    <div class="muted">New access code:</div>
+    <div class="code" id="code"></div>
+    <div class="muted" id="exp"></div>
+    <button class="light" id="copyBtn">Copy code</button>
+  </div>
+
+  <button class="light" id="listBtn" style="margin-top:28px;">Show codes I made</button>
+  <div id="list"></div>
+</main>
+<script>
+(function(){
+  const $ = (id) => document.getElementById(id);
+  const KEY = 'sf_admin_pw';
+  try{ const saved = localStorage.getItem(KEY); if(saved){ $('pw').value = saved; $('rememberPw').checked = true; } }catch(e){}
+  const fmt = (iso) => new Date(iso).toLocaleDateString(undefined, { year:'numeric', month:'long', day:'numeric' });
+  async function call(body){
+    const pw = $('pw').value.trim();
+    if(!pw) throw new Error('Please type your admin password.');
+    try{ if($('rememberPw').checked) localStorage.setItem(KEY, pw); else localStorage.removeItem(KEY); }catch(e){}
+    const res = await fetch('/.netlify/functions/make-code', { method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify(Object.assign({ password: pw }, body)) });
+    const d = await res.json().catch(() => ({}));
+    if(d.error) throw new Error(d.error);
+    return d;
+  }
+  $('makeBtn').addEventListener('click', async () => {
+    $('err').textContent = ''; $('makeBtn').disabled = true; $('makeBtn').textContent = 'Making…';
+    try{
+      const d = await call({ action:'make', days: $('days').value, note: $('note').value, plan: $('plan').value });
+      $('code').textContent = d.code;
+      $('exp').textContent = 'Works until ' + fmt(d.expiresAt) + '. Type it in ScanFixAll → Settings → Access code.';
+      $('result').style.display = 'block'; $('copyBtn').textContent = 'Copy code';
+    }catch(err){ $('err').textContent = err.message; }
+    $('makeBtn').disabled = false; $('makeBtn').textContent = 'Make code';
+  });
+  $('copyBtn').addEventListener('click', () => {
+    navigator.clipboard.writeText($('code').textContent).then(() => { $('copyBtn').textContent = 'Copied ✓'; });
+  });
+  $('listBtn').addEventListener('click', async () => {
+    $('err').textContent = ''; $('list').innerHTML = '<p class="muted">Loading…</p>';
+    try{
+      const d = await call({ action:'list' });
+      $('list').innerHTML = d.codes.length ? '' : '<p class="muted">No codes made yet.</p>';
+      d.codes.forEach(c => {
+        const it = document.createElement('div'); it.className = 'item';
+        const expired = new Date(c.expiresAt) < new Date();
+        it.innerHTML = '<div class="c"></div><div class="muted"></div>';
+        it.querySelector('.c').textContent = c.code;
+        it.querySelector('.muted').textContent = (c.note ? c.note + ' · ' : '') + (expired ? 'expired ' : 'works until ') + fmt(c.expiresAt);
+        $('list').appendChild(it);
+      });
+    }catch(err){ $('list').innerHTML = ''; $('err').textContent = err.message; }
+  });
+})();
+</script>
+</body>
+</html>
