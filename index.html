@@ -2205,6 +2205,11 @@
         <button class="new-recording-btn" id="closeSettingsBtn">Close</button>
       </div>
       <div class="settings-list">
+        <div id="freeBox" style="border:2px solid #2A7F86; background:#F1F8F7; color:#1E2A2C; border-radius:12px; padding:12px 14px; margin-bottom:10px; font-size:14.5px; line-height:1.5;">
+          <b>🎁 Your free load</b><br>
+          ✨ 3 free AI pages on this phone: Retype, Translate or Listen. No code needed.<br>
+          <small style="color:#4A5658;">Like free load: use them any day, they don't expire. Scanning, Clean paper, Shrink and Sign don't use AI pages.</small>
+        </div>
         <div class="settings-item">
           <span id="premiumStatusLabel">⭐ Premium status</span>
           <span class="premium-badge locked" id="premiumBadge">Not unlocked</span>
@@ -3219,23 +3224,14 @@
     }
   }
 
+  // 🎁 Free load: with no Premium code, the server gives this phone 3 free AI pages (one time).
+  function aiCode(){
+    try{ return localStorage.getItem('sf_premium_unlocked') === 'true' ? (localStorage.getItem('sf_premium_code') || '') : ''; }catch(e){ return ''; }
+  }
   scanRetypeBtn.addEventListener('click', async () => {
     if(retypeBusy) return;
     scanError.style.display = 'none';
-    if(!isPremiumActive()){
-      scanError.textContent = 'Retype is a Premium feature. Tap the ⭐ Premium tab above to unlock it.';
-      scanError.style.display = 'block';
-      scanError.scrollIntoView({ behavior:'smooth', block:'center' });
-      return;
-    }
-    const code = localStorage.getItem(PREMIUM_CODE_KEY);
-    if(!code){
-      scanError.textContent = isFreeMonth()
-        ? 'Retype needs a free access code from your teacher. Tap ⚙ Settings above, enter the code, then try Retype again.'
-        : 'Please re-enter your access code in ⭐ Premium, then try Retype again.';
-      scanError.style.display = 'block';
-      return;
-    }
+    const code = aiCode();
     ensureScanResult();
     const page = processedPage();
     if(!page || scanCanvasWrap.style.display === 'none'){
@@ -3285,7 +3281,7 @@
       };
       let data = null;
       const mode = (document.querySelector('input[name="retypeKind"]:checked') || {}).value === 'notes' ? 'notes' : 'letter';
-      const t = await post('/.netlify/functions/retype-job', { action: 'start', code, image, mode });
+      const t = await post('/.netlify/functions/retype-job', { action: 'start', code, device: getDeviceId(), image, mode });
       if(t.r.ok && t.d.jobId){
         await fetch('/.netlify/functions/retype-work-background', {
           method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ jobId: t.d.jobId })
@@ -3304,7 +3300,7 @@
         throw new Error(t.d.error);
       } else {
         // Ticket desk not on the server yet: use the one-minute reader.
-        const q = await post('/.netlify/functions/retype-careful', { code, image, mode });
+        const q = await post('/.netlify/functions/retype-careful', { code, device: getDeviceId(), image, mode });
         if(q.r.ok && !q.raw.trim()) throw new Error('Reading took too long and was cut off. If the page has a lot of writing, drag the gold corner dots to include only the part you need, then tap Retype again.');
         data = q.d;
         if(!data.error && (!q.r.ok || !Array.isArray(data.blocks))){
@@ -3325,7 +3321,7 @@
       const unsure = (retypePaper.innerHTML.match(/\[\?\]/g) || []).length;
       document.getElementById('retypeUnsureCount').textContent = unsure === 1 ? '1 word' : unsure + ' words';
       document.getElementById('retypeUnsureBox').style.display = unsure ? 'block' : 'none';
-      showStatus((unsure ? 'Retyped ✓ ' + unsure + ' word' + (unsure > 1 ? 's' : '') + ' marked [?] could not be read clearly — tap each yellow [?] and type the correct word.' : 'Retyped ✓ Tap any word to fix it.') + (typeof data.pagesLeft === 'number' ? ' (' + data.pagesLeft + ' Retype pages left for this 30-day period)' : ''), 4000);
+      showStatus((unsure ? 'Retyped ✓ ' + unsure + ' word' + (unsure > 1 ? 's' : '') + ' marked [?] could not be read clearly — tap each yellow [?] and type the correct word.' : 'Retyped ✓ Tap any word to fix it.') + (typeof data.pagesLeft === 'number' ? ' (' + data.pagesLeft + ' AI pages left)' : ''), 4000);
     }catch(err){
       sfaToast.style.display = 'none';
       scanError.textContent = err.message || 'Could not retype right now. Please try again.';
@@ -3356,8 +3352,7 @@
   let listenBusy = false;
   retypeListenBtn.addEventListener('click', async () => {
     if(listenBusy) return;
-    const code = localStorage.getItem(PREMIUM_CODE_KEY);
-    if(!isPremiumActive() || !code){ retypeListenNote.textContent = 'Listen is a Premium feature. Please unlock Premium (or enter your free access code) first.'; return; }
+    const code = aiCode();
     const text = rtBlockEls().map(el => el.innerText.trim()).filter(Boolean).join('\n\n');
     if(!text){ retypeListenNote.textContent = 'There is no text on the page to read.'; return; }
     if(listenCache.text === text && listenCache.url){
@@ -3372,7 +3367,7 @@
     try{
       const res = await fetch('/.netlify/functions/listen-page', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code, text })
+        body: JSON.stringify({ code, device: getDeviceId(), text })
       });
       const type = res.headers.get('Content-Type') || '';
       if(type.indexOf('application/json') >= 0){
@@ -3451,8 +3446,7 @@
 
   retypeTranslateBtn.addEventListener('click', async () => {
     if(translateBusy) return;
-    const code = localStorage.getItem(PREMIUM_CODE_KEY);
-    if(!isPremiumActive() || !code){ retypeTranslateNote.textContent = 'Translate is a Premium feature. Please unlock Premium first.'; return; }
+    const code = aiCode();
     const els = rtBlockEls();
     if(!els.length) return;
     const texts = els.map(blockToMarked);
@@ -3464,7 +3458,7 @@
     try{
       const res = await fetch('/.netlify/functions/translate-page', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code, blocks: texts, lang: retypeLang.value })
+        body: JSON.stringify({ code, device: getDeviceId(), blocks: texts, lang: retypeLang.value })
       });
       const raw = await res.text().catch(() => '');
       let data = {}; try{ data = JSON.parse(raw.trim() || '{}'); }catch(e){}
@@ -3476,7 +3470,7 @@
       showRetypedBlocks(els.map((el, i) => ({ type: el.dataset.type || 'paragraph', align: el.dataset.align || 'left', text: data.blocks[i] })), signerIdx);
       retypeOriginalRow.style.display = 'flex';
       document.getElementById('retypeGrammarBox').style.display = 'none';
-      retypeTranslateNote.textContent = 'Translated to ' + (data.language || 'the chosen language') + ' ✓ Tap any word to fix it.' + (typeof data.pagesLeft === 'number' ? ' (' + data.pagesLeft + ' pages left for this 30-day period)' : '');
+      retypeTranslateNote.textContent = 'Translated to ' + (data.language || 'the chosen language') + ' ✓ Tap any word to fix it.' + (typeof data.pagesLeft === 'number' ? ' (' + data.pagesLeft + ' AI pages left)' : '');
     }catch(err){
       retypeTranslateNote.textContent = err.message || 'Could not translate right now. Please try again.';
     }finally{
@@ -3560,12 +3554,7 @@
 
   retypeGrammarBtn.addEventListener('click', async () => {
     if(grammarBusy) return;
-    const code = localStorage.getItem(PREMIUM_CODE_KEY);
-    if(!isPremiumActive() || !code){
-      retypeGrammarBox.style.display = 'block'; retypeGrammarList.innerHTML = ''; retypeGrammarAllRow.style.display = 'none';
-      retypeGrammarIntro.textContent = 'Grammar suggestions are a Premium feature. Please unlock Premium first.';
-      return;
-    }
+    const code = aiCode();
     const texts = rtBlockEls().map(el => el.innerText);
     if(!texts.some(t => t.trim())) return;
     grammarBusy = true;
@@ -3574,7 +3563,7 @@
     try{
       const res = await fetch('/.netlify/functions/grammar-check', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code, blocks: texts })
+        body: JSON.stringify({ code, device: getDeviceId(), blocks: texts })
       });
       const raw = await res.text().catch(() => '');
       let data = {}; try{ data = JSON.parse(raw.trim() || '{}'); }catch(e){}
@@ -4372,6 +4361,8 @@
     }
 
     const unlocked = localStorage.getItem(PREMIUM_FLAG_KEY) === 'true';
+
+    { const fb = document.getElementById('freeBox'); if(fb) fb.style.display = unlocked ? 'none' : ''; }
     const savedCode = localStorage.getItem(PREMIUM_CODE_KEY);
     const expiresAt = localStorage.getItem(PREMIUM_EXPIRES_KEY);
     if(unlocked){
@@ -4632,13 +4623,13 @@
     const pw = document.getElementById('paywallBtn');
     if(pw && pw.parentElement) pw.parentElement.style.display = 'none';   // hides the star AND its "Premium" label
     const lbl = document.getElementById('premiumStatusLabel');
-    if(lbl) lbl.textContent = '🔑 Access code (for Retype)';
+    if(lbl) lbl.textContent = '🔑 Access code (optional)';
     const rh = document.getElementById('redeemHint');
-    if(rh) rh.textContent = 'October promo: scanning, Clean paper, Shrink and Sign are free. Each free access code also includes 3 free AI pages (Retype, Translate, Listen) to try — enter your code above.';
+    if(rh) rh.textContent = 'October promo: scanning, Clean paper, Shrink and Sign are free. Got an access code? Enter it above for Premium.';
     const rb = document.getElementById('scanRetypeBtn');
-    if(rb) rb.textContent = '📝 Retype as new document (free access code)';
+    if(rb) rb.textContent = '📝 Retype as new document (3 free pages)';
     const rw = document.getElementById('retypePlanWord');
-    if(rw) rw.textContent = '3 free pages with an access code';
+    if(rw) rw.textContent = '3 free pages on this phone';
   })();
   refreshPremiumUI();
 
