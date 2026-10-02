@@ -58,7 +58,8 @@ Read the page image slowly, word by word, and return ONLY a JSON object, no othe
 {
   "blocks": [
     { "type": "lines", "align": "left", "text": "first line\\nsecond line" },
-    { "type": "paragraph", "align": "justify", "text": "Flowing body text with **bold words** kept." }
+    { "type": "paragraph", "align": "justify", "text": "Flowing body text with **bold words** kept." },
+    { "type": "table", "header": 1, "rows": [["INDICATORS", "1", "2", "NO*"], ["1. Apply knowledge of content (1.1.2)", "", "", ""]] }
   ],
   "signerBlock": 7,
   "letterhead": { "found": true, "top": 0.0, "bottom": 0.12 }
@@ -82,7 +83,9 @@ Layout rules:
 - Keep the blocks in the same order as the page. One block per paragraph or group of lines.
 - LEAVE OUT: letterheads, logos, seals, stamps, watermarks, handwritten signatures, handwritten initials, page numbers, and anything that is not part of the page (phone screen buttons, background objects).
 - "letterhead" describes the printed letterhead band at the TOP of the page (organization name, logo, seal, address header, usually above the date). "top" and "bottom" are where that band starts and ends, as a fraction of the page height from 0 (top edge) to 1 (bottom edge). Make the band cover the whole letterhead including any line under it, but no body text. If there is no letterhead, use { "found": false, "top": 0, "bottom": 0 }.
-- CHARTS AND DIAGRAMS: if the page is mainly a flowchart, decision chart, diagram, mind map or concept map (boxes joined by arrows or lines) rather than a letter or document, do NOT list the boxes one by one. Instead write it as an easy-to-follow outline in "lines" blocks: one block per box or question, its text first, then each branch on its own line as "  – LABEL → where it leads" (for example "  – YES → POLYTHEIST"). Put final results/end points in **bold**, start with the box marked "start" if there is one, and note special arrows in brackets, like "(dashed line back)". A table: one line per row, cells separated by " | ".
+- CHARTS AND DIAGRAMS: if the page is mainly a flowchart, decision chart, diagram, mind map or concept map (boxes joined by arrows or lines) rather than a letter or document, do NOT list the boxes one by one. Instead write it as an easy-to-follow outline in "lines" blocks: one block per box or question, its text first, then each branch on its own line as "  – LABEL → where it leads" (for example "  – YES → POLYTHEIST"). Put final results/end points in **bold**, start with the box marked "start" if there is one, and note special arrows in brackets, like "(dashed line back)". Tables inside such charts follow the TABLES rule below.
+- TABLES: any part of the page set in a grid with vertical and horizontal lines (forms, rating sheets, checklists, class records, schedules) must be ONE "table" block, NOT lines of text. "rows" is a list of rows; each row is a list of cell texts from left to right, and every row has the SAME number of cells (use "" for an empty cell, and for the extra cells of a merged cell, keeping its text in the first one). Copy each cell exactly; use **bold** inside a cell where it is bold; keep checkboxes as ☐ and check marks as ✓. "header" is how many rows at the top are column headings (0 if none). Text above or below the grid (titles, directions, comments) stays in normal blocks.
+- FORM BLANKS: keep fill-in lines as underscores, like "OBSERVER: ____________________", and empty boxes as ☐.
 - "signerBlock" is the index (starting at 0) of the block holding the printed name of the person who signs, usually right after the closing. Use -1 if there is none.`;
 
 const NOTES_INSTRUCTIONS = `You are retyping a photographed page of handwritten CLASS NOTES (a notebook page, pad paper or handout) so a student or teacher can read and print them neatly. Accuracy matters more than anything.
@@ -244,7 +247,16 @@ async function doRetype(body, deadline){
     return { error: 'Could not read any text on that page. Try a clearer photo.' };
   }
 
-  const allowedTypes = ['paragraph', 'lines'];
+  const allowedTypes = ['paragraph', 'lines', 'table'];
+  // A table block: tidy its rows (same number of cells in each), and keep a text copy for translate/grammar.
+  parsed.blocks = parsed.blocks.map(b => {
+    if (!b || b.type !== 'table' || !Array.isArray(b.rows)) return b;
+    let rows = b.rows.filter(r => Array.isArray(r)).slice(0, 80).map(r => r.slice(0, 14).map(c => String(c == null ? '' : c).slice(0, 600)));
+    const cols = rows.reduce((m, r) => Math.max(m, r.length), 0);
+    rows = rows.map(r => r.concat(Array(cols - r.length).fill('')));
+    if (!cols || !rows.length) return null;
+    return { type: 'table', header: Math.max(0, Math.min(3, parseInt(b.header, 10) || 0)), rows, text: rows.map(r => r.join(' | ')).join('\n') };
+  });
   const allowedAlign = ['left', 'center', 'right', 'justify'];
   const signerIdx = Number.isInteger(parsed.signerBlock) ? parsed.signerBlock : -1;
   const kept = parsed.blocks
@@ -253,7 +265,8 @@ async function doRetype(body, deadline){
   const blocks = kept.map(({ b }) => ({
     type: allowedTypes.includes(b.type) ? b.type : 'paragraph',
     align: allowedAlign.includes(b.align) ? b.align : 'left',
-    text: b.text.slice(0, 5000)
+    text: b.text.slice(0, 5000),
+    ...(b.type === 'table' ? { rows: b.rows, header: b.header } : {})
   }));
   const signerBlock = kept.findIndex(k => k.isSigner);
 
