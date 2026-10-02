@@ -1720,6 +1720,10 @@
   }
   .size-compare .big{ font-size:16px; font-weight:700; }
   .size-compare .arrow{ color:var(--text-muted); align-self:center; }
+  .scan-toolbar{ display:flex; gap:8px; margin:10px 0 8px; }
+  .scan-toolbar button{ flex:1; padding:10px 6px; border-radius:10px; border:1.5px solid var(--gold); background:#fff; color:var(--gold); font-weight:700; font-size:14px; cursor:pointer; font-family:inherit; }
+  .scan-toolbar button:disabled{ opacity:.4; cursor:default; }
+  .scan-toolbar button.on{ background:var(--gold); color:#fff; }
   .retype-sheet{ background:#ffffff; border-radius:6px; box-shadow:0 2px 12px rgba(30,50,52,0.10); margin-top:10px; overflow:hidden; }
   .retype-sheet img{ display:block; width:calc(100% - 8%); margin:3% 4% 0; }
   .retype-sheet .retype-paper{ box-shadow:none; margin-top:0; border-radius:0; }
@@ -1921,12 +1925,17 @@
 
         <div class="error-box" id="scanError" style="display:none;"></div>
 
+        <div class="scan-toolbar" id="scanToolbar" style="display:none;">
+          <button type="button" id="scanUndoBtn" disabled>↩ Undo</button>
+          <button type="button" id="scanCompareBtn">👁 Before</button>
+          <button type="button" id="scanStartOverBtn">⟲ Start over</button>
+        </div>
         <div class="canvas-wrap" id="scanCanvasWrap" style="display:none;">
           <canvas id="scanCanvas" style="touch-action:none;"></canvas>
         </div>
 
         <div id="scanCornerControls" style="display:none;">
-          <div class="tool-hint">Drag the 4 gold dots onto the 4 corners of the paper. Then tap <b>Flatten &amp; clean</b>.</div>
+          <div class="tool-hint">Drag the 4 round <b>corner dots</b> (also called corner handles) onto the 4 corners of the paper. The page inside the dots is kept; everything outside is cut off. Then tap <b>Flatten &amp; clean</b>.</div>
           <div class="tool-upload-row" style="margin-top:10px;">
             <button class="tool-btn primary" id="scanFlattenBtn">✅ Flatten &amp; clean</button>
             <button class="tool-btn" id="scanWholePhotoBtn">Use whole photo</button>
@@ -2464,16 +2473,66 @@
     return 'Could not open "' + name + '" as a picture. Please choose a JPG or PNG photo.';
   }
 
-  function loadImageFromFile(file){
+  function loadImageRaw(blob){
     // Uses a lightweight object URL instead of a big text copy of the photo,
     // so large phone photos don't run the browser out of memory.
     return new Promise((resolve, reject) => {
-      const url = URL.createObjectURL(file);
+      const url = URL.createObjectURL(blob);
       const img = new Image();
-      img.onload = () => { URL.revokeObjectURL(url); resolve({ img, originalBytes: file.size }); };
-      img.onerror = () => { URL.revokeObjectURL(url); reject(new Error(photoErrorMessage(file))); };
+      img.onload = () => { URL.revokeObjectURL(url); resolve(img); };
+      img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('no')); };
       img.src = url;
     });
+  }
+  // Looks at the first bytes of the file to see what kind of picture it really is
+  // (a photo can be called ".jpg" but really be an iPhone/Samsung HEIC photo).
+  async function sniffKind(file){
+    try{
+      const b = new Uint8Array(await file.slice(0, 16).arrayBuffer());
+      const txt = String.fromCharCode.apply(null, b);
+      if(b[0] === 0xFF && b[1] === 0xD8) return 'jpg';
+      if(b[0] === 0x89 && txt.slice(1, 4) === 'PNG') return 'png';
+      if(txt.slice(4, 8) === 'ftyp'){ const brand = txt.slice(8, 12); return /avif|avis/.test(brand) ? 'avif' : 'heic'; }
+      if(txt.slice(0, 4) === 'RIFF') return 'webp';
+      if(txt.slice(0, 4) === '%PDF') return 'pdf';
+    }catch(e){}
+    return '';
+  }
+  let heicLoading = null;
+  function loadHeicTool(){
+    if(window.heic2any) return Promise.resolve();
+    if(!heicLoading) heicLoading = new Promise((resolve, reject) => {
+      const sc = document.createElement('script'); sc.src = '/heic2any.min.js';
+      sc.onload = () => resolve(); sc.onerror = () => { heicLoading = null; reject(new Error('load')); };
+      document.head.appendChild(sc);
+    });
+    return heicLoading;
+  }
+  async function loadImageFromFile(file){
+    try{ return { img: await loadImageRaw(file), originalBytes: file.size }; }catch(e){}
+    try{                                        // some browsers open more kinds this way
+      const bmp = await createImageBitmap(file);
+      const c = document.createElement('canvas'); c.width = bmp.width; c.height = bmp.height;
+      c.getContext('2d').drawImage(bmp, 0, 0);
+      const jpg = await new Promise(r => c.toBlob(r, 'image/jpeg', 0.92));
+      return { img: await loadImageRaw(jpg), originalBytes: file.size };
+    }catch(e){}
+    const kind = await sniffKind(file);
+    if(kind === 'heic'){
+      try{
+        showStatus('Converting the iPhone/Samsung photo… a few seconds');
+        await loadHeicTool();
+        let out = await window.heic2any({ blob: file, toType: 'image/jpeg', quality: 0.92 });
+        if(Array.isArray(out)) out = out[0];
+        const img = await loadImageRaw(out);
+        showStatus('Photo ready ✓', 1500);
+        return { img, originalBytes: file.size };
+      }catch(e){
+        throw new Error('This is an iPhone/Samsung HEIC photo that could not be converted here. Please take a screenshot of it, or set the camera to "Most compatible" (JPG), then try again.');
+      }
+    }
+    if(kind === 'pdf') throw new Error('This file is a PDF, not a photo. Please choose a JPG or PNG picture.');
+    throw new Error(photoErrorMessage(file));
   }
 
   // ---- Small status message at the bottom of the screen ----
@@ -2868,9 +2927,23 @@
     renderScanCanvas();
   }
 
+  let scanCompareOn = false;   // 👁 Before: shows the photo exactly as it was uploaded
   function renderScanCanvas(){
     if(!scanSrcCanvas) return;
     const ctx = scanCtx();
+    if(scanCompareOn){
+      const s0 = Math.min(1, 1600 / Math.max(scanSrcCanvas.width, scanSrcCanvas.height));
+      scanCanvas.width = Math.round(scanSrcCanvas.width * s0);
+      scanCanvas.height = Math.round(scanSrcCanvas.height * s0);
+      ctx.drawImage(scanSrcCanvas, 0, 0, scanCanvas.width, scanCanvas.height);
+      const fs = Math.max(16, Math.round(scanCanvas.width / 22));
+      ctx.font = 'bold ' + fs + 'px system-ui, sans-serif';
+      const label = 'BEFORE (original photo)';
+      const w = ctx.measureText(label).width + fs;
+      ctx.fillStyle = 'rgba(0,0,0,0.65)'; ctx.fillRect(fs / 2, fs / 2, w, fs * 1.6);
+      ctx.fillStyle = '#fff'; ctx.fillText(label, fs, fs * 1.75);
+      return;
+    }
     if(scanMode === 'corners'){
       const s = Math.min(1, 1600 / Math.max(scanSrcCanvas.width, scanSrcCanvas.height));
       scanCanvas.width = Math.round(scanSrcCanvas.width * s);
@@ -2879,7 +2952,7 @@
       // Dim everything outside the chosen area, then draw the outline + dots.
       const pts = scanCorners.map(p => ({x: p.x * s, y: p.y * s}));
       ctx.save();
-      ctx.fillStyle = 'rgba(30,50,52,0.10)';
+      ctx.fillStyle = 'rgba(0,0,0,0.45)';
       ctx.beginPath();
       ctx.rect(0, 0, scanCanvas.width, scanCanvas.height);
       ctx.moveTo(pts[0].x, pts[0].y); for(let i = 3; i >= 1; i--) ctx.lineTo(pts[i].x, pts[i].y); ctx.closePath();
@@ -2915,6 +2988,60 @@
     scanSizeEstimate.textContent = '~' + formatBytes(dataUrlSizeBytes(scanCanvas.toDataURL('image/jpeg', 0.82)));
   }
 
+  // ---- ↩ Undo, 👁 Before / After, ⟲ Start over ----
+  const scanToolbar = document.getElementById('scanToolbar');
+  const scanUndoBtn = document.getElementById('scanUndoBtn');
+  const scanCompareBtn = document.getElementById('scanCompareBtn');
+  const scanStartOverBtn = document.getElementById('scanStartOverBtn');
+  let scanUndoStack = [], scanFirstCorners = null;
+  function scanSnapshot(){
+    return { mode: scanMode, corners: scanCorners ? scanCorners.map(c => ({ x: c.x, y: c.y })) : null, flat: scanFlatCanvas,
+      rot: scanBaseRotation, fine: scanFineAngle, enh: scanEnhanceOn, bw: scanBwOn };
+  }
+  function pushUndo(){
+    if(!scanSrcCanvas) return;
+    scanUndoStack.push(scanSnapshot());
+    if(scanUndoStack.length > 30) scanUndoStack.shift();
+    scanUndoBtn.disabled = false;
+  }
+  function applySnapshot(st){
+    scanCorners = st.corners ? st.corners.map(c => ({ x: c.x, y: c.y })) : scanCorners;
+    if(scanFlatCanvas !== st.flat) scanCleanCache = {};
+    scanFlatCanvas = st.flat;
+    scanBaseRotation = st.rot; scanFineAngle = st.fine; scanStraightenSlider.value = st.fine;
+    scanEnhanceOn = st.enh; scanEnhanceBtn.classList.toggle('active', st.enh);
+    scanBwOn = st.bw; scanBwBtn.classList.toggle('active', st.bw);
+    setCompare(false);
+    showScanMode(st.mode === 'result' && !st.flat ? 'corners' : st.mode);
+  }
+  function setCompare(on){
+    scanCompareOn = on;
+    scanCompareBtn.classList.toggle('on', on);
+    scanCompareBtn.textContent = on ? '✨ After' : '👁 Before';
+  }
+  scanUndoBtn.addEventListener('click', () => {
+    const st = scanUndoStack.pop();
+    if(st) applySnapshot(st);
+    scanUndoBtn.disabled = !scanUndoStack.length;
+    showStatus('↩ Undone', 1200);
+  });
+  scanCompareBtn.addEventListener('click', () => { setCompare(!scanCompareOn); renderScanCanvas(); });
+  scanStartOverBtn.addEventListener('click', () => {
+    if(!scanSrcCanvas) return;
+    pushUndo();
+    applySnapshot({ mode: 'corners', corners: scanFirstCorners, flat: null, rot: 0, fine: 0, enh: true, bw: false });
+    showStatus('⟲ Back to the original photo — you can tap ↩ Undo to go back', 2600);
+  });
+  // Remember the step before each change, so ↩ Undo can go back.
+  [scanAdjustCornersBtn, scanRotateLeftBtn, scanRotateRightBtn, scanEnhanceBtn, scanBwBtn, scanWholePhotoBtn, scanFlattenBtn]
+    .forEach(b => b.addEventListener('click', () => { pushUndo(); setCompare(false); }, true));
+  let sliderSnap = null;
+  scanStraightenSlider.addEventListener('pointerdown', () => { sliderSnap = scanSnapshot(); });
+  scanStraightenSlider.addEventListener('change', () => {
+    const st = sliderSnap || scanSnapshot(); sliderSnap = null;
+    if(st.fine !== scanFineAngle){ scanUndoStack.push(st); scanUndoBtn.disabled = false; }
+  });
+
   function doFlatten(){
     if(!scanSrcCanvas) return;
     showStatus('Flattening and cleaning…');
@@ -2947,6 +3074,7 @@
     scanCanvasWrap.style.display = 'none';
     scanCornerControls.style.display = 'none';
     scanEditControls.style.display = 'none';
+    if(typeof scanToolbar !== 'undefined' && scanToolbar){ scanToolbar.style.display = 'none'; scanUndoStack = []; scanUndoBtn.disabled = true; setCompare(false); }
     scanError.style.display = 'none';
     scanFileInput.value = '';
     if(typeof updateScanPdfLabel === 'function') updateScanPdfLabel();
@@ -2960,6 +3088,9 @@
       scanCurrentImg = img;
       scanSrcCanvas = buildSrcCanvas(img);
       scanCorners = detectPaperCorners(scanSrcCanvas);
+      scanFirstCorners = scanCorners.map(c => ({ x: c.x, y: c.y }));
+      scanUndoStack = []; scanUndoBtn.disabled = true; setCompare(false);
+      scanToolbar.style.display = 'flex';
       scanFlatCanvas = null;
       scanCleanCache = {};
       scanBaseRotation = 0;
@@ -2986,6 +3117,7 @@
     let best = -1, bestD = Infinity;
     scanCorners.forEach((c, i) => { const d = Math.hypot(c.x - p.x, c.y - p.y); if(d < bestD){ bestD = d; best = i; } });
     if(bestD <= grab){
+      pushUndo();
       scanDragIdx = best;
       scanCanvas.setPointerCapture(e.pointerId);
       e.preventDefault();
@@ -3301,7 +3433,7 @@
       } else {
         // Ticket desk not on the server yet: use the one-minute reader.
         const q = await post('/.netlify/functions/retype-careful', { code, device: getDeviceId(), image, mode });
-        if(q.r.ok && !q.raw.trim()) throw new Error('Reading took too long and was cut off. If the page has a lot of writing, drag the gold corner dots to include only the part you need, then tap Retype again.');
+        if(q.r.ok && !q.raw.trim()) throw new Error('Reading took too long and was cut off. If the page has a lot of writing, drag the corner dots to include only the part you need, then tap Retype again.');
         data = q.d;
         if(!data.error && (!q.r.ok || !Array.isArray(data.blocks))){
           throw new Error(q.r.status === 504 || q.r.status === 502 ? 'Reading took too long. Please try again.' : 'Could not retype right now (' + q.r.status + '). Please try again.');
