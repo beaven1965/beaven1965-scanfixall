@@ -1724,6 +1724,25 @@
   .scan-toolbar button{ flex:1; padding:10px 6px; border-radius:10px; border:1.5px solid var(--gold); background:#fff; color:var(--gold); font-weight:700; font-size:14px; cursor:pointer; font-family:inherit; }
   .scan-toolbar button:disabled{ opacity:.4; cursor:default; }
   .scan-toolbar button.on{ background:var(--gold); color:#fff; }
+  .lh-modal{ position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:9000; overflow-y:auto; padding:16px 10px 40px; }
+  .lh-card{ max-width:520px; margin:0 auto; background:#fff; color:#1E2A2C; border-radius:16px; padding:16px; box-shadow:0 8px 30px rgba(0,0,0,.25); }
+  .lh-head{ display:flex; justify-content:space-between; align-items:center; font-size:17px; margin-bottom:6px; }
+  .lh-x{ border:1px solid #cfd6df; background:#fff; border-radius:999px; padding:6px 14px; cursor:pointer; font-family:inherit; }
+  .lh-step{ margin:16px 0 6px; font-size:15px; }
+  .lh-hint{ font-size:13px; color:#4A5658; line-height:1.45; }
+  .lh-src-row{ display:flex; flex-wrap:wrap; gap:6px; margin:6px 0; }
+  .lh-pill{ padding:8px 12px; border-radius:999px; border:1.5px solid var(--gold); background:#fff; color:var(--gold); font-weight:600; font-size:13.5px; cursor:pointer; font-family:inherit; }
+  .lh-pill.on{ background:var(--gold); color:#fff; }
+  .lh-crop-wrap{ background:#eee; border-radius:8px; margin:8px 0; text-align:center; }
+  #lhCropCanvas{ max-width:100%; display:block; margin:0 auto; }
+  .lh-label{ display:flex; align-items:center; gap:10px; font-size:14px; margin:8px 0; }
+  .lh-label input[type=range]{ flex:1; accent-color:#1F6F78; }
+  .lh-label select{ padding:6px; border-radius:8px; border:1px solid #cfd6df; font-family:inherit; }
+  #lhText{ width:100%; box-sizing:border-box; border:1.5px solid #A9CFCB; border-radius:10px; padding:10px; font-size:15px; font-family:inherit; }
+  .lh-preview{ background:#fff; border:1px dashed #cfd6df; border-radius:8px; padding:10px; min-height:40px; }
+  .lh-preview img{ display:block; max-width:100%; }
+  .lh-actions{ display:flex; gap:8px; margin-top:14px; }
+  .lh-actions .tool-btn{ flex:1; }
   .retype-sheet{ background:#ffffff; border-radius:6px; box-shadow:0 2px 12px rgba(30,50,52,0.10); margin-top:10px; overflow:hidden; }
   .retype-sheet img{ display:block; width:calc(100% - 8%); margin:3% 4% 0; }
   .retype-sheet .retype-paper{ box-shadow:none; margin-top:0; border-radius:0; }
@@ -1745,6 +1764,13 @@
   .retype-paper:focus{ box-shadow:0 0 0 3px var(--gold), 0 2px 12px rgba(30,50,52,0.10); }
   .retype-paper .rt-block{ margin:0 0 0.75em; white-space:pre-wrap; }
   .retype-paper .rt-signer{ margin-top:3.2em; }
+  .retype-paper .rt-block[data-type="table"]{ white-space:normal; overflow-x:auto; }
+  .rt-table{ border-collapse:collapse; width:100%; font-size:0.92em; }
+  .rt-table td{ border:1px solid #333; padding:3px 5px; vertical-align:top; min-width:1.4em; }
+  .rt-table tr.rt-head td{ background:#e8eef0; font-weight:700; text-align:center; }
+  .rt-table td.rt-cur{ outline:2px solid #E07A5F; outline-offset:-2px; }
+  .tbl-tools{ display:flex; flex-wrap:wrap; gap:6px; margin:8px 0 2px; }
+  .tbl-tools button{ padding:7px 10px; border-radius:8px; border:1.5px solid var(--gold); background:#fff; color:var(--gold); font-weight:600; font-size:13px; cursor:pointer; font-family:inherit; }
   .plan-choices{ display:grid; grid-template-columns:1fr; gap:10px; margin:16px 0 6px; }
   @media (min-width:560px){ .plan-choices{ grid-template-columns:1fr 1fr; } }
   .plan-card{ display:flex; gap:10px; align-items:flex-start; border:2px solid #d9dde3; border-radius:12px; padding:14px; cursor:pointer; background:#fff; color:#1c2530; }
@@ -1909,6 +1935,52 @@
       </script>
     </div>
 
+
+    <!-- LETTERHEAD FIXER -->
+    <div id="lhModal" class="lh-modal" style="display:none;" role="dialog" aria-label="Fix letterhead">
+      <div class="lh-card">
+        <div class="lh-head"><b>🖼 Fix the letterhead</b><button type="button" id="lhCancelBtn" class="lh-x">Close</button></div>
+
+        <div class="lh-step"><b>1. The logo</b></div>
+        <div class="lh-src-row">
+          <button type="button" class="lh-pill" id="lhUseScanBtn">From the scanned page</button>
+          <button type="button" class="lh-pill" id="lhUploadBtn">📁 Upload a clean logo</button>
+          <button type="button" class="lh-pill" id="lhNoLogoBtn">No logo</button>
+          <input type="file" id="lhFile" accept="image/*" class="visually-hidden">
+        </div>
+        <div id="lhCropBox">
+          <div class="lh-hint">✂️ Drag the box (or its 4 corner dots) around <b>only the logo</b>. Everything outside the box is cut off.</div>
+          <div class="lh-crop-wrap"><canvas id="lhCropCanvas" style="touch-action:none;"></canvas></div>
+          <label class="lh-label">🧼 Clean stains &amp; shadows <input type="range" id="lhClean" min="0" max="100" value="55"></label>
+          <label class="lh-label">📐 Straighten <input type="range" id="lhTilt" min="-10" max="10" step="0.5" value="0"></label>
+        </div>
+
+        <div class="lh-step"><b>2. Typed letterhead lines</b> <span class="lh-hint">(optional — one line each; ALL-CAPS lines come out bold)</span></div>
+        <textarea id="lhText" rows="4" placeholder="Republic of the Philippines&#10;Department of Education&#10;REGION XI&#10;SCHOOLS DIVISION OF DAVAO CITY"></textarea>
+        <div class="lh-src-row">
+          <label class="lh-label" style="margin:0;">Layout
+            <select id="lhLayout"><option value="above">Logo above the text</option><option value="left">Logo left, text beside it</option><option value="sides">Logo on both sides</option></select>
+          </label>
+        </div>
+
+        <div class="lh-step"><b>3. Size &amp; place</b></div>
+        <label class="lh-label">Size <input type="range" id="lhSize" min="15" max="92" value="60"></label>
+        <div class="lh-src-row">
+          <button type="button" class="lh-pill" data-al="left">⬅ Left</button>
+          <button type="button" class="lh-pill on" data-al="center">⬌ Center</button>
+          <button type="button" class="lh-pill" data-al="right">Right ➡</button>
+        </div>
+
+        <div class="lh-step"><b>Preview</b></div>
+        <div class="lh-preview"><img id="lhPreview" alt="Letterhead preview"></div>
+
+        <div class="lh-actions">
+          <button type="button" class="tool-btn" id="lhResetBtn">⟲ Reset</button>
+          <button type="button" class="tool-btn primary" id="lhApplyBtn">✅ Use this letterhead</button>
+        </div>
+      </div>
+    </div>
+
     <!-- SCAN A DOCUMENT -->
     <div class="library page-white" id="scanView" style="display:none;">
       <div class="result-meta">
@@ -2016,6 +2088,18 @@
             <input type="checkbox" id="retypeKeepLetterhead" style="width:20px;height:20px;">
             <span><b>Keep original letterhead / logo</b> — only if it is <i>your own</i> or your organization's. A small <i>"Retyped copy"</i> note is added at the bottom of the page.</span>
           </label>
+          <div class="tbl-tools" id="tblTools">
+            <button type="button" data-tb="insert">▦ Insert table</button>
+            <button type="button" data-tb="row+">➕ Row</button>
+            <button type="button" data-tb="col+">➕ Column</button>
+            <button type="button" data-tb="row-">➖ Row</button>
+            <button type="button" data-tb="col-">➖ Column</button>
+            <button type="button" data-tb="head">▤ Heading row</button>
+          </div>
+          <div class="tool-hint" style="margin-top:2px;">Tap a box in a table first, then use the table buttons.</div>
+          <div class="tool-upload-row" id="lhFixRow" style="display:none; margin-top:6px;">
+            <button class="tool-btn" id="lhOpenBtn" type="button">🖼 Fix / add letterhead</button>
+          </div>
           <div class="retype-sheet">
             <img id="retypeLetterheadImg" alt="Original letterhead" style="display:none;">
             <div class="retype-paper" id="retypePaper" contenteditable="true" spellcheck="false"></div>
@@ -3321,16 +3405,277 @@
     if(on){
       retypeLetterheadImg.src = retypeLetterhead.toDataURL('image/png');
       retypeLetterheadImg.style.width = Math.min(92, retypeLetterhead._pageFrac * 100) + '%';
-      retypeLetterheadImg.style.marginLeft = 'auto'; retypeLetterheadImg.style.marginRight = 'auto';
+      const al = retypeLetterhead._align || 'center';
+      retypeLetterheadImg.style.marginLeft = al === 'left' ? '4%' : 'auto'; retypeLetterheadImg.style.marginRight = al === 'right' ? '4%' : 'auto';
     }
   }
   retypeKeepLetterhead.addEventListener('change', refreshLetterheadPreview);
 
+  // ================= ▦ TABLE TOOLS =================
+  let tblCell = null;
+  function markCell(td){ if(tblCell) tblCell.classList.remove('rt-cur'); tblCell = td; if(td) td.classList.add('rt-cur'); }
+  retypePaper.addEventListener('click', (e) => { const td = e.target.closest && e.target.closest('.rt-table td'); markCell(td || null); });
+  document.addEventListener('selectionchange', () => {
+    const sel = document.getSelection(); if(!sel || !sel.anchorNode) return;
+    const n = sel.anchorNode.nodeType === 1 ? sel.anchorNode : sel.anchorNode.parentElement;
+    const td = n && n.closest && n.closest('#retypePaper .rt-table td');
+    if(td && td !== tblCell) markCell(td);
+  });
+  document.getElementById('tblTools').addEventListener('click', (e) => {
+    const b = e.target.closest('button'); if(!b) return;
+    const act = b.dataset.tb;
+    if(act === 'insert'){
+      const n = parseInt(prompt('How many columns? (2–10)', '3'), 10); if(!n) return;
+      const r = parseInt(prompt('How many rows? (1–40)', '4'), 10); if(!r) return;
+      const cols = Math.max(2, Math.min(10, n)), rowsN = Math.max(1, Math.min(40, r));
+      const div = document.createElement('div'); div.className = 'rt-block'; div.dataset.type = 'table'; div.dataset.align = 'left'; div.dataset.header = '1'; div.setAttribute('dir', 'auto');
+      div.innerHTML = tableHtml(Array.from({ length: rowsN }, () => Array(cols).fill('')), 1);
+      const host = tblCell ? tblCell.closest('.rt-block') : null;
+      if(host && host.nextSibling) retypePaper.insertBefore(div, host.nextSibling); else retypePaper.appendChild(div);
+      markCell(div.querySelector('td')); div.scrollIntoView({ block:'nearest' });
+      return;
+    }
+    if(!tblCell || !retypePaper.contains(tblCell)){ showStatus('Tap a box inside a table first.', 2200); return; }
+    const tr = tblCell.parentElement, table = tr.closest('table'), ci = Array.from(tr.children).indexOf(tblCell);
+    const rows = Array.from(table.querySelectorAll('tr'));
+    if(act === 'row+'){
+      const nr = document.createElement('tr'); for(let i = 0; i < tr.children.length; i++){ const td = document.createElement('td'); td.innerHTML = '<br>'; nr.appendChild(td); }
+      tr.after(nr); markCell(nr.children[ci]);
+    } else if(act === 'col+'){
+      rows.forEach(r => { const td = document.createElement('td'); td.innerHTML = '<br>'; (r.children[ci] ? r.children[ci].after(td) : r.appendChild(td)); });
+      markCell(tr.children[ci + 1]);
+    } else if(act === 'row-'){
+      if(rows.length <= 1){ table.closest('.rt-block').remove(); markCell(null); return; }
+      const next = tr.nextElementSibling || tr.previousElementSibling; tr.remove(); markCell(next ? next.children[Math.min(ci, next.children.length - 1)] : null);
+    } else if(act === 'col-'){
+      if(tr.children.length <= 1){ table.closest('.rt-block').remove(); markCell(null); return; }
+      rows.forEach(r => { if(r.children[ci]) r.children[ci].remove(); });
+      markCell(tr.children[Math.max(0, ci - 1)]);
+    } else if(act === 'head'){
+      tr.classList.toggle('rt-head');
+      const blk = table.closest('.rt-block'); blk.dataset.header = String(rows.filter(r => r.classList.contains('rt-head')).length);
+    }
+  });
+
+  // ================= 🖼 LETTERHEAD FIXER =================
+  // Crop just the logo, clean stains, straighten, add typed lines, then size and place it.
+  let lhScanSource = null;   // top part of the scanned page (to crop the logo from)
+  let lhSource = null;       // the picture currently being cropped (scan or uploaded logo)
+  let lhCrop = null;         // {x,y,w,h} in lhSource pixels
+  let lhAlign = 'center', lhNoLogo = false, lhDrag = null;
+  const lhModal = document.getElementById('lhModal'), lhCropCanvas = document.getElementById('lhCropCanvas');
+  const lhEl = (id) => document.getElementById(id);
+  function lhDefaultCrop(src, band){
+    if(band) return { x: band.x, y: band.y, w: band.w, h: band.h };
+    return { x: src.width * 0.05, y: src.height * 0.05, w: src.width * 0.9, h: src.height * 0.9 };
+  }
+  function lhSetSource(src, band){ lhSource = src; lhCrop = src ? lhDefaultCrop(src, band) : null; lhNoLogo = !src; lhDrawCrop(); lhUpdate(); }
+  function lhDrawCrop(){
+    lhEl('lhCropBox').style.display = lhSource ? 'block' : 'none';
+    if(!lhSource) return;
+    const s = Math.min(1, 900 / lhSource.width);
+    lhCropCanvas.width = Math.round(lhSource.width * s); lhCropCanvas.height = Math.round(lhSource.height * s);
+    const ctx = lhCropCanvas.getContext('2d');
+    ctx.drawImage(lhSource, 0, 0, lhCropCanvas.width, lhCropCanvas.height);
+    const r = { x: lhCrop.x * s, y: lhCrop.y * s, w: lhCrop.w * s, h: lhCrop.h * s };
+    ctx.fillStyle = 'rgba(0,0,0,0.45)';
+    ctx.beginPath(); ctx.rect(0, 0, lhCropCanvas.width, lhCropCanvas.height); ctx.rect(r.x, r.y + r.h, r.w, -r.h); ctx.fill('evenodd');
+    ctx.strokeStyle = '#1F6F78'; ctx.lineWidth = Math.max(2, lhCropCanvas.width / 300); ctx.strokeRect(r.x, r.y, r.w, r.h);
+    const rad = Math.max(8, lhCropCanvas.width / 70);
+    [[r.x, r.y], [r.x + r.w, r.y], [r.x + r.w, r.y + r.h], [r.x, r.y + r.h]].forEach(([x, y]) => {
+      ctx.beginPath(); ctx.arc(x, y, rad, 0, Math.PI * 2); ctx.fillStyle = '#ffffff'; ctx.fill(); ctx.strokeStyle = '#1F6F78'; ctx.stroke();
+    });
+  }
+  function lhPoint(e){
+    const b = lhCropCanvas.getBoundingClientRect(), s = lhSource.width / b.width;
+    return { x: (e.clientX - b.left) * s, y: (e.clientY - b.top) * s, k: s };
+  }
+  lhCropCanvas.addEventListener('pointerdown', (e) => {
+    if(!lhSource) return;
+    const p = lhPoint(e), c = lhCrop, grab = 30 * p.k;
+    const corners = [[c.x, c.y], [c.x + c.w, c.y], [c.x + c.w, c.y + c.h], [c.x, c.y + c.h]];
+    let idx = -1, best = Infinity;
+    corners.forEach(([x, y], i) => { const d = Math.hypot(x - p.x, y - p.y); if(d < best){ best = d; idx = i; } });
+    if(best <= grab) lhDrag = { kind: 'corner', idx };
+    else if(p.x > c.x && p.x < c.x + c.w && p.y > c.y && p.y < c.y + c.h) lhDrag = { kind: 'move', dx: p.x - c.x, dy: p.y - c.y };
+    else return;
+    lhCropCanvas.setPointerCapture(e.pointerId); e.preventDefault();
+  });
+  lhCropCanvas.addEventListener('pointermove', (e) => {
+    if(!lhDrag) return;
+    const p = lhPoint(e), W = lhSource.width, H = lhSource.height, c = lhCrop, min = 20;
+    const clampX = (v) => Math.max(0, Math.min(W, v)), clampY = (v) => Math.max(0, Math.min(H, v));
+    if(lhDrag.kind === 'move'){
+      c.x = Math.max(0, Math.min(W - c.w, p.x - lhDrag.dx)); c.y = Math.max(0, Math.min(H - c.h, p.y - lhDrag.dy));
+    } else {
+      let x0 = c.x, y0 = c.y, x1 = c.x + c.w, y1 = c.y + c.h;
+      const i = lhDrag.idx;
+      if(i === 0 || i === 3) x0 = Math.min(clampX(p.x), x1 - min); else x1 = Math.max(clampX(p.x), x0 + min);
+      if(i === 0 || i === 1) y0 = Math.min(clampY(p.y), y1 - min); else y1 = Math.max(clampY(p.y), y0 + min);
+      lhCrop = { x: x0, y: y0, w: x1 - x0, h: y1 - y0 };
+    }
+    lhDrawCrop(); e.preventDefault();
+  });
+  ['pointerup', 'pointercancel'].forEach(t => lhCropCanvas.addEventListener(t, () => { if(lhDrag){ lhDrag = null; lhUpdate(); } }));
+
+  // Crop + straighten + clean the logo. Light pixels (paper, stains, shadows) turn pure white.
+  function lhLogoCanvas(){
+    if(!lhSource || lhNoLogo) return null;
+    const tilt = parseFloat(lhEl('lhTilt').value) * Math.PI / 180;
+    const c = document.createElement('canvas');
+    c.width = Math.max(1, Math.round(lhCrop.w)); c.height = Math.max(1, Math.round(lhCrop.h));
+    const ctx = c.getContext('2d');
+    ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, c.width, c.height);
+    ctx.translate(c.width / 2, c.height / 2); ctx.rotate(tilt);
+    ctx.drawImage(lhSource, -lhCrop.x - c.width / 2, -lhCrop.y - c.height / 2);
+    const k = parseInt(lhEl('lhClean').value, 10) / 100;
+    if(k > 0){
+      const img = ctx.getImageData(0, 0, c.width, c.height), d = img.data;
+      const cut = 245 - 130 * k;             // stronger = more grey (stains, shadows) turns white
+      for(let i = 0; i < d.length; i += 4){
+        const r = d[i], g = d[i+1], b = d[i+2];
+        const lum = 0.299 * r + 0.587 * g + 0.114 * b;
+        const sat = Math.max(r, g, b) - Math.min(r, g, b);
+        if(lum >= cut && sat < 60){ d[i] = d[i+1] = d[i+2] = 255; }
+        else if(lum < cut){              // darken the ink a little so it looks crisp
+          const f = 0.85 + 0.15 * (1 - k);
+          d[i] = r * f; d[i+1] = g * f; d[i+2] = b * f;
+        }
+      }
+      ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.putImageData(img, 0, 0);
+    }
+    // Trim the empty white edges, so the logo sits snugly next to the text.
+    const d2 = c.getContext('2d').getImageData(0, 0, c.width, c.height).data;
+    let x0 = c.width, x1 = -1, y0 = c.height, y1 = -1;
+    for(let y = 0; y < c.height; y += 2) for(let x = 0; x < c.width; x += 2){
+      const i = (y * c.width + x) * 4;
+      if(d2[i] < 235 || d2[i+1] < 235 || d2[i+2] < 235){ if(x < x0) x0 = x; if(x > x1) x1 = x; if(y < y0) y0 = y; if(y > y1) y1 = y; }
+    }
+    if(x1 < 0) return null;
+    const pad = 4; x0 = Math.max(0, x0 - pad); y0 = Math.max(0, y0 - pad); x1 = Math.min(c.width, x1 + pad + 2); y1 = Math.min(c.height, y1 + pad + 2);
+    const t = document.createElement('canvas'); t.width = x1 - x0; t.height = y1 - y0;
+    t.getContext('2d').drawImage(c, x0, y0, t.width, t.height, 0, 0, t.width, t.height);
+    return t;
+  }
+  // Puts the logo and the typed lines together into one letterhead picture.
+  function lhCompose(){
+    const logo = lhLogoCanvas();
+    const lines = lhEl('lhText').value.split('\n').map(t => t.trim()).filter(Boolean).slice(0, 6);
+    if(!logo && !lines.length) return null;
+    const layout = lhEl('lhLayout').value, FS = 34, LH = 44, LOGO_H = 170;
+    const meas = document.createElement('canvas').getContext('2d');
+    const fontOf = (t) => (t === t.toUpperCase() && /[A-Z]/.test(t) ? '700 ' : '400 ') + FS + 'px "Times New Roman", Times, serif';
+    const textW = lines.reduce((m, t) => { meas.font = fontOf(t); return Math.max(m, meas.measureText(t).width); }, 0);
+    const textH = lines.length * LH;
+    const lw = logo ? Math.round(logo.width * LOGO_H / logo.height) : 0, lh = logo ? LOGO_H : 0;
+    let W, H;
+    if(!logo || !lines.length){ W = Math.max(lw, textW) + 20; H = (logo ? lh : 0) + textH + 20; }
+    else if(layout === 'above'){ W = Math.max(lw, textW) + 20; H = lh + 14 + textH + 10; }
+    else if(layout === 'left'){ W = lw + 30 + textW + 20; H = Math.max(lh, textH) + 10; }
+    else { W = lw * 2 + 60 + textW + 20; H = Math.max(lh, textH) + 10; }
+    const c = document.createElement('canvas'); c.width = Math.ceil(W); c.height = Math.ceil(H);
+    const ctx = c.getContext('2d'); ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, c.width, c.height);
+    ctx.fillStyle = '#111'; ctx.textBaseline = 'alphabetic';
+    const drawLines = (cx, top, align) => {
+      ctx.textAlign = align;
+      lines.forEach((t, i) => { ctx.font = fontOf(t); ctx.fillText(t, cx, top + (i + 1) * LH - 10); });
+    };
+    if(!logo){ drawLines(c.width / 2, 10, 'center'); }
+    else if(!lines.length){ ctx.drawImage(logo, (c.width - lw) / 2, 10, lw, lh); }
+    else if(layout === 'above'){ ctx.drawImage(logo, (c.width - lw) / 2, 0, lw, lh); drawLines(c.width / 2, lh + 14, 'center'); }
+    else if(layout === 'left'){ ctx.drawImage(logo, 0, (c.height - lh) / 2, lw, lh); drawLines(lw + 30 + textW / 2, (c.height - textH) / 2, 'center'); }
+    else { ctx.drawImage(logo, 0, (c.height - lh) / 2, lw, lh); ctx.drawImage(logo, c.width - lw, (c.height - lh) / 2, lw, lh); drawLines(c.width / 2, (c.height - textH) / 2, 'center'); }
+    return c;
+  }
+  function lhUpdate(){
+    const c = lhCompose(), img = lhEl('lhPreview');
+    if(!c){ img.removeAttribute('src'); img.style.display = 'none'; return; }
+    img.src = c.toDataURL('image/png'); img.style.display = 'block';
+    img.style.width = lhEl('lhSize').value + '%';
+    img.style.marginLeft = lhAlign === 'left' ? '0' : 'auto'; img.style.marginRight = lhAlign === 'right' ? '0' : 'auto';
+  }
+  ['lhClean', 'lhTilt', 'lhSize', 'lhText', 'lhLayout'].forEach(id => lhEl(id).addEventListener('input', lhUpdate));
+  lhModal.querySelectorAll('[data-al]').forEach(b => b.addEventListener('click', () => {
+    lhAlign = b.dataset.al; lhModal.querySelectorAll('[data-al]').forEach(x => x.classList.toggle('on', x === b)); lhUpdate();
+  }));
+  lhEl('lhUseScanBtn').addEventListener('click', () => { if(lhScanSource) lhSetSource(lhScanSource.canvas, lhScanSource.band); else alert('No scanned page yet.'); });
+  lhEl('lhNoLogoBtn').addEventListener('click', () => lhSetSource(null));
+  lhEl('lhUploadBtn').addEventListener('click', () => lhEl('lhFile').click());
+  lhEl('lhFile').addEventListener('change', async () => {
+    const f = lhEl('lhFile').files[0]; lhEl('lhFile').value = '';
+    if(!f) return;
+    try{
+      const { img } = await loadImageFromFile(f);
+      const c = document.createElement('canvas'), s = Math.min(1, 1400 / Math.max(img.width, img.height));
+      c.width = Math.round(img.width * s); c.height = Math.round(img.height * s);
+      const x = c.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, c.width, c.height); x.drawImage(img, 0, 0, c.width, c.height);
+      lhEl('lhClean').value = 0;
+      lhSetSource(c, { x: 0, y: 0, w: c.width, h: c.height });
+    }catch(err){ alert(err.message || 'Could not open that picture.'); }
+  });
+  function lhReset(){
+    lhEl('lhClean').value = 55; lhEl('lhTilt').value = 0; lhEl('lhSize').value = 55;
+    lhAlign = 'center'; lhModal.querySelectorAll('[data-al]').forEach(x => x.classList.toggle('on', x.dataset.al === 'center'));
+    if(lhScanSource) lhSetSource(lhScanSource.canvas, lhScanSource.band); else lhSetSource(null);
+  }
+  lhEl('lhResetBtn').addEventListener('click', lhReset);
+  lhEl('lhOpenBtn').addEventListener('click', () => {
+    if(!lhSource && !lhNoLogo) lhReset(); else { lhDrawCrop(); lhUpdate(); }
+    lhModal.style.display = 'block'; document.body.style.overflow = 'hidden';
+  });
+  function lhClose(){ lhModal.style.display = 'none'; document.body.style.overflow = ''; }
+  lhEl('lhCancelBtn').addEventListener('click', lhClose);
+  lhEl('lhApplyBtn').addEventListener('click', () => {
+    const c = lhCompose();
+    if(!c){ alert('Choose a logo or type at least one line first.'); return; }
+    c._pageFrac = parseInt(lhEl('lhSize').value, 10) / 100;
+    c._align = lhAlign;
+    retypeLetterhead = c;
+    retypeLetterheadRow.style.display = 'flex';
+    retypeKeepLetterhead.checked = true;
+    refreshLetterheadPreview();
+    lhClose();
+    showStatus('Letterhead ready ✓', 2000);
+  });
+  // Called after each Retype: remembers the top of the scanned page for cropping.
+  function lhRemember(pageCanvas, band, cut){
+    const bottom = Math.min(1, Math.max(0.25, ((band && band.found) ? band.bottom : 0.2) + 0.08));
+    const c = document.createElement('canvas'); c.width = pageCanvas.width; c.height = Math.max(1, Math.round(pageCanvas.height * bottom));
+    c.getContext('2d').drawImage(pageCanvas, 0, 0, c.width, c.height, 0, 0, c.width, c.height);
+    let b = null;
+    if(band && band.found){
+      const y0 = pageCanvas.height * band.top, y1 = pageCanvas.height * band.bottom;
+      b = { x: c.width * 0.05, y: Math.max(0, y0), w: c.width * 0.9, h: Math.max(20, Math.min(c.height, y1) - Math.max(0, y0)) };
+    }
+    lhScanSource = { canvas: c, band: b };
+    lhSource = null; lhNoLogo = false; lhEl('lhText').value = '';
+    document.getElementById('lhFixRow').style.display = 'flex';
+  }
+
   function escapeHtml(t){ return t.replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 
   // Turns the reader's blocks into editable HTML on the white page.
+  // Rows of a table block: from the reader's "rows", or from text lines with " | " between cells.
+  function tableRowsOf(b){
+    if(Array.isArray(b.rows) && b.rows.length) return b.rows;
+    const rows = String(b.text || '').split('\n').filter(l => l.trim()).map(l => l.split(' | '));
+    const cols = rows.reduce((m, r) => Math.max(m, r.length), 0);
+    return rows.map(r => r.concat(Array(cols - r.length).fill('')));
+  }
+  function cellHtml(t){
+    return escapeHtml(String(t || '')).replace(/\*\*([\s\S]+?)\*\*/g, '<b>$1</b>')
+      .replace(/\[\?\]/g, '<mark style="background:#ffe08a;color:#111;">[?]</mark>').replace(/\n/g, '<br>');
+  }
+  function tableHtml(rows, header){
+    return '<table class="rt-table">' + rows.map((r, ri) => '<tr' + (ri < header ? ' class="rt-head"' : '') + '>' + r.map(c => '<td>' + (cellHtml(c) || '<br>') + '</td>').join('') + '</tr>').join('') + '</table>';
+  }
   function showRetypedBlocks(blocks, signerBlock){
     retypePaper.innerHTML = blocks.map((b, i) => {
+      if(b.type === 'table'){
+        const rows = tableRowsOf(b);
+        const header = typeof b.header === 'number' ? b.header : 1;
+        return '<div class="rt-block" dir="auto" data-type="table" data-align="left" data-header="' + header + '">' + tableHtml(rows, header) + '</div>';
+      }
       const html = escapeHtml(b.text)
         .replace(/\*\*([\s\S]+?)\*\*/g, '<b>$1</b>')
         .replace(/\[\?\]/g, '<mark style="background:#ffe08a;color:#111;">[?]</mark>')
@@ -3446,6 +3791,7 @@
       retypeOriginalHtml = null; retypeOriginalRow.style.display = 'none'; resetListen();
       retypeTranslateNote.textContent = 'Translating uses 1 Retype page. You can switch back to the original any time.';
       retypeLetterhead = (data.letterhead && data.letterhead.found) ? cutLetterhead(send, data.letterhead) : null;
+      lhRemember(send, data.letterhead);
       retypeLetterheadRow.style.display = retypeLetterhead ? 'flex' : 'none';
       retypeKeepLetterhead.checked = false;   // off unless the person chooses it
       refreshLetterheadPreview();
@@ -3561,6 +3907,9 @@
 
   // One block of the page as text, with **bold** and line breaks kept.
   function blockToMarked(el){
+    if(el.dataset && el.dataset.type === 'table'){
+      return Array.from(el.querySelectorAll('tr')).map(tr => Array.from(tr.children).map(td => blockToMarked(td).replace(/\n/g, ' ').replace(/\|/g, '/')).join(' | ')).join('\n');
+    }
     let out = '';
     const walk = (n, bold) => {
       if(n.nodeType === 3){ out += n.textContent; return; }
@@ -3599,7 +3948,7 @@
       if(!Array.isArray(data.blocks) || data.blocks.length !== els.length) throw new Error('Could not translate right now. Please try again.');
       if(retypeOriginalHtml === null) retypeOriginalHtml = retypePaper.innerHTML;
       const signerIdx = els.findIndex(el => el.classList.contains('rt-signer'));
-      showRetypedBlocks(els.map((el, i) => ({ type: el.dataset.type || 'paragraph', align: el.dataset.align || 'left', text: data.blocks[i] })), signerIdx);
+      showRetypedBlocks(els.map((el, i) => ({ type: el.dataset.type || 'paragraph', align: el.dataset.align || 'left', header: parseInt(el.dataset.header || '1', 10), text: data.blocks[i] })), signerIdx);
       retypeOriginalRow.style.display = 'flex';
       document.getElementById('retypeGrammarBox').style.display = 'none';
       retypeTranslateNote.textContent = 'Translated to ' + (data.language || 'the chosen language') + ' ✓ Tap any word to fix it.' + (typeof data.pagesLeft === 'number' ? ' (' + data.pagesLeft + ' AI pages left)' : '');
@@ -3711,6 +4060,22 @@
     }
   });
 
+  // One table cell → lines of {t, b} runs.
+  function cellRuns(td, headBold){
+    const lines = [[]];
+    const walk = (n, bold) => {
+      if(n.nodeType === 3){ if(n.textContent) lines[lines.length-1].push({ t: n.textContent.replace(/\n/g, ' '), b: bold }); return; }
+      if(n.nodeType !== 1) return;
+      if(n.tagName === 'BR'){ lines.push([]); return; }
+      const isBlock = /^(DIV|P)$/.test(n.tagName);
+      if(isBlock && lines[lines.length-1].length) lines.push([]);
+      n.childNodes.forEach(c => walk(c, bold || n.tagName === 'B' || n.tagName === 'STRONG'));
+      if(isBlock) lines.push([]);
+    };
+    td.childNodes.forEach(c => walk(c, !!headBold));
+    while(lines.length > 1 && !lines[lines.length-1].length) lines.pop();
+    return lines;
+  }
   // ---- Read the (possibly edited) page back into lines of bold/normal text ----
   function readRetypeBlocks(){
     const blocks = [];
@@ -3720,6 +4085,12 @@
         return;
       }
       if(node.nodeType !== 1) return;
+      if(node.dataset && node.dataset.type === 'table'){
+        const trs = Array.from(node.querySelectorAll('tr'));
+        const rows = trs.map(tr => Array.from(tr.children).map(td => cellRuns(td, tr.classList.contains('rt-head'))));
+        if(rows.length) blocks.push({ type: 'table', align: 'left', signer: false, header: trs.filter(tr => tr.classList.contains('rt-head')).length, rows });
+        return;
+      }
       const lines = [[]];
       const walk = (n, bold) => {
         if(n.nodeType === 3){ if(n.textContent) lines[lines.length-1].push({ t: n.textContent.replace(/\n/g,' '), b: bold }); return; }
@@ -3755,11 +4126,67 @@
   const RT_RTL_G = /[\u0590-\u08FF\uFB1D-\uFDFF\uFE70-\uFEFF]/g;
   function rtFont(size, bold){ return (bold ? '700 ' : '400 ') + size + 'px ' + RT_FONT; }
 
+  // Tables: share the width between columns by how much text each holds, wrap each cell, one item per row.
+  function wrapRuns(lines, fs, width, meas){
+    const out = [];
+    lines.forEach(runs => {
+      const words = [];
+      runs.forEach(r => r.t.split(/(\s+)/).forEach(w => { if(w && !/^\s+$/.test(w)){ meas.font = rtFont(fs, r.b); words.push({ w, b: r.b, width: meas.measureText(w).width }); } }));
+      meas.font = rtFont(fs, false); const sp = meas.measureText(' ').width;
+      let line = [], lw = 0;
+      words.forEach(wd => {
+        if(line.length && lw + sp + wd.width > width){ out.push(line); line = []; lw = 0; }
+        lw += (line.length ? sp : 0) + wd.width; line.push(wd);
+      });
+      out.push(line);
+    });
+    return out;
+  }
+  function layoutTable(block, size, maxW, meas){
+    const fs = size * 0.85, lh = Math.round(fs * 1.3), pad = 7;
+    const cols = block.rows.reduce((m, r) => Math.max(m, r.length), 0);
+    const want = Array(cols).fill(0), minW = Array(cols).fill(0);
+    block.rows.forEach(r => r.forEach((cell, ci) => {
+      let total = 0, longest = 0;
+      cell.forEach(runs => runs.forEach(rn => rn.t.split(/\s+/).forEach(w => { if(!w) return; meas.font = rtFont(fs, rn.b); const ww = meas.measureText(w).width; total += ww + fs * 0.3; longest = Math.max(longest, ww); })));
+      want[ci] = Math.max(want[ci], total); minW[ci] = Math.max(minW[ci], longest);
+    }));
+    const floor = fs * 1.6;
+    let widths = want.map((w, i) => Math.max(floor, minW[i], Math.min(w, maxW * 0.7)) + pad * 2);
+    const sum = widths.reduce((a, b) => a + b, 0);
+    if(sum > maxW){                                    // shrink the wide columns first
+      const fixed = widths.map((w, i) => Math.min(w, minW[i] + pad * 2 + 4));
+      const room = maxW - fixed.reduce((a, b) => a + b, 0);
+      const extra = widths.map((w, i) => w - fixed[i]); const ex = extra.reduce((a, b) => a + b, 0) || 1;
+      widths = room > 0 ? fixed.map((f, i) => f + extra[i] * room / ex) : widths.map(w => w * maxW / sum);
+    } else widths = widths.map(w => w * maxW / sum);   // fill the page width
+    return block.rows.map((r, ri) => {
+      const cells = r.map((cell, ci) => wrapRuns(cell, fs, widths[ci] - pad * 2, meas));
+      const nLines = Math.max(1, ...cells.map(c => c.length));
+      return { kind:'trow', cells, widths, fs, cellLh: lh, pad, head: ri < block.header, lh: nLines * lh + pad * 2 };
+    });
+  }
+  function drawTableRow(ctx, it, top){
+    let x = RT_MX; const y = top + it.y;
+    it.cells.forEach((lines, ci) => {
+      const w = it.widths[ci];
+      if(it.head){ ctx.fillStyle = '#e8eef0'; ctx.fillRect(x, y, w, it.lh); }
+      ctx.strokeStyle = '#222'; ctx.lineWidth = 1.5; ctx.strokeRect(x, y, w, it.lh);
+      ctx.fillStyle = '#111';
+      lines.forEach((ln, li) => {
+        const lineW = ln.reduce((a, wd, i) => a + wd.width + (i ? it.fs * 0.27 : 0), 0);
+        let px = it.head ? x + (w - lineW) / 2 : x + it.pad;
+        ln.forEach((wd, i) => { if(i) { ctx.font = rtFont(it.fs, false); px += ctx.measureText(' ').width; } ctx.font = rtFont(it.fs, wd.b || it.head); ctx.fillText(wd.w, px, y + it.pad + (li + 1) * it.cellLh - it.cellLh * 0.25); px += wd.width; });
+      });
+      x += w;
+    });
+  }
   function layoutRetype(size, firstTop){
     const meas = document.createElement('canvas').getContext('2d');
     const lh = Math.round(size * 1.38), maxW = RT_W - RT_MX * 2;
     const items = [];       // {kind:'line', words, align, justify} | {kind:'gap', h} | {kind:'signerMark'}
     readRetypeBlocks().forEach(block => {
+      if(block.type === 'table'){ layoutTable(block, size, maxW, meas).forEach(r => items.push(r)); items.push({ kind:'gap', h: Math.round(lh * 0.55) }); return; }
       const allText = block.lines.map(l => l.map(r => r.t).join('')).join(' ');
       block.rtl = (allText.match(RT_RTL_G) || []).length > (allText.match(/[A-Za-z]/g) || []).length;
       if(block.signer) items.push({ kind:'gap', h: Math.round(lh * 2.6) }, { kind:'signerMark' });
@@ -3801,8 +4228,8 @@
     const pages = [[]]; let y = 0;
     const availFor = (pi) => RT_H - (pi === 0 ? firstTop : RT_TOP) - RT_BOTTOM;
     items.forEach(it => {
-      const h = it.kind === 'line' ? it.lh : (it.h || 0);
-      if(it.kind === 'line' && y + h > availFor(pages.length - 1)){ pages.push([]); y = 0; }
+      const h = (it.kind === 'line' || it.kind === 'trow') ? it.lh : (it.h || 0);
+      if((it.kind === 'line' || it.kind === 'trow') && y + h > availFor(pages.length - 1)){ pages.push([]); y = 0; }
       if(it.kind === 'gap' && y === 0) return;          // no blank space at the top of a page
       pages[pages.length-1].push({ ...it, y });
       y += h;
@@ -3817,8 +4244,9 @@
     if(retypeLetterhead && retypeKeepLetterhead.checked){
       let w = RT_W * Math.min(0.92, retypeLetterhead._pageFrac);
       let h = w * retypeLetterhead.height / retypeLetterhead.width;
-      if(h > RT_H * 0.2){ h = RT_H * 0.2; w = h * retypeLetterhead.width / retypeLetterhead.height; }
-      lhDraw = { x: (RT_W - w) / 2, y: 60, w, h };
+      if(h > RT_H * 0.25){ h = RT_H * 0.25; w = h * retypeLetterhead.width / retypeLetterhead.height; }
+      const al = retypeLetterhead._align || 'center';
+      lhDraw = { x: al === 'left' ? RT_MX : al === 'right' ? RT_W - RT_MX - w : (RT_W - w) / 2, y: 60, w, h };
       firstTop = Math.max(RT_TOP, 60 + h + 50);
     }
     let lay = null;
@@ -3839,6 +4267,7 @@
       ctx.fillStyle = '#111111'; ctx.textBaseline = 'alphabetic';
       items.forEach(it => {
         if(it.kind === 'signerMark'){ if(pi === 0 && signerFrac === null) signerFrac = (top + it.y) / RT_H; return; }
+        if(it.kind === 'trow'){ drawTableRow(ctx, it, top); ctx.fillStyle = '#111111'; return; }
         if(it.kind !== 'line') return;
         const total = it.words.reduce((a, w) => a + w.width, 0);
         const gaps = it.words.filter((w, i) => i > 0 && w.sp).length;
