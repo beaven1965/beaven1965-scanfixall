@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ScanFixAll — Scan, Clean &amp; Shrink</title>
 <meta name="description" content="Turn messy document photos into clean, shareable scans, and shrink any photo down to a size you can actually send.">
-<meta name="theme-color" content="#FAF7F0">
+<meta name="theme-color" content="#C9472F">
 <link rel="manifest" href="/manifest.json">
 <link rel="icon" type="image/png" sizes="32x32" href="/icon-32.png">
 <link rel="icon" type="image/png" sizes="16x16" href="/icon-16.png">
@@ -14,29 +14,30 @@
 <link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,500&family=Inter:wght@400;500;600;700&family=Tinos:wght@400;700&display=swap" rel="stylesheet">
 <style>
   :root{
-    /* Morning Classroom theme: ivory, teal, soft coral */
-    --ink:#FAF7F0;
-    --ink-deep:#F1ECE1;
+    /* scanfix look: banig header band, plain body */
+    --ink:#FFF7F0;
+    --ink-deep:#FFEDE0;
     --surface:#FFFFFF;
-    --surface-line:#D7E6E4;
+    --surface-line:#F0D8CA;
     --paper:#FFFFFF;
-    --paper-line:#D7E6E4;
-    --gold:#1F6F78;
-    --gold-bright:#17565D;
-    --coral:#E07A5F;
+    --paper-line:#F0D8CA;
+    --gold:#C9472F;
+    --gold-bright:#A8381F;
+    --coral:#F2A23A;
     --ember:#C8553D;
     --ember-bright:#D96A52;
-    --text:#2B2B2B;
-    --text-muted:#5F6B6D;
+    --text:#232A2C;
+    --text-muted:#5A6466;
     --ink-on-paper:#1E2A2C;
     --ink-on-paper-muted:#4A5658;
-    --link-warm:#1F6F78;
+    --link-warm:#C9472F;
+    --tint:#FFEDE0;
   }
   *{box-sizing:border-box;}
   html,body{margin:0;padding:0;}
   body{
     background:
-      radial-gradient(circle at 0% 0%, rgba(31,111,120,0.10), transparent 38%),
+      radial-gradient(circle at 0% 0%, rgba(201,71,47,0.10), transparent 38%),
       radial-gradient(circle at 100% 6%, rgba(224,122,95,0.10), transparent 32%),
       var(--ink);
     background-attachment:fixed;
@@ -137,7 +138,7 @@
     border-radius:50%;
     border:none;
     background:radial-gradient(circle at 35% 30%, var(--gold-bright), var(--gold));
-    box-shadow:0 0 0 8px rgba(31,111,120,0.12);
+    box-shadow:0 0 0 8px rgba(201,71,47,0.12);
     cursor:pointer;
     display:flex;
     align-items:center;
@@ -174,8 +175,8 @@
     animation:nudge-glow 1.8s ease-in-out infinite;
   }
   @keyframes nudge-glow{
-    0%,100%{ box-shadow:0 0 0 8px rgba(31,111,120,0.12); }
-    50%{ box-shadow:0 0 0 20px rgba(31,111,120,0.30); }
+    0%,100%{ box-shadow:0 0 0 8px rgba(201,71,47,0.12); }
+    50%{ box-shadow:0 0 0 20px rgba(201,71,47,0.30); }
   }
   @media (prefers-reduced-motion: reduce){
     .record-btn.needs-attention{ animation:none; }
@@ -250,7 +251,7 @@
     align-items:center;
     justify-content:center;
     background:radial-gradient(circle at 35% 30%, var(--gold-bright), var(--gold));
-    box-shadow:0 0 0 8px rgba(31,111,120,0.12);
+    box-shadow:0 0 0 8px rgba(201,71,47,0.12);
     transition:transform 0.15s ease;
   }
   .home-icon-btn:hover .home-icon-circle{ transform:scale(1.05); }
@@ -365,8 +366,8 @@
     animation:idle-pulse 2.2s ease-in-out infinite;
   }
   @keyframes idle-pulse{
-    0%,100%{ box-shadow:0 0 0 8px rgba(31,111,120,0.10); opacity:1; }
-    50%{ box-shadow:0 0 0 22px rgba(31,111,120,0.24); opacity:0.85; }
+    0%,100%{ box-shadow:0 0 0 8px rgba(201,71,47,0.10); opacity:1; }
+    50%{ box-shadow:0 0 0 22px rgba(201,71,47,0.24); opacity:0.85; }
   }
   @media (prefers-reduced-motion: reduce){
     .record-btn.idle-blink{ animation:none; }
@@ -836,7 +837,7 @@
     font-family:'Inter',sans-serif;
   }
   .premium-note{
-    background:rgba(31,111,120,0.12);
+    background:rgba(201,71,47,0.12);
     border:1px solid var(--gold);
     color:var(--text);
     padding:12px 14px;
@@ -862,7 +863,7 @@
     cursor:pointer;
     white-space:nowrap;
   }
-  .premium-note .unlock-btn:hover{ background:rgba(31,111,120,0.18); }
+  .premium-note .unlock-btn:hover{ background:rgba(201,71,47,0.18); }
   .settings-item.clickable{ cursor:pointer; }
   .settings-item.clickable:hover{ background:rgba(255,255,255,0.03); }
   .settings-item .chevron{ color:var(--coral); font-weight:700; }
@@ -951,7 +952,7 @@
     border-radius:16px;
     cursor:pointer;
   }
-  .related-topics .chip:hover{ border-color:var(--gold); color:var(--gold-bright); background:rgba(31,111,120,0.12); }
+  .related-topics .chip:hover{ border-color:var(--gold); color:var(--gold-bright); background:rgba(201,71,47,0.12); }
   .quiz-question{
     border:1px solid var(--surface-line);
     border-radius:12px;
@@ -1130,7 +1131,7 @@
     margin:0;
   }
   .founding-banner{
-    background:rgba(31,111,120,0.12);
+    background:rgba(201,71,47,0.12);
     border:1px solid var(--gold);
     color:var(--gold-bright);
     text-align:center;
@@ -1720,6 +1721,29 @@
   }
   .size-compare .big{ font-size:16px; font-weight:700; }
   .size-compare .arrow{ color:var(--text-muted); align-self:center; }
+  .scan-steps{ display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:6px; margin:0 0 12px; font-size:12px; font-weight:600; color:#9A847D; }
+  .scan-steps div{ display:flex; flex-direction:column; gap:5px; }
+  .scan-steps i{ display:block; height:5px; border-radius:3px; background:var(--surface-line); }
+  .scan-steps .on{ color:var(--gold-bright); font-weight:700; }
+  .scan-steps .on i{ background:var(--gold); }
+  .ai-retype-btn{ width:100%; margin-top:10px; padding:13px 14px; border-radius:14px; border:2px solid var(--coral); background:#FFF1DC; color:#7A3E0E;
+    display:flex; align-items:center; justify-content:space-between; gap:10px; cursor:pointer; font-family:inherit; font-size:15.5px; font-weight:700; text-align:left; }
+  .ai-retype-btn .ai-l{ display:flex; align-items:center; gap:8px; }
+  .ai-retype-btn svg{ color:var(--gold); flex:none; }
+  .ai-badge{ font-size:11.5px; font-weight:800; background:var(--gold); color:#fff; padding:4px 8px; border-radius:999px; white-space:nowrap; }
+  .msgr-btn{ width:100%; margin-top:12px; padding:12px 14px; border-radius:12px; border:2px solid #1E8A4C; background:#E7F6EC; color:#145C33;
+    display:flex; align-items:center; gap:10px; text-align:left; cursor:pointer; font-family:inherit; font-size:15px; }
+  .msgr-btn svg{ color:#1E8A4C; flex:none; }
+  .msgr-btn span{ display:flex; flex-direction:column; gap:2px; }
+  .msgr-btn small{ font-size:12.5px; color:#2F6B48; }
+  .pay-promises{ list-style:none; padding:14px 16px; margin:14px 0 4px; background:#fff; border-radius:14px; box-shadow:0 2px 10px rgba(0,0,0,.06); display:flex; flex-direction:column; gap:8px; font-size:14.5px; color:#2B2B2B; }
+  .pay-promises li{ padding-left:26px; position:relative; line-height:1.4; }
+  .pay-promises li::before{ content:'✓'; position:absolute; left:2px; top:0; color:#1E8A4C; font-weight:800; }
+  .subscribe-btn small{ display:block; font-size:13px; font-weight:600; opacity:.85; margin-top:3px; }
+  #subscribeBtn{ background:#145C33 !important; color:#fff !important; border:none !important; }
+  #subscribeBtn:disabled{ opacity:.55; }
+  .pay-methods{ display:flex; justify-content:center; gap:8px; margin-top:10px; flex-wrap:wrap; }
+  .pay-methods span{ font-size:12.5px; font-weight:700; padding:6px 10px; border-radius:8px; background:#F0E6E0; color:#3A2A26; }
   .scan-toolbar{ display:flex; gap:8px; margin:10px 0 8px; }
   .scan-toolbar button{ flex:1; padding:10px 6px; border-radius:10px; border:1.5px solid var(--gold); background:#fff; color:var(--gold); font-weight:700; font-size:14px; cursor:pointer; font-family:inherit; }
   .scan-toolbar button:disabled{ opacity:.4; cursor:default; }
@@ -1736,9 +1760,9 @@
   .lh-crop-wrap{ background:#eee; border-radius:8px; margin:8px 0; text-align:center; }
   #lhCropCanvas{ max-width:100%; display:block; margin:0 auto; }
   .lh-label{ display:flex; align-items:center; gap:10px; font-size:14px; margin:8px 0; }
-  .lh-label input[type=range]{ flex:1; accent-color:#1F6F78; }
+  .lh-label input[type=range]{ flex:1; accent-color:#C9472F; }
   .lh-label select{ padding:6px; border-radius:8px; border:1px solid #cfd6df; font-family:inherit; }
-  #lhText{ width:100%; box-sizing:border-box; border:1.5px solid #A9CFCB; border-radius:10px; padding:10px; font-size:15px; font-family:inherit; }
+  #lhText{ width:100%; box-sizing:border-box; border:1.5px solid #F0D8CA; border-radius:10px; padding:10px; font-size:15px; font-family:inherit; }
   .lh-preview{ background:#fff; border:1px dashed #cfd6df; border-radius:8px; padding:10px; min-height:40px; }
   .lh-preview img{ display:block; max-width:100%; }
   .lh-actions{ display:flex; gap:8px; margin-top:14px; }
@@ -1768,21 +1792,21 @@
   .rt-table{ border-collapse:collapse; width:100%; font-size:0.92em; }
   .rt-table td{ border:1px solid #333; padding:3px 5px; vertical-align:top; min-width:1.4em; }
   .rt-table tr.rt-head td{ background:#e8eef0; font-weight:700; text-align:center; }
-  .rt-table td.rt-cur{ outline:2px solid #E07A5F; outline-offset:-2px; }
+  .rt-table td.rt-cur{ outline:2px solid #F2A23A; outline-offset:-2px; }
   .tbl-tools{ display:flex; flex-wrap:wrap; gap:6px; margin:8px 0 2px; }
   .tbl-tools button{ padding:7px 10px; border-radius:8px; border:1.5px solid var(--gold); background:#fff; color:var(--gold); font-weight:600; font-size:13px; cursor:pointer; font-family:inherit; }
   .plan-choices{ display:grid; grid-template-columns:1fr; gap:10px; margin:16px 0 6px; }
   @media (min-width:560px){ .plan-choices{ grid-template-columns:1fr 1fr; } }
   .plan-card{ display:flex; gap:10px; align-items:flex-start; border:2px solid #d9dde3; border-radius:12px; padding:14px; cursor:pointer; background:#fff; color:#1c2530; }
-  .plan-card:has(input:checked){ border-color:#1F6F78; background:#F1F8F7; }
-  .plan-card input{ width:20px; height:20px; margin-top:2px; accent-color:#1F6F78; flex:none; }
+  .plan-card:has(input:checked){ border-color:#C9472F; background:#FFEDE0; }
+  .plan-card input{ width:20px; height:20px; margin-top:2px; accent-color:#C9472F; flex:none; }
   .plan-body{ display:flex; flex-direction:column; gap:4px; }
   .plan-name{ font-weight:700; font-size:16px; }
   .plan-price{ font-weight:800; font-size:22px; }
   .plan-price small{ font-weight:500; font-size:13px; color:#5b6876; }
   .plan-desc{ font-size:13.5px; line-height:1.4; color:#3a4654; }
   .terms-agree{ display:flex; gap:10px; align-items:flex-start; margin:14px 0 10px; font-size:14px; line-height:1.4; cursor:pointer; }
-  .terms-agree input{ width:20px; height:20px; flex:none; margin-top:1px; accent-color:#1F6F78; }
+  .terms-agree input{ width:20px; height:20px; flex:none; margin-top:1px; accent-color:#C9472F; }
   .terms-agree a{ color:inherit; text-decoration:underline; font-weight:600; }
   .subscribe-btn:disabled{ opacity:.5; cursor:not-allowed; }
   .page-thumbs{
@@ -1822,35 +1846,38 @@
 </style>
 
 <style id="art-theme">
-  /* Banig weave + sea waves */
-  :root{ --ink:#F6EFE2; }
-  body{
-    background:
-      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1440 320' preserveAspectRatio='none'%3E%3Cpath fill='%2380CFCB' fill-opacity='.85' d='M0 160c120-40 240-60 360-40s240 80 360 80 240-60 360-80 240 0 360 40v160H0z'/%3E%3Cpath fill='%23F5A585' fill-opacity='.9' d='M0 220c140-30 260-20 380 10s240 50 360 30 240-60 360-60 220 30 340 50v70H0z'/%3E%3Cpath fill='%231F7C85' fill-opacity='.95' d='M0 270c160-20 300-10 440 10s280 20 420 0 300-30 580-10v50H0z'/%3E%3C/svg%3E") bottom center / 100% 210px no-repeat fixed,
-      repeating-linear-gradient(45deg, rgba(31,111,120,0.035) 0 10px, transparent 10px 20px),repeating-linear-gradient(-45deg, rgba(224,122,95,0.04) 0 10px, transparent 10px 20px),
-      linear-gradient(170deg, #CDEBE8 0%, #F6EFE2 38%, #FBE3D6 72%, #F7D2C2 100%) fixed,
-      #F6EFE2 !important;
+  /* New look: banig weave only in the header band; plain, calm page below */
+  body{ background:#FFF7F0 !important; }
+  .shell{ padding-top:0 !important; }
+  header{
+    position:relative; margin:0 -20px 46px; padding:22px 20px 58px; border-radius:0 0 26px 26px;
+    background-color:#C9472F;
+    background-image:repeating-linear-gradient(45deg, rgba(242,162,58,0.50) 0 9px, transparent 9px 18px), repeating-linear-gradient(-45deg, rgba(255,255,255,0.10) 0 9px, transparent 9px 18px);
+    align-items:center;
   }
-  header{ position:relative; }
-  .shell{ padding-bottom:190px !important; }
-  header::after{ content:''; position:absolute; left:4px; right:4px; bottom:14px; height:6px; border-radius:6px;
-    background:repeating-linear-gradient(90deg, #1F6F78 0 18px, #E07A5F 18px 30px, #E9B949 30px 38px, #F6EFE2 38px 44px); opacity:.85; }
-  details.se-fold > summary{
-    background:
-      repeating-linear-gradient(45deg, rgba(31,111,120,0.07) 0 8px, transparent 8px 16px),
-      repeating-linear-gradient(-45deg, rgba(224,122,95,0.06) 0 8px, transparent 8px 16px),
-      linear-gradient(100deg, #E3F3F1, #FFF4EC) !important;
+  .brand{ display:flex; align-items:center; gap:11px; color:#FFFFFF !important; font-size:21px; font-weight:700; }
+  .brand-icon{ width:42px; height:42px; border-radius:12px; flex:none; box-shadow:0 2px 6px rgba(0,0,0,.18); }
+  .brand-text{ display:flex; flex-direction:column; gap:2px; }
+  .brand-tagline{ color:#FFE2BD !important; font-weight:600 !important; letter-spacing:.08em !important; font-size:10.5px !important; }
+  header .header-actions{
+    position:absolute; left:14px; right:14px; bottom:-30px; background:#FFFFFF; border-radius:18px;
+    box-shadow:0 6px 18px rgba(201,71,47,0.16); display:flex; justify-content:space-around; padding:6px 4px; gap:0;
   }
-  .settings-item.feature-row{ background:linear-gradient(90deg, #FFFFFF 70%, #FBEFEA) !important; }
+  header .icon-with-label{ flex:1; }
+  header .gear-btn{ color:#C9472F; }
+  header .icon-label{ color:#4A5658; font-size:11.5px; font-weight:600; }
+  .home-icon-circle.home-record-only{ background:#C9472F !important; border:10px solid #FFD9B0; box-sizing:border-box;
+    box-shadow:0 0 0 10px rgba(201,71,47,0.12), 0 14px 28px rgba(201,71,47,0.30) !important; }
+  details.se-fold > summary{ background:var(--tint) !important; color:#A8381F !important; }
+  .settings-item.feature-row{ background:#FFFFFF !important; }
+  .share-app-btn{ border-color:#C9472F !important; color:#C9472F !important; background:#FFFFFF !important; }
+  @media (min-width:560px){ header{ border-radius:0 0 28px 28px; } }
 </style>
 </head>
 <body>
 <div class="shell">
   <header>
-    <div class="brand">
-      ScanFixAll
-      <div class="brand-tagline">Scan, Clean &amp; Shrink</div>
-    </div>
+    <div class="brand"><img class="brand-icon" src="/icon-192.png" alt=""><div class="brand-text">ScanFixAll<div class="brand-tagline">Scan · Clean · Shrink · Sign</div></div></div>
     <div class="header-actions">
       <div class="icon-with-label">
         <button class="gear-btn" id="homeBtn" aria-label="Home">
@@ -1989,6 +2016,11 @@
       </div>
 
       <div class="tool-stage">
+        <div class="scan-steps" id="scanSteps">
+          <div class="on" data-st="1"><i></i>1 · Photo</div>
+          <div data-st="2"><i></i>2 · Fix</div>
+          <div data-st="3"><i></i>3 · Save</div>
+        </div>
         <div class="tool-upload-row" id="scanUploadRow">
           <button class="tool-btn primary" id="scanTakePhotoBtn">📷 Take Photo</button>
           <button class="tool-btn" id="scanUploadBtn">⬆ Upload Photo</button>
@@ -2012,6 +2044,10 @@
             <button class="tool-btn primary" id="scanFlattenBtn">✅ Flatten &amp; clean</button>
             <button class="tool-btn" id="scanWholePhotoBtn">Use whole photo</button>
           </div>
+          <button type="button" class="ai-retype-btn" id="scanAiRetypeBtn">
+            <span class="ai-l"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8z"></path><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"></path></svg>✨ AI Retype — brand-new clean copy</span>
+            <span class="ai-badge" id="scanAiBadge">3 FREE</span>
+          </button>
         </div>
 
         <div id="scanEditControls" style="display:none;">
@@ -2066,6 +2102,10 @@
           <div class="size-compare" style="margin-top:14px;">
             <span>Estimated file size: <span class="big" id="scanSizeEstimate">—</span></span>
           </div>
+          <button type="button" class="msgr-btn" id="scanMessengerBtn">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8.5 8.5 0 0 1-12.6 7.4L3 21l1.6-5.2A8.5 8.5 0 1 1 21 12z"></path><path d="M8 13l3-3 2 2 3-3"></path></svg>
+            <span><b>Compress for Messenger (Low Data)</b><small id="scanMsgrNote">Small file, fast to send · still easy to read</small></span>
+          </button>
           <div class="tool-upload-row" style="margin-top:10px;">
             <button class="tool-btn primary" id="scanSaveImageBtn">⬇ Save as Image</button>
             <button class="tool-btn primary" id="scanSavePdfBtn">⬇ Save as PDF</button>
@@ -2298,7 +2338,7 @@
         <button class="new-recording-btn" id="closeSettingsBtn">Close</button>
       </div>
       <div class="settings-list">
-        <div id="freeBox" style="border:2px solid #2A7F86; background:#F1F8F7; color:#1E2A2C; border-radius:12px; padding:12px 14px; margin-bottom:10px; font-size:14.5px; line-height:1.5;">
+        <div id="freeBox" style="border:2px solid #C9472F; background:#FFEDE0; color:#1E2A2C; border-radius:12px; padding:12px 14px; margin-bottom:10px; font-size:14.5px; line-height:1.5;">
           <b>🎁 Your free load</b><br>
           ✨ 3 free AI pages on this phone: Retype, Translate or Listen. No code needed.<br>
           <small style="color:#4A5658;">Like free load: use them any day, they don't expire. Scanning, Clean paper, Shrink and Sign don't use AI pages.</small>
@@ -2378,7 +2418,13 @@
         <input type="checkbox" id="termsAgree">
         <span>I have read and agree to the <a href="/terms.html" target="_blank" rel="noopener">Terms of Use</a>.</span>
       </label>
-      <button class="subscribe-btn" id="subscribeBtn" disabled>Subscribe / Pay Now</button>
+      <ul class="pay-promises">
+        <li><b>Prepaid, like load.</b> Pay once for 30 days.</li>
+        <li><b>No auto-charge.</b> We never take money again by ourselves.</li>
+        <li><b>Your code appears right away</b> in Settings.</li>
+      </ul>
+      <button class="subscribe-btn" id="subscribeBtn" disabled>🔒 Pay once via GCash / Maya<small>30 days · No auto-charges</small></button>
+      <div class="pay-methods"><span>GCash</span><span>Maya · QR Ph</span><span>Card</span></div>
       <div class="error-box" id="paywallError" style="display:none;"></div>
 
            <p class="paywall-fine">Payments are processed securely by PayMongo. You'll be taken to their payment page and brought right back here.</p>
@@ -3004,8 +3050,13 @@
     return c;
   }
 
+  function setScanStep(n){
+    const box = document.getElementById('scanSteps'); if(!box) return;
+    box.querySelectorAll('[data-st]').forEach(d => d.classList.toggle('on', +d.dataset.st <= n));
+  }
   function showScanMode(mode){
     scanMode = mode;
+    setScanStep(2);
     scanCornerControls.style.display = mode === 'corners' ? 'block' : 'none';
     scanEditControls.style.display = mode === 'result' ? 'block' : 'none';
     renderScanCanvas();
@@ -3047,7 +3098,7 @@
       const rDot = Math.max(10, scanCanvas.width / 45);
       pts.forEach(p => {
         ctx.beginPath(); ctx.arc(p.x, p.y, rDot, 0, Math.PI * 2);
-        ctx.fillStyle = 'rgba(31,111,120,0.85)'; ctx.fill();
+        ctx.fillStyle = 'rgba(201,71,47,0.85)'; ctx.fill();
         ctx.lineWidth = Math.max(2, rDot / 4); ctx.strokeStyle = '#ffffff'; ctx.stroke();
       });
       ctx.restore();
@@ -3161,6 +3212,7 @@
     if(typeof scanToolbar !== 'undefined' && scanToolbar){ scanToolbar.style.display = 'none'; scanUndoStack = []; scanUndoBtn.disabled = true; setCompare(false); }
     scanError.style.display = 'none';
     scanFileInput.value = '';
+    setScanStep(1);
     if(typeof updateScanPdfLabel === 'function') updateScanPdfLabel();
   }
 
@@ -3306,6 +3358,30 @@
     scanCornerControls.style.display = 'none';
     scanFileInput.value = '';
     showStatus('Page added ✓ Now take or upload the next page.', 3000);
+  });
+
+  document.getElementById('foldSave').addEventListener('toggle', (e) => { if(e.target.open) setScanStep(3); });
+  // ✨ AI Retype straight from the corner dots: flattens the page, then retypes it.
+  document.getElementById('scanAiRetypeBtn').addEventListener('click', () => scanRetypeBtn.click());
+  (function(){ const b = document.getElementById('scanAiBadge'); try{ if(localStorage.getItem('sf_premium_unlocked') === 'true') b.textContent = 'PREMIUM'; }catch(e){} })();
+  // 💬 Compress for Messenger: a small, still-readable JPG, then share or save it.
+  document.getElementById('scanMessengerBtn').addEventListener('click', async () => {
+    if(!scanCurrentImg && scanPages.length === 0){ scanError.textContent = 'Take or upload a photo first.'; scanError.style.display = 'block'; return; }
+    const src = scanCurrentImg ? finishedPageDataUrl() : scanPages[scanPages.length - 1];
+    const img = await new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = src; });
+    const k = Math.min(1, 1100 / Math.max(img.width, img.height));
+    const c = document.createElement('canvas'); c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
+    const x = c.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, c.width, c.height); x.imageSmoothingQuality = 'high'; x.drawImage(img, 0, 0, c.width, c.height);
+    const blob = await new Promise(r => c.toBlob(r, 'image/jpeg', 0.6));
+    document.getElementById('scanMsgrNote').textContent = 'Ready: ' + formatBytes(blob.size) + ' — small and fast to send';
+    const file = new File([blob], 'scan-small-' + Date.now() + '.jpg', { type: 'image/jpeg' });
+    bumpUsage();
+    if(navigator.canShare && navigator.canShare({ files: [file] })){
+      try{ await navigator.share({ files: [file], title: 'Scanned page' }); return; }catch(err){ if(err && err.name === 'AbortError') return; }
+    }
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = file.name; a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+    showStatus('Small copy saved (' + formatBytes(blob.size) + ') — attach it in Messenger from your Downloads', 4000);
   });
 
   scanSaveImageBtn.addEventListener('click', () => {
@@ -3480,10 +3556,10 @@
     const r = { x: lhCrop.x * s, y: lhCrop.y * s, w: lhCrop.w * s, h: lhCrop.h * s };
     ctx.fillStyle = 'rgba(0,0,0,0.45)';
     ctx.beginPath(); ctx.rect(0, 0, lhCropCanvas.width, lhCropCanvas.height); ctx.rect(r.x, r.y + r.h, r.w, -r.h); ctx.fill('evenodd');
-    ctx.strokeStyle = '#1F6F78'; ctx.lineWidth = Math.max(2, lhCropCanvas.width / 300); ctx.strokeRect(r.x, r.y, r.w, r.h);
+    ctx.strokeStyle = '#C9472F'; ctx.lineWidth = Math.max(2, lhCropCanvas.width / 300); ctx.strokeRect(r.x, r.y, r.w, r.h);
     const rad = Math.max(8, lhCropCanvas.width / 70);
     [[r.x, r.y], [r.x + r.w, r.y], [r.x + r.w, r.y + r.h], [r.x, r.y + r.h]].forEach(([x, y]) => {
-      ctx.beginPath(); ctx.arc(x, y, rad, 0, Math.PI * 2); ctx.fillStyle = '#ffffff'; ctx.fill(); ctx.strokeStyle = '#1F6F78'; ctx.stroke();
+      ctx.beginPath(); ctx.arc(x, y, rad, 0, Math.PI * 2); ctx.fillStyle = '#ffffff'; ctx.fill(); ctx.strokeStyle = '#C9472F'; ctx.stroke();
     });
   }
   function lhPoint(e){
@@ -4643,7 +4719,7 @@
     octx.clearRect(0,0,signOverlayCanvas.width, signOverlayCanvas.height);
     const { w, h } = currentSigSize();
     octx.drawImage(signatureImg, sigPos.x, sigPos.y, w, h);
-    octx.strokeStyle = 'rgba(31,111,120,0.9)';
+    octx.strokeStyle = 'rgba(201,71,47,0.9)';
     octx.lineWidth = Math.max(2, signOverlayCanvas.width * 0.003);
     octx.strokeRect(sigPos.x, sigPos.y, w, h);
   }
@@ -5227,7 +5303,7 @@
       paywallError.textContent = err.message;
       paywallError.style.display = 'block';
       subscribeBtn.disabled = !termsAgree.checked;
-      subscribeBtn.textContent = 'Subscribe / Pay Now';
+      subscribeBtn.innerHTML = '🔒 Pay once via GCash / Maya<small>30 days · No auto-charges</small>';
     }
   });
 
