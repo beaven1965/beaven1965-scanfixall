@@ -1843,6 +1843,7 @@
   .share-app-btn{ margin:4px auto 0; display:block; padding:10px 18px; border-radius:999px; border:1.5px solid var(--gold); background:rgba(255,255,255,.85);
     color:var(--gold); font-weight:700; font-size:14.5px; cursor:pointer; box-shadow:0 1px 4px rgba(30,50,52,.10); font-family:inherit; }
   .share-app-btn:active{ transform:scale(.97); }
+  .share-ic{ display:inline-block; vertical-align:-3px; margin-right:6px; flex:none; }
 </style>
 
 <style id="art-theme">
@@ -1898,7 +1899,7 @@
       </div>
       <div class="icon-with-label">
         <button class="gear-btn" id="navShareBtn" style="color:var(--gold)" aria-label="Share this app" onclick="document.getElementById('shareAppBtn').click()">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.6 13.5 6.8 4"/><path d="m15.4 6.5-6.8 4"/></svg>
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4.5 21 11l-7 6.5v-3.8c-5.2 0-8.6 1.6-11 5.3.9-5.4 4.1-10.2 11-11.1z"/></svg>
         </button>
         <span class="icon-label">Share</span>
       </div>
@@ -1949,7 +1950,7 @@
         <div class="tool-hint" id="convertSoonNote" style="display:none; margin-top:-4px; padding:12px 14px; border-radius:12px; background:var(--surface); color:var(--text); line-height:1.5;"></div>
       </div>
       <div class="free-count-hint" id="freeCountHint"></div>
-      <button type="button" class="share-app-btn" id="shareAppBtn">📤 Share this app</button>
+      <button type="button" class="share-app-btn" id="shareAppBtn"><svg class="share-ic" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4.5 21 11l-7 6.5v-3.8c-5.2 0-8.6 1.6-11 5.3.9-5.4 4.1-10.2 11-11.1z"/></svg>Share this app</button>
       <script>
       (function(){
         var b = document.getElementById('shareAppBtn');
@@ -1962,7 +1963,7 @@
           }
           try{ await navigator.clipboard.writeText(text + ' ' + url); b.textContent = '✅ Link copied — paste it in Messenger'; }
           catch(e){ prompt('Copy this link and send it:', url); }
-          setTimeout(function(){ b.textContent = '📤 Share this app'; }, 3500);
+          setTimeout(function(){ b.innerHTML = '<svg class="share-ic" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4.5 21 11l-7 6.5v-3.8c-5.2 0-8.6 1.6-11 5.3.9-5.4 4.1-10.2 11-11.1z"/></svg>Share this app'; }, 3500);
         });
       })();
       </script>
@@ -2117,7 +2118,7 @@
             <button class="tool-btn primary" id="scanSavePdfBtn">⬇ Save as PDF</button>
           </div>
           <div class="tool-upload-row" style="margin-top:10px;">
-            <button class="tool-btn" id="scanShareBtn">📤 Share</button>
+            <button class="tool-btn" id="scanShareBtn"><svg class="share-ic" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4.5 21 11l-7 6.5v-3.8c-5.2 0-8.6 1.6-11 5.3.9-5.4 4.1-10.2 11-11.1z"/></svg>Share</button>
             <button class="tool-btn" id="scanPrintBtn">🖨 Print</button>
           </div>
             </div>
@@ -2204,7 +2205,7 @@
           <audio id="retypeAudio" controls style="display:none; width:100%; margin-top:8px;"></audio>
           <div class="tool-upload-row" id="retypeAudioRow" style="margin-top:8px; display:none;">
             <button class="tool-btn" id="retypeAudioSaveBtn">⬇ Save audio</button>
-            <button class="tool-btn" id="retypeAudioShareBtn">📤 Share audio</button>
+            <button class="tool-btn" id="retypeAudioShareBtn"><svg class="share-ic" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4.5 21 11l-7 6.5v-3.8c-5.2 0-8.6 1.6-11 5.3.9-5.4 4.1-10.2 11-11.1z"/></svg>Share audio</button>
           </div>
           <div class="tool-hint" id="retypeListenNote" style="margin-top:6px;">Reads the page aloud — the original or the translation, whichever is showing. Uses 1 AI page. Playing it again is free.</div>
             </div>
@@ -2220,7 +2221,7 @@
             <button class="tool-btn primary" id="retypeSavePdfBtn">⬇ Save as PDF</button>
           </div>
           <div class="tool-upload-row" style="margin-top:10px;">
-            <button class="tool-btn" id="retypeShareBtn">📤 Share</button>
+            <button class="tool-btn" id="retypeShareBtn"><svg class="share-ic" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4.5 21 11l-7 6.5v-3.8c-5.2 0-8.6 1.6-11 5.3.9-5.4 4.1-10.2 11-11.1z"/></svg>Share</button>
             <button class="tool-btn" id="retypePrintBtn">🖨 Print</button>
           </div>
             </div>
@@ -2267,7 +2268,7 @@
             <button class="tool-btn primary" id="shrinkSaveBtn">⬇ Download Shrunk Photo</button>
           </div>
           <div class="tool-upload-row" style="margin-top:10px;">
-            <button class="tool-btn" id="shrinkShareBtn">📤 Share</button>
+            <button class="tool-btn" id="shrinkShareBtn"><svg class="share-ic" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4.5 21 11l-7 6.5v-3.8c-5.2 0-8.6 1.6-11 5.3.9-5.4 4.1-10.2 11-11.1z"/></svg>Share</button>
           </div>
         </div>
       </div>
@@ -2317,7 +2318,7 @@
             <button class="tool-btn primary" id="signSavePdfBtn">⬇ Save as PDF</button>
           </div>
           <div class="tool-upload-row" style="margin-top:10px;">
-            <button class="tool-btn" id="signShareBtn">📤 Share</button>
+            <button class="tool-btn" id="signShareBtn"><svg class="share-ic" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4.5 21 11l-7 6.5v-3.8c-5.2 0-8.6 1.6-11 5.3.9-5.4 4.1-10.2 11-11.1z"/></svg>Share</button>
             <button class="tool-btn" id="signPrintBtn">🖨 Print</button>
           </div>
         </div>
