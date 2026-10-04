@@ -1871,6 +1871,8 @@
   .share-ic{ display:inline-block; vertical-align:-3px; margin-right:6px; flex:none; }
   .mode-card.in-progress{ position:relative; }
   .mode-card.in-progress::after{ content:'● Your scan is waiting · tap to continue'; position:absolute; top:-10px; right:12px; background:#1E7A44; color:#fff; font-size:11.5px; font-weight:700; padding:3px 10px; border-radius:999px; }
+  .copied-tip{ position:fixed; left:50%; bottom:24px; transform:translateX(-50%); width:min(420px, calc(100% - 32px)); box-sizing:border-box; background:#1E2A2C; color:#fff; border-radius:14px; padding:14px 16px; font-size:14.5px; line-height:1.5; z-index:9500; box-shadow:0 10px 30px rgba(0,0,0,.3); display:none; }
+  .copied-tip button{ display:block; margin:10px 0 0 auto; padding:8px 18px; border:none; border-radius:999px; background:#fff; color:#1E2A2C; font-weight:800; font-family:inherit; cursor:pointer; }
 </style>
 
 <style id="art-theme">
@@ -2332,9 +2334,9 @@
           <div id="signPlacementControls" style="display:none; margin-top:10px;">
             <div class="adjust-row">
               <label>Size</label>
-              <input type="range" id="signSizeSlider" min="10" max="60" step="1" value="32">
+              <input type="range" id="signSizeSlider" min="5" max="80" step="0.5" value="32">
             </div>
-            <div class="tool-hint">Drag the signature to where it should go, then tap "Place on Document."</div>
+            <div class="tool-hint">Drag the signature to the signature line. To make it bigger or smaller, drag one of its <b>4 corner dots</b> (or use Size). Then tap "Place on Document."</div>
             <div class="tool-upload-row" style="margin-top:10px;">
               <button class="tool-btn" id="signRedoBtn">↺ Redraw Signature</button>
               <button class="tool-btn primary" id="signPlaceBtn">✅ Place on Document</button>
@@ -4768,7 +4770,7 @@
   }
 
   function currentSigSize(){
-    const wPct = parseInt(signSizeSlider.value, 10) / 100;
+    const wPct = parseFloat(signSizeSlider.value) / 100;
     const w = signCanvas.width * wPct;
     const h = w / sigAspect;
     return { w, h };
@@ -4783,7 +4785,15 @@
     octx.strokeStyle = 'rgba(201,71,47,0.9)';
     octx.lineWidth = Math.max(2, signOverlayCanvas.width * 0.003);
     octx.strokeRect(sigPos.x, sigPos.y, w, h);
+    const r = sigHandleR();
+    [[sigPos.x, sigPos.y], [sigPos.x + w, sigPos.y], [sigPos.x + w, sigPos.y + h], [sigPos.x, sigPos.y + h]].forEach(([x, y]) => {
+      octx.beginPath(); octx.arc(x, y, r, 0, Math.PI * 2); octx.fillStyle = '#fff'; octx.fill();
+      octx.lineWidth = Math.max(2, r / 4); octx.strokeStyle = 'rgba(201,71,47,0.95)'; octx.stroke();
+    });
   }
+  // Corner dot size, in page pixels, so it looks about the same size on any screen.
+  function sigHandleR(){ const rect = signOverlayCanvas.getBoundingClientRect(); return Math.max(6, 9 * signOverlayCanvas.width / Math.max(1, rect.width)); }
+  let sigResize = null;
 
   signSizeSlider.addEventListener('input', drawSigOverlay);
 
@@ -4798,7 +4808,17 @@
     if(!signatureImg) return;
     const p = overlayPointFromEvent(evt);
     const { w, h } = currentSigSize();
+    const grab = sigHandleR() * 2.6;
+    const corners = [[sigPos.x, sigPos.y], [sigPos.x + w, sigPos.y], [sigPos.x + w, sigPos.y + h], [sigPos.x, sigPos.y + h]];
+    const ci = corners.findIndex(([x, y]) => Math.hypot(p.x - x, p.y - y) <= grab);
+    if(ci >= 0){
+      // Resize from this corner; the opposite corner stays where it is.
+      const o = corners[(ci + 2) % 4];
+      sigResize = { ax: o[0], ay: o[1], left: ci === 0 || ci === 3, top: ci === 0 || ci === 1 };
+      sigDragging = true; signOverlayCanvas.setPointerCapture(evt.pointerId); evt.preventDefault(); return;
+    }
     if(p.x >= sigPos.x && p.x <= sigPos.x + w && p.y >= sigPos.y && p.y <= sigPos.y + h){
+      sigResize = null;
       sigDragging = true;
       sigDragOffset = { x: p.x - sigPos.x, y: p.y - sigPos.y };
       signOverlayCanvas.setPointerCapture(evt.pointerId);
@@ -4807,6 +4827,15 @@
   signOverlayCanvas.addEventListener('pointermove', (evt) => {
     if(!sigDragging) return;
     const p = overlayPointFromEvent(evt);
+    if(sigResize){
+      const W = signCanvas.width;
+      let nw = Math.abs(p.x - sigResize.ax);   // width follows the finger left/right; height keeps the signature's shape
+      nw = Math.max(W * 0.05, Math.min(W * 0.8, nw));
+      signSizeSlider.value = (nw / W * 100).toFixed(1);
+      const { w: rw, h: rh } = currentSigSize();
+      sigPos = { x: sigResize.left ? sigResize.ax - rw : sigResize.ax, y: sigResize.top ? sigResize.ay - rh : sigResize.ay };
+      drawSigOverlay(); evt.preventDefault(); return;
+    }
     const { w, h } = currentSigSize();
     let nx = p.x - sigDragOffset.x;
     let ny = p.y - sigDragOffset.y;
@@ -4815,7 +4844,7 @@
     sigPos = { x: nx, y: ny };
     drawSigOverlay();
   });
-  function endSigDrag(){ sigDragging = false; }
+  function endSigDrag(){ sigDragging = false; sigResize = null; }
   signOverlayCanvas.addEventListener('pointerup', endSigDrag);
   signOverlayCanvas.addEventListener('pointercancel', endSigDrag);
 
@@ -4922,6 +4951,18 @@
       errBox.textContent = 'Could not prepare the file to share. Please try Save instead.';
       errBox.style.display = 'block'; return;
     }
+    const isPhone = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || (navigator.maxTouchPoints > 1 && matchMedia('(pointer:coarse)').matches);
+    // On a laptop the share menu often fails to open Messenger, so copy the picture instead:
+    // the person pastes it into Messenger with Ctrl + V.
+    if(!isPhone && dataUrls.length === 1 && navigator.clipboard && window.ClipboardItem){
+      try{
+        const png = await new Promise((res, rej) => { const im = new Image(); im.onload = () => { const c = document.createElement('canvas'); c.width = im.naturalWidth; c.height = im.naturalHeight; c.getContext('2d').drawImage(im, 0, 0); c.toBlob(b => b ? res(b) : rej(new Error('no image')), 'image/png'); }; im.onerror = rej; im.src = dataUrls[0]; });
+        await navigator.clipboard.write([new ClipboardItem({ 'image/png': png })]);
+        bumpUsage();
+        showCopiedTip();
+        return;
+      }catch(e){ /* fall through to the share menu or Save */ }
+    }
     if(navigator.canShare && navigator.canShare({ files: [file] })){
       try{
         await navigator.share({ files: [file], title: baseName });
@@ -4939,6 +4980,17 @@
     setTimeout(() => URL.revokeObjectURL(a.href), 20000);
     bumpUsage();
     showStatus('This browser can\'t share directly, so the file was saved to your Downloads — send it from there.', 5000);
+  }
+  function showCopiedTip(){
+    let t = document.getElementById('copiedTip');
+    if(!t){
+      t = document.createElement('div'); t.id = 'copiedTip'; t.className = 'copied-tip';
+      t.innerHTML = '<b>✅ Picture copied!</b><br>Open Messenger (or Viber, Gmail, Facebook), click in the message box and press <b>Ctrl + V</b> to paste it. Then press Enter to send.<button type="button">OK</button>';
+      t.querySelector('button').addEventListener('click', () => { t.style.display = 'none'; });
+      document.body.appendChild(t);
+    }
+    t.style.display = 'block';
+    clearTimeout(t._h); t._h = setTimeout(() => { t.style.display = 'none'; }, 12000);
   }
   // Prints the pages through a hidden frame, one page per sheet.
   function printPages(dataUrls, errBox){
