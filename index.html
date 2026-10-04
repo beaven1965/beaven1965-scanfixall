@@ -1749,17 +1749,38 @@
   .scan-toolbar button{ flex:1; padding:10px 6px; border-radius:10px; border:1.5px solid var(--gold); background:#fff; color:var(--gold); font-weight:700; font-size:14px; cursor:pointer; font-family:inherit; }
   .scan-toolbar button:disabled{ opacity:.4; cursor:default; }
   .scan-toolbar button.on{ background:var(--gold); color:#fff; }
-  .lh-modal{ position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:9000; overflow-y:auto; padding:16px 10px 40px; }
-  .lh-card{ max-width:520px; margin:0 auto; background:#fff; color:#1E2A2C; border-radius:16px; padding:16px; box-shadow:0 8px 30px rgba(0,0,0,.25); }
+  .lh-modal{ position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:9000; padding:12px 10px; }
+  .lh-card{ max-width:1100px; margin:0 auto; background:#fff; color:#1E2A2C; border-radius:16px; padding:14px 16px; box-shadow:0 8px 30px rgba(0,0,0,.25); display:flex; flex-direction:column; max-height:calc(100vh - 24px); max-height:calc(100dvh - 24px); box-sizing:border-box; }
+  .lh-body{ display:flex; flex-direction:column; gap:10px; overflow-y:auto; min-height:0; }
+  .lh-side{ order:-1; position:sticky; top:0; background:#fff; z-index:2; padding-bottom:8px; border-bottom:1px solid #F0D8CA; }
+  .lh-side .lh-preview{ max-height:170px; overflow:auto; }
+  .lh-prev-title{ margin-top:4px !important; }
+  .lh-two{ display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:4px 16px; }
+  @media (max-width:600px){ .lh-two{ grid-template-columns:minmax(0,1fr); } }
+  .lh-size{ flex:1 1 120px; margin:0; }
+  .lh-place{ display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin:6px 0; }
+  .lh-place select{ padding:9px 8px; border-radius:10px; border:1px solid #cfd6df; font-family:inherit; font-size:14px; }
+  .lh-alrow{ display:inline-flex; border:1.5px solid var(--gold); border-radius:10px; overflow:hidden; }
+  .lh-al{ width:46px; height:40px; border:none; background:#fff; color:var(--gold); display:flex; align-items:center; justify-content:center; cursor:pointer; }
+  .lh-al + .lh-al{ border-left:1.5px solid var(--gold); }
+  .lh-al.on{ background:var(--gold); color:#fff; }
+  #lhText::placeholder{ color:#9AA3A5; font-style:italic; }
+  @media (min-width:900px){
+    .lh-body{ display:grid; grid-template-columns:minmax(0,1.05fr) minmax(0,1fr); gap:22px; overflow:hidden; }
+    .lh-controls{ overflow-y:auto; padding-right:8px; min-height:0; }
+    .lh-side{ order:0; position:static; border-bottom:none; border-left:1px solid #F0D8CA; padding:0 0 0 20px; display:flex; flex-direction:column; min-height:0; }
+    .lh-side .lh-preview{ max-height:none; flex:1; overflow:auto; }
+    #lhCropCanvas{ max-height:210px; }
+  }
   .lh-head{ display:flex; justify-content:space-between; align-items:center; font-size:17px; margin-bottom:6px; }
   .lh-x{ border:1px solid #cfd6df; background:#fff; border-radius:999px; padding:6px 14px; cursor:pointer; font-family:inherit; }
-  .lh-step{ margin:16px 0 6px; font-size:15px; }
+  .lh-step{ margin:12px 0 4px; font-size:15px; }
   .lh-hint{ font-size:13px; color:#4A5658; line-height:1.45; }
   .lh-src-row{ display:flex; flex-wrap:wrap; gap:6px; margin:6px 0; }
   .lh-pill{ padding:8px 12px; border-radius:999px; border:1.5px solid var(--gold); background:#fff; color:var(--gold); font-weight:600; font-size:13.5px; cursor:pointer; font-family:inherit; }
   .lh-pill.on{ background:var(--gold); color:#fff; }
   .lh-crop-wrap{ background:#eee; border-radius:8px; margin:8px 0; text-align:center; }
-  #lhCropCanvas{ max-width:100%; display:block; margin:0 auto; }
+  #lhCropCanvas{ max-width:100%; max-height:200px; width:auto; height:auto; display:block; margin:0 auto; }
   .lh-label{ display:flex; align-items:center; gap:10px; font-size:14px; margin:8px 0; }
   .lh-label input[type=range]{ flex:1; accent-color:#C9472F; }
   .lh-label select{ padding:6px; border-radius:8px; border:1px solid #cfd6df; font-family:inherit; }
@@ -1975,43 +1996,44 @@
     <div id="lhModal" class="lh-modal" style="display:none;" role="dialog" aria-label="Fix letterhead">
       <div class="lh-card">
         <div class="lh-head"><b>🖼 Fix the letterhead</b><button type="button" id="lhCancelBtn" class="lh-x">Close</button></div>
+        <div class="lh-body">
+          <div class="lh-controls">
+            <div class="lh-step"><b>1. The logo</b></div>
+            <div class="lh-src-row">
+              <button type="button" class="lh-pill" id="lhUseScanBtn">From the scanned page</button>
+              <button type="button" class="lh-pill" id="lhUploadBtn">📁 Upload a clean logo</button>
+              <button type="button" class="lh-pill" id="lhNoLogoBtn">No logo</button>
+              <input type="file" id="lhFile" accept="image/*" class="visually-hidden">
+            </div>
+            <div id="lhCropBox">
+              <div class="lh-hint" id="lhCropHint">✂️ <b>Cut out the logo:</b> drag the box or its 4 corner dots around only the logo. The dots cut; to make the logo bigger or smaller, use <b>Size</b> in step 3.</div>
+              <div class="lh-crop-wrap"><canvas id="lhCropCanvas" style="touch-action:none;"></canvas></div>
+              <div class="lh-two">
+                <label class="lh-label">🧼 Clean <input type="range" id="lhClean" min="0" max="100" value="55"></label>
+                <label class="lh-label">📐 Straighten <input type="range" id="lhTilt" min="-10" max="10" step="0.5" value="0"></label>
+              </div>
+            </div>
 
-        <div class="lh-step"><b>1. The logo</b></div>
-        <div class="lh-src-row">
-          <button type="button" class="lh-pill" id="lhUseScanBtn">From the scanned page</button>
-          <button type="button" class="lh-pill" id="lhUploadBtn">📁 Upload a clean logo</button>
-          <button type="button" class="lh-pill" id="lhNoLogoBtn">No logo</button>
-          <input type="file" id="lhFile" accept="image/*" class="visually-hidden">
-        </div>
-        <div id="lhCropBox">
-          <div class="lh-hint">✂️ Drag the box (or its 4 corner dots) around <b>only the logo</b>. Everything outside the box is cut off.</div>
-          <div class="lh-crop-wrap"><canvas id="lhCropCanvas" style="touch-action:none;"></canvas></div>
-          <label class="lh-label">🧼 Clean stains &amp; shadows <input type="range" id="lhClean" min="0" max="100" value="55"></label>
-          <label class="lh-label">📐 Straighten <input type="range" id="lhTilt" min="-10" max="10" step="0.5" value="0"></label>
-        </div>
+            <div class="lh-step"><b>2. Typed lines</b> <span class="lh-hint">(optional, one line each; ALL-CAPS lines come out bold)</span></div>
+            <textarea id="lhText" rows="3" placeholder="Type your own lines here. Example:&#10;Republic of the Philippines&#10;Department of Education&#10;REGION XI"></textarea>
+            <div class="lh-src-row"><button type="button" class="lh-pill" id="lhExampleBtn">✏️ Start from an example</button></div>
 
-        <div class="lh-step"><b>2. Typed letterhead lines</b> <span class="lh-hint">(optional — one line each; ALL-CAPS lines come out bold)</span></div>
-        <textarea id="lhText" rows="4" placeholder="Republic of the Philippines&#10;Department of Education&#10;REGION XI&#10;SCHOOLS DIVISION OF DAVAO CITY"></textarea>
-        <div class="lh-src-row">
-          <label class="lh-label" style="margin:0;">Layout
-            <select id="lhLayout"><option value="above">Logo above the text</option><option value="left">Logo left, text beside it</option><option value="sides">Logo on both sides</option></select>
-          </label>
-        </div>
+            <div class="lh-step"><b>3. Layout, size &amp; place</b></div>
+            <div class="lh-place">
+              <select id="lhLayout" aria-label="Layout"><option value="above">Logo above the text</option><option value="left">Logo left, text beside it</option><option value="sides">Logo on both sides</option></select>
+              <div class="lh-alrow" role="group" aria-label="Place on the page"><button type="button" class="lh-al" data-al="left" aria-label="Left" title="Left"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 6h16M4 10h10M4 14h16M4 18h10"/></svg></button><button type="button" class="lh-al on" data-al="center" aria-label="Center" title="Center"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 6h16M7 10h10M4 14h16M7 18h10"/></svg></button><button type="button" class="lh-al" data-al="right" aria-label="Right" title="Right"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 6h16M10 10h10M4 14h16M10 18h10"/></svg></button></div>
+              <label class="lh-label lh-size">Size <input type="range" id="lhSize" min="15" max="92" value="60"></label>
+            </div>
+          </div>
 
-        <div class="lh-step"><b>3. Size &amp; place</b></div>
-        <label class="lh-label">Size <input type="range" id="lhSize" min="15" max="92" value="60"></label>
-        <div class="lh-src-row">
-          <button type="button" class="lh-pill" data-al="left">⬅ Left</button>
-          <button type="button" class="lh-pill on" data-al="center">⬌ Center</button>
-          <button type="button" class="lh-pill" data-al="right">Right ➡</button>
-        </div>
-
-        <div class="lh-step"><b>Preview</b></div>
-        <div class="lh-preview"><img id="lhPreview" alt="Letterhead preview"></div>
-
-        <div class="lh-actions">
-          <button type="button" class="tool-btn" id="lhResetBtn">⟲ Reset</button>
-          <button type="button" class="tool-btn primary" id="lhApplyBtn">✅ Use this letterhead</button>
+          <div class="lh-side">
+            <div class="lh-step lh-prev-title"><b>Preview</b> <span class="lh-hint">every change shows here right away</span></div>
+            <div class="lh-preview"><img id="lhPreview" alt="Letterhead preview"></div>
+            <div class="lh-actions">
+              <button type="button" class="tool-btn" id="lhResetBtn">⟲ Reset</button>
+              <button type="button" class="tool-btn primary" id="lhApplyBtn">✅ Use this letterhead</button>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -3599,6 +3621,7 @@
       lhCrop = { x: x0, y: y0, w: x1 - x0, h: y1 - y0 };
     }
     lhDrawCrop(); e.preventDefault();
+    if(!lhDrag.t){ lhDrag.t = setTimeout(() => { if(lhDrag) lhDrag.t = null; lhUpdate(); }, 120); }
   });
   ['pointerup', 'pointercancel'].forEach(t => lhCropCanvas.addEventListener(t, () => { if(lhDrag){ lhDrag = null; lhUpdate(); } }));
 
@@ -3682,9 +3705,15 @@
   lhModal.querySelectorAll('[data-al]').forEach(b => b.addEventListener('click', () => {
     lhAlign = b.dataset.al; lhModal.querySelectorAll('[data-al]').forEach(x => x.classList.toggle('on', x === b)); lhUpdate();
   }));
-  lhEl('lhUseScanBtn').addEventListener('click', () => { if(lhScanSource) lhSetSource(lhScanSource.canvas, lhScanSource.band); else alert('No scanned page yet.'); });
+  const LH_CROP_HINT = lhEl('lhCropHint').innerHTML;
+  lhEl('lhUseScanBtn').addEventListener('click', () => { if(lhScanSource){ lhSetSource(lhScanSource.canvas, lhScanSource.band); lhEl('lhCropHint').innerHTML = LH_CROP_HINT; } else alert('No scanned page yet.'); });
   lhEl('lhNoLogoBtn').addEventListener('click', () => lhSetSource(null));
   lhEl('lhUploadBtn').addEventListener('click', () => lhEl('lhFile').click());
+  lhEl('lhExampleBtn').addEventListener('click', () => {
+    const t = lhEl('lhText');
+    if(!t.value.trim()) t.value = 'Republic of the Philippines\nDepartment of Education\nREGION XI\nSCHOOLS DIVISION OF DAVAO CITY';
+    t.focus(); lhUpdate();
+  });
   lhEl('lhFile').addEventListener('change', async () => {
     const f = lhEl('lhFile').files[0]; lhEl('lhFile').value = '';
     if(!f) return;
@@ -3695,6 +3724,7 @@
       const x = c.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, c.width, c.height); x.drawImage(img, 0, 0, c.width, c.height);
       lhEl('lhClean').value = 0;
       lhSetSource(c, { x: 0, y: 0, w: c.width, h: c.height });
+      lhEl('lhCropHint').innerHTML = '✅ <b>Your logo is in.</b> Only drag the corner dots if you need to cut part of it off. To make it bigger or smaller, use <b>Size</b> in step 3.';
     }catch(err){ alert(err.message || 'Could not open that picture.'); }
   });
   function lhReset(){
