@@ -1787,7 +1787,7 @@
   .lh-label{ display:flex; align-items:center; gap:10px; font-size:14px; margin:8px 0; }
   .lh-label input[type=range]{ flex:1; accent-color:#C9472F; }
   .lh-label select{ padding:6px; border-radius:8px; border:1px solid #cfd6df; font-family:inherit; }
-  #lhText{ width:100%; box-sizing:border-box; border:1.5px solid #F0D8CA; border-radius:10px; padding:10px; font-size:15px; font-family:inherit; }
+  #lhText{ resize:vertical; overflow:auto; width:100%; box-sizing:border-box; border:1.5px solid #F0D8CA; border-radius:10px; padding:10px; font-size:15px; font-family:inherit; }
   .lh-preview{ background:#fff; border:1px dashed #cfd6df; border-radius:8px; padding:10px; min-height:40px; }
   .lh-preview img{ display:block; max-width:100%; }
   .lh-actions{ display:flex; gap:8px; margin-top:14px; }
@@ -3714,6 +3714,10 @@
     img.style.marginLeft = lhAlign === 'left' ? '0' : 'auto'; img.style.marginRight = lhAlign === 'right' ? '0' : 'auto';
   }
   ['lhClean', 'lhTilt', 'lhSize', 'lhText', 'lhLayout'].forEach(id => lhEl(id).addEventListener('input', lhUpdate));
+  // The typing box grows as you add lines, so every line stays in view.
+  function lhGrow(){ const t = lhEl('lhText'); t.style.height = 'auto'; t.style.height = Math.min(t.scrollHeight + 2, 260) + 'px'; }
+  lhEl('lhText').addEventListener('input', lhGrow);
+  lhEl('lhExampleBtn').addEventListener('click', lhGrow);
   lhModal.querySelectorAll('[data-al]').forEach(b => b.addEventListener('click', () => {
     lhAlign = b.dataset.al; lhModal.querySelectorAll('[data-al]').forEach(x => x.classList.toggle('on', x === b)); lhUpdate();
   }));
