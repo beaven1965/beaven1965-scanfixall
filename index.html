@@ -1773,7 +1773,10 @@
     #lhCropCanvas{ max-height:210px; }
   }
   .lh-head{ display:flex; justify-content:space-between; align-items:center; font-size:17px; margin-bottom:6px; }
-  .lh-x{ border:1px solid #cfd6df; background:#fff; border-radius:999px; padding:6px 14px; cursor:pointer; font-family:inherit; }
+  .lh-glow{ box-shadow:0 0 0 4px rgba(201,71,47,.35); transition:box-shadow .3s; }
+  .lh-saved{ font-size:12px; color:#4A5658; }
+  @media (max-width:600px){ .lh-saved{ display:none; } }
+  .lh-x{ font-weight:700; color:#1E2A2C; border:1px solid #cfd6df; background:#fff; border-radius:999px; padding:6px 14px; cursor:pointer; font-family:inherit; }
   .lh-step{ margin:12px 0 4px; font-size:15px; }
   .lh-hint{ font-size:13px; color:#4A5658; line-height:1.45; }
   .lh-src-row{ display:flex; flex-wrap:wrap; gap:6px; margin:6px 0; }
@@ -1995,7 +1998,7 @@
     <!-- LETTERHEAD FIXER -->
     <div id="lhModal" class="lh-modal" style="display:none;" role="dialog" aria-label="Fix letterhead">
       <div class="lh-card">
-        <div class="lh-head"><b>🖼 Fix the letterhead</b><button type="button" id="lhCancelBtn" class="lh-x">Close</button></div>
+        <div class="lh-head"><button type="button" id="lhCancelBtn" class="lh-x">← Back to my page</button><b>🖼 Fix the letterhead</b><span class="lh-saved">Your work is kept</span></div>
         <div class="lh-body">
           <div class="lh-controls">
             <div class="lh-step"><b>1. The logo</b></div>
@@ -3737,7 +3740,14 @@
     if(!lhSource && !lhNoLogo) lhReset(); else { lhDrawCrop(); lhUpdate(); }
     lhModal.style.display = 'block'; document.body.style.overflow = 'hidden';
   });
-  function lhClose(){ lhModal.style.display = 'none'; document.body.style.overflow = ''; }
+  function lhClose(){
+    lhModal.style.display = 'none'; document.body.style.overflow = '';
+    // Show where to come back: the button is renamed and gently highlighted.
+    const b = lhEl('lhOpenBtn'); if(!b) return;
+    if(lhSource || lhEl('lhText').value.trim()) b.textContent = '🖼 Back to Fix letterhead (your work is kept)';
+    b.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    b.classList.add('lh-glow'); setTimeout(() => b.classList.remove('lh-glow'), 2600);
+  }
   lhEl('lhCancelBtn').addEventListener('click', lhClose);
   lhEl('lhApplyBtn').addEventListener('click', () => {
     const c = lhCompose();
