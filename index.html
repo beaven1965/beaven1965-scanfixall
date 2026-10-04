@@ -1869,6 +1869,8 @@
     color:var(--gold); font-weight:700; font-size:14.5px; cursor:pointer; box-shadow:0 1px 4px rgba(30,50,52,.10); font-family:inherit; }
   .share-app-btn:active{ transform:scale(.97); }
   .share-ic{ display:inline-block; vertical-align:-3px; margin-right:6px; flex:none; }
+  .mode-card.in-progress{ position:relative; }
+  .mode-card.in-progress::after{ content:'● Your scan is waiting · tap to continue'; position:absolute; top:-10px; right:12px; background:#1E7A44; color:#fff; font-size:11.5px; font-weight:700; padding:3px 10px; border-radius:999px; }
 </style>
 
 <style id="art-theme">
@@ -2045,7 +2047,7 @@
     <div class="library page-white" id="scanView" style="display:none;">
       <div class="result-meta">
         <span class="date">Scan a Document</span>
-        <button class="new-recording-btn" id="closeScanBtn">Close</button>
+        <button class="new-recording-btn" id="closeScanBtn">← Back</button>
       </div>
 
       <div class="tool-stage">
@@ -2263,7 +2265,7 @@
     <div class="library page-white" id="shrinkView" style="display:none;">
       <div class="result-meta">
         <span class="date">Shrink a Photo</span>
-        <button class="new-recording-btn" id="closeShrinkBtn">Close</button>
+        <button class="new-recording-btn" id="closeShrinkBtn">← Back</button>
       </div>
 
       <div class="tool-stage">
@@ -2304,7 +2306,7 @@
     <div class="library page-white" id="signView" style="display:none;">
       <div class="result-meta">
         <span class="date">Sign a Document</span>
-        <button class="new-recording-btn" id="closeSignBtn">Close</button>
+        <button class="new-recording-btn" id="closeSignBtn">← Back</button>
       </div>
 
       <div class="tool-stage">
@@ -2538,9 +2540,16 @@
   goScanBtn.addEventListener('click', () => showView('scan'));
   goShrinkBtn.addEventListener('click', () => showView('shrink'));
   goSignBtn.addEventListener('click', () => showView('sign'));
-  closeScanBtn.addEventListener('click', () => { resetScanTool(); showView('home'); });
-  closeShrinkBtn.addEventListener('click', () => { resetShrinkTool(); showView('home'); });
-  closeSignBtn.addEventListener('click', () => { resetSignTool(); showView('home'); });
+  // ← Back keeps your work. Coming back to the tool shows it exactly as you left it.
+  // (Use "⟲ Start over" inside a tool to clear it.)
+  function markInProgress(){
+    const scanBusy = !!(typeof scanSrcCanvas !== 'undefined' && scanSrcCanvas) || (typeof scanPages !== 'undefined' && scanPages.length > 0);
+    goScanBtn.classList.toggle('in-progress', scanBusy);
+  }
+  closeScanBtn.addEventListener('click', () => { showView('home'); markInProgress(); });
+  closeShrinkBtn.addEventListener('click', () => showView('home'));
+  closeSignBtn.addEventListener('click', () => showView('home'));
+  homeBtn.addEventListener('click', markInProgress);
 
   let screenBeforeSettings = 'home';
   settingsBtn.addEventListener('click', () => {
