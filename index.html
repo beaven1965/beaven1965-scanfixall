@@ -2012,6 +2012,7 @@
               <button type="button" class="lh-pill" id="lhNoLogoBtn">No logo</button>
               <input type="file" id="lhFile" accept="image/*" class="visually-hidden">
             </div>
+            <div class="lh-hint">💡 Tip: you can upload the <b>whole letterhead as one picture</b> (logo, colors, boxes and all) and leave step 2 empty.</div>
             <div id="lhCropBox">
               <div class="lh-hint" id="lhCropHint">✂️ <b>Cut out the logo:</b> drag the box or its 4 corner dots around only the logo. The dots cut; to make the logo bigger or smaller, use <b>Size</b> in step 3.</div>
               <div class="lh-crop-wrap"><canvas id="lhCropCanvas" style="touch-action:none;"></canvas></div>
@@ -2019,6 +2020,7 @@
                 <label class="lh-label">🧼 Clean <input type="range" id="lhClean" min="0" max="100" value="55"></label>
                 <label class="lh-label">📐 Straighten <input type="range" id="lhTilt" min="-10" max="10" step="0.5" value="0"></label>
               </div>
+              <label class="lh-label" style="margin-top:2px;"><input type="checkbox" id="lhBw" style="width:20px;height:20px;accent-color:#C9472F;"> ⬛ Black &amp; white logo <span class="lh-hint">(often cleaner for scanned logos)</span></label>
             </div>
 
             <div class="lh-step"><b>2. Typed lines</b> <span class="lh-hint">(optional, one line each; ALL-CAPS lines come out bold)</span></div>
@@ -2249,7 +2251,9 @@
           <div class="tool-upload-row" style="margin-top:0;">
             <button class="tool-btn primary" id="retypeSaveImageBtn">⬇ Save as Image</button>
             <button class="tool-btn primary" id="retypeSavePdfBtn">⬇ Save as PDF</button>
+            <button class="tool-btn primary" id="retypeSaveWordBtn">⬇ Save as Word</button>
           </div>
+          <div class="tool-hint" style="margin-top:6px;">Word file: open it in Word or Google Docs for extra touches like italics, colors or boxes.</div>
           <div class="tool-upload-row" style="margin-top:10px;">
             <button class="tool-btn" id="retypeShareBtn"><svg class="share-ic" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4.5 21 11l-7 6.5v-3.8c-5.2 0-8.6 1.6-11 5.3.9-5.4 4.1-10.2 11-11.1z"/></svg>Share</button>
             <button class="tool-btn" id="retypePrintBtn">🖨 Print</button>
@@ -3665,6 +3669,17 @@
       }
       ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.putImageData(img, 0, 0);
     }
+    if(lhEl('lhBw') && lhEl('lhBw').checked){
+      // Black & white: grey levels with extra contrast, so a blurry scan looks crisp.
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      const im = ctx.getImageData(0, 0, c.width, c.height), dd = im.data;
+      for(let i = 0; i < dd.length; i += 4){
+        let g = 0.299 * dd[i] + 0.587 * dd[i+1] + 0.114 * dd[i+2];
+        g = Math.max(0, Math.min(255, (g - 140) * 1.8 + 140));
+        dd[i] = dd[i+1] = dd[i+2] = g;
+      }
+      ctx.putImageData(im, 0, 0);
+    }
     // Trim the empty white edges, so the logo sits snugly next to the text.
     const d2 = c.getContext('2d').getImageData(0, 0, c.width, c.height).data;
     let x0 = c.width, x1 = -1, y0 = c.height, y1 = -1;
@@ -3716,6 +3731,7 @@
     img.style.marginLeft = lhAlign === 'left' ? '0' : 'auto'; img.style.marginRight = lhAlign === 'right' ? '0' : 'auto';
   }
   ['lhClean', 'lhTilt', 'lhSize', 'lhText', 'lhLayout'].forEach(id => lhEl(id).addEventListener('input', lhUpdate));
+  lhEl('lhBw').addEventListener('change', lhUpdate);
   // The typing box grows as you add lines, so every line stays in view.
   function lhGrow(){ const t = lhEl('lhText'); t.style.height = 'auto'; t.style.height = Math.min(t.scrollHeight + 2, 260) + 'px'; }
   lhEl('lhText').addEventListener('input', lhGrow);
@@ -4469,6 +4485,83 @@
       showStatus('Saved to your Downloads folder ✓', 3000);
     }catch(err){
       scanError.textContent = 'Could not build the PDF right now. Please try again.';
+      scanError.style.display = 'block';
+    }
+  });
+
+  // ---- ⬇ Save as Word (.docx): the retyped text, bold, tables and letterhead, editable in Word ----
+  let jszipLoading = null;
+  function loadJsZip(){
+    if(window.JSZip) return Promise.resolve();
+    if(!jszipLoading) jszipLoading = new Promise((resolve, reject) => {
+      const sc = document.createElement('script'); sc.src = '/jszip.min.js';
+      sc.onload = () => resolve(); sc.onerror = () => { jszipLoading = null; reject(new Error('Could not load the Word maker. Please check your internet and try again.')); };
+      document.head.appendChild(sc);
+    });
+    return jszipLoading;
+  }
+  const xmlEsc = (t) => String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, '');
+  function docxRuns(lines){
+    const font = '<w:rFonts w:ascii="Times New Roman" w:hAnsi="Times New Roman" w:cs="Times New Roman"/><w:sz w:val="24"/>';
+    return lines.map((line, i) => (i ? '<w:r><w:br/></w:r>' : '') + line.map(r =>
+      '<w:r><w:rPr>' + font + (r.b ? '<w:b/>' : '') + '</w:rPr><w:t xml:space="preserve">' + xmlEsc(r.t) + '</w:t></w:r>').join('')).join('');
+  }
+  const JC = { left: 'left', center: 'center', right: 'right', justify: 'both' };
+  function docxPara(lines, align, after){
+    return '<w:p><w:pPr><w:spacing w:after="' + (after == null ? 160 : after) + '"/><w:jc w:val="' + (JC[align] || 'left') + '"/></w:pPr>' + docxRuns(lines) + '</w:p>';
+  }
+  function docxTable(block){
+    const cols = Math.max(1, ...block.rows.map(r => r.length)), TW = 9026, cw = Math.floor(TW / cols);
+    const b = '<w:top w:val="single" w:sz="6" w:color="000000"/><w:left w:val="single" w:sz="6" w:color="000000"/><w:bottom w:val="single" w:sz="6" w:color="000000"/><w:right w:val="single" w:sz="6" w:color="000000"/><w:insideH w:val="single" w:sz="6" w:color="000000"/><w:insideV w:val="single" w:sz="6" w:color="000000"/>';
+    let x = '<w:tbl><w:tblPr><w:tblW w:w="' + TW + '" w:type="dxa"/><w:tblBorders>' + b + '</w:tblBorders></w:tblPr><w:tblGrid>' + ('<w:gridCol w:w="' + cw + '"/>').repeat(cols) + '</w:tblGrid>';
+    block.rows.forEach(row => {
+      x += '<w:tr>';
+      for(let c = 0; c < cols; c++){
+        const cell = row[c] || [[]];
+        x += '<w:tc><w:tcPr><w:tcW w:w="' + cw + '" w:type="dxa"/></w:tcPr>' + docxPara(cell, 'left', 0) + '</w:tc>';
+      }
+      x += '</w:tr>';
+    });
+    return x + '</w:tbl>' + docxPara([[]], 'left', 0);
+  }
+  function docxImage(rid, wEmu, hEmu, align){
+    return '<w:p><w:pPr><w:jc w:val="' + (JC[align] || 'center') + '"/></w:pPr><w:r><w:drawing><wp:inline distT="0" distB="0" distL="0" distR="0"><wp:extent cx="' + wEmu + '" cy="' + hEmu + '"/><wp:docPr id="1" name="Letterhead"/>'
+      + '<a:graphic xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:pic xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture">'
+      + '<pic:nvPicPr><pic:cNvPr id="1" name="letterhead.png"/><pic:cNvPicPr/></pic:nvPicPr><pic:blipFill><a:blip r:embed="' + rid + '"/><a:stretch><a:fillRect/></a:stretch></pic:blipFill>'
+      + '<pic:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="' + wEmu + '" cy="' + hEmu + '"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></pic:spPr></pic:pic></a:graphicData></a:graphic></wp:inline></w:drawing></w:r></w:p>';
+  }
+  async function buildRetypeDocx(){
+    await loadJsZip();
+    const blocks = readRetypeBlocks();
+    let body = '', hasImg = false, png = null;
+    if(retypeLetterhead && retypeKeepLetterhead.checked){
+      const lh = retypeLetterhead, frac = Math.max(0.15, Math.min(1, lh._pageFrac || 0.6));
+      const wEmu = Math.round(5731510 * frac), hEmu = Math.round(wEmu * lh.height / lh.width);
+      png = await new Promise(r => lh.toBlob(r, 'image/png'));
+      if(png){ hasImg = true; body += docxImage('rIdImg1', wEmu, hEmu, lh._align || 'center'); }
+    }
+    blocks.forEach(b => {
+      if(b.type === 'table') body += docxTable(b);
+      else body += docxPara(b.lines, b.align, b.signer ? 0 : 160);
+    });
+    const doc = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing"><w:body>'
+      + body + '<w:sectPr><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="1440" w:right="1440" w:bottom="1440" w:left="1440" w:header="708" w:footer="708" w:gutter="0"/></w:sectPr></w:body></w:document>';
+    const zip = new JSZip();
+    zip.file('[Content_Types].xml', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Default Extension="png" ContentType="image/png"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/></Types>');
+    zip.file('_rels/.rels', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>');
+    zip.file('word/_rels/document.xml.rels', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' + (hasImg ? '<Relationship Id="rIdImg1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="media/letterhead.png"/>' : '') + '</Relationships>');
+    zip.file('word/document.xml', doc);
+    if(hasImg) zip.file('word/media/letterhead.png', png);
+    return zip.generateAsync({ type: 'blob', mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
+  }
+  document.getElementById('retypeSaveWordBtn').addEventListener('click', async () => {
+    try{
+      const blob = await buildRetypeDocx();
+      const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'retyped-' + Date.now() + '.docx'; a.click();
+      setTimeout(() => URL.revokeObjectURL(a.href), 20000);
+      showStatus('Word file saved to your Downloads ✓', 3000);
+    }catch(err){
+      scanError.textContent = err.message || 'Could not build the Word file right now. Please try again.';
       scanError.style.display = 'block';
     }
   });
