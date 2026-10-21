@@ -9,7 +9,7 @@
 //            'class'  = like a paid Class code: 100 AI pages, up to 50 student codes
 //   { password, action: 'list' }             -> { codes: [...] }   (last 50 made)
 // Codes have their expiry built in, like paid codes.
-// Also used by the 'Code Maker' file on Beaven's laptop (one file for all his apps).
+// Also used by the owner's 'Code Maker' file (one file for all the apps).
 
 import crypto from 'node:crypto';
 import { getStore } from '@netlify/blobs';
